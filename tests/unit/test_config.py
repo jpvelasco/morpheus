@@ -77,3 +77,39 @@ def test_CFG_004_startup_report_has_feature_decisions() -> None:
     assert report["features"]["search"] is True
     assert report["features"]["image_generation"] is False
     assert "api_key" not in report
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "unix:///run/morpheus.sock",
+        "http://user:password@127.0.0.1:7402",
+        "http://127.0.0.1:7402/v1",
+        "http://127.0.0.1:7402?token=secret",
+    ],
+)
+def test_CFG_003_rejects_unsafe_runtime_agent_endpoint(url: str) -> None:
+    with pytest.raises(ValidationError):
+        MorpheusSettings(runtime_agent_url=url)
+
+
+def test_CFG_003_accepts_empty_or_http_runtime_agent_endpoint() -> None:
+    assert MorpheusSettings(runtime_agent_url="").runtime_agent_url is None
+    assert (
+        MorpheusSettings(runtime_agent_url="http://127.0.0.1:7402/").runtime_agent_url
+        == "http://127.0.0.1:7402"
+    )
+
+
+def test_CFG_003_rejects_multiple_runtime_agent_transports() -> None:
+    with pytest.raises(ValidationError, match="only one runtime agent"):
+        MorpheusSettings(
+            runtime_agent_url="http://127.0.0.1:7402",
+            runtime_agent_socket="/run/morpheus-agent/agent.sock",
+        )
+
+
+def test_CFG_003_runtime_agent_socket_is_optional_and_absolute() -> None:
+    assert MorpheusSettings(runtime_agent_socket="").runtime_agent_socket is None
+    with pytest.raises(ValidationError, match="absolute path"):
+        MorpheusSettings(runtime_agent_socket="agent.sock")

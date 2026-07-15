@@ -5,6 +5,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Protocol
 
+from morpheus.agent.protocol import AgentOperation, AgentResponse
 from morpheus.core.health import Evidence
 from morpheus.core.models import ModelIdentity
 
@@ -29,6 +30,10 @@ class MetricsPort(Protocol):
 
 class HostTelemetryPort(Protocol):
     async def snapshot(self) -> dict[str, Any]: ...
+
+
+class RuntimeAgentPort(Protocol):
+    async def inspect(self, operation: AgentOperation) -> AgentResponse: ...
 
 
 class PersistencePort(Protocol):

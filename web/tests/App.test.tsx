@@ -21,14 +21,27 @@ const overview = {
     search: { state: 'disabled', blockers: [] },
   },
   host: { status: 'unavailable', reason: 'runtime_agent_not_configured' },
+  diagnostics: {
+    status: 'degraded',
+    observed_at: '2026-07-15T12:00:00+00:00',
+    checks: [{
+      code: 'network_endpoint',
+      status: 'pass',
+      reason_code: 'inference_models_ready',
+      summary: 'Inference API returned one or more served models',
+      observed_at: '2026-07-15T12:00:00+00:00',
+      freshness: 'current',
+      next_action: null,
+    }],
+  },
   external_controls: [],
 }
 
 function mockFetch(payload: unknown = overview, status = 200) {
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify(payload), {
+  vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(new Response(JSON.stringify(payload), {
     status,
     headers: { 'Content-Type': 'application/json' },
-  })))
+  }))))
 }
 
 async function signIn() {
@@ -72,7 +85,7 @@ test('UI-002 diagnostics exposes evidence and freshness', async () => {
   expect(await screen.findByRole('heading', { name: 'Diagnostics' })).toBeVisible()
   expect(screen.getByText('Inference Models Ready')).toBeVisible()
   expect(screen.getByText('Current evidence')).toBeVisible()
-  expect(screen.getByText('2.5 ms')).toBeVisible()
+  expect(screen.getByText('No action required')).toBeVisible()
 })
 
 test('UI-004 retains layout and reports a partial API failure', async () => {
@@ -134,6 +147,11 @@ test('missing model and stale evidence remain explicit', async () => {
   mockFetch({
     ...overview,
     inference: { ...overview.inference, state: 'degraded', expires_at: '2000-01-01T00:00:00Z' },
+    diagnostics: {
+      ...overview.diagnostics,
+      status: 'unhealthy',
+      checks: overview.diagnostics.checks.map((check) => ({ ...check, freshness: 'stale' })),
+    },
     models: [],
   })
   render(<App />)
@@ -142,5 +160,5 @@ test('missing model and stale evidence remain explicit', async () => {
   expect(screen.getAllByText('Unavailable').length).toBeGreaterThan(1)
   await userEvent.click(screen.getByRole('button', { name: 'Diagnostics' }))
   expect(await screen.findByText('Stale evidence')).toBeVisible()
-  expect(screen.getByText('Unknown')).toBeVisible()
+  expect(screen.getByText('Unhealthy')).toBeVisible()
 })

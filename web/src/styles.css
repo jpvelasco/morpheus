@@ -196,6 +196,11 @@ h2 { margin: 0; font-size: 20px; }
 .evidence-list > div:last-child { border-bottom: 0; }
 .evidence-list dt { color: #6e7976; font-size: 12px; font-weight: 700; }
 .evidence-list dd { margin: 0; overflow-wrap: anywhere; }
+.diagnostic-checks { display: grid; }
+.diagnostic-check { border-bottom: 1px solid #d8dfdd; }
+.diagnostic-check:last-child { border-bottom: 0; }
+.diagnostic-title { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 20px 8px; }
+.diagnostic-title h3 { margin: 0; font-size: 15px; }
 .error-banner, .loading-state {
   min-height: 46px;
   display: flex;

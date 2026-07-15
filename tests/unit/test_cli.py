@@ -81,3 +81,16 @@ def test_RUN_006_doctor_reports_ready_diagnostics(monkeypatch: pytest.MonkeyPatc
         "diagnostics": {"safe": True},
         "status": "ready",
     }
+
+
+def test_RUN_006_doctor_propagates_degraded_status_and_exit_code(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        main.httpx,
+        "get",
+        lambda url, **kwargs: response({"status": "degraded", "checks": []}),
+    )
+    result = runner.invoke(app, ["doctor", "--json"])
+    assert result.exit_code == 1
+    assert json.loads(result.stdout)["status"] == "degraded"

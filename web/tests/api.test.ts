@@ -16,6 +16,19 @@ function validOverview() {
     models: [{ root: null, aliases: ['model-a'], context_window: null }],
     capabilities: { core: { state: 'available', blockers: [] } },
     host: { status: 'unavailable', reason: 'agent_offline' },
+    diagnostics: {
+      status: 'degraded',
+      observed_at: '2026-07-15T12:00:00+00:00',
+      checks: [{
+        code: 'runtime_agent',
+        status: 'unavailable',
+        reason_code: 'runtime_agent_unreachable',
+        summary: 'Runtime agent is unavailable',
+        observed_at: '2026-07-15T12:00:00+00:00',
+        freshness: 'current',
+        next_action: 'Start the runtime agent',
+      }],
+    },
     external_controls: [],
   }
 }

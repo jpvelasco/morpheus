@@ -163,9 +163,15 @@ a new API version or documented migration period.
 
 ### 5.3 Runtime Agent
 
-The runtime agent is a small host-native Python service bound to loopback. It
-runs as the installing user, not root, and authenticates every request with a
-separate agent credential.
+The runtime agent is a small host-native Python service bound to loopback for
+host-native clients or to a Morpheus-owned Unix socket for the containerized
+control API. The API mounts only the socket directory read-only; it never mounts
+the Docker socket. Compose grants the API process only the installing user's
+numeric group so the agent socket can remain group-read/write rather than
+world-accessible. The agent runs as the installing user, not root, and
+authenticates every request with a separate agent credential. Unix-socket file
+permissions are not treated as authentication; the signed request remains
+mandatory.
 
 Its command surface is an explicit enum, not arbitrary shell input:
 

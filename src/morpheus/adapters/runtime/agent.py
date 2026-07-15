@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import secrets
 import time
+from pathlib import Path
 
 import httpx
 
@@ -13,14 +14,18 @@ class RuntimeAgentClient:
     def __init__(
         self,
         *,
-        base_url: str,
+        base_url: str = "http://runtime-agent",
         key: bytes,
         timeout_seconds: float = 5,
+        uds: Path | None = None,
         client: httpx.AsyncClient | None = None,
     ) -> None:
+        if uds is not None and client is not None:
+            raise ValueError("a supplied HTTP client cannot be combined with a Unix socket")
         self._base_url = base_url.rstrip("/")
         self._key = key
         self._timeout = timeout_seconds
+        self._uds = uds
         self._client = client
 
     async def inspect(self, operation: AgentOperation) -> AgentResponse:
@@ -36,7 +41,8 @@ class RuntimeAgentClient:
             "X-Morpheus-Signature": signature,
         }
         if self._client is None:
-            async with httpx.AsyncClient() as client:
+            transport = httpx.AsyncHTTPTransport(uds=str(self._uds)) if self._uds else None
+            async with httpx.AsyncClient(transport=transport) as client:
                 response = await client.post(
                     f"{self._base_url}/v1/inspect",
                     content=body,
@@ -51,4 +57,7 @@ class RuntimeAgentClient:
                 timeout=self._timeout,
             )
         response.raise_for_status()
-        return AgentResponse.model_validate(response.json())
+        parsed = AgentResponse.model_validate(response.json())
+        if parsed.request_id != request.request_id or parsed.operation is not operation:
+            raise ValueError("runtime agent returned mismatched response identity")
+        return parsed
