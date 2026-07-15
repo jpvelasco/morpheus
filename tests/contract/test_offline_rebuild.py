@@ -17,10 +17,11 @@ COMPARE = ROOT / "validation/candidate/compare-rebuilds.sh"
 BACKEND_DOCKERFILE = ROOT / "validation/candidate/Dockerfile.backend"
 DASHBOARD_DOCKERFILE = ROOT / "validation/candidate/Dockerfile.dashboard"
 CANDIDATE_COMPOSE = ROOT / "validation/candidate/compose.yaml"
+AGENT_INSTALLER = ROOT / "deploy/agent/install.sh"
 
 
 def test_CLEAN_002_scripts_are_executable_and_parse_as_bash() -> None:
-    for script in (OFFLINE_GUARD, POPULATE, REBUILD, COMPARE):
+    for script in (OFFLINE_GUARD, POPULATE, REBUILD, COMPARE, AGENT_INSTALLER):
         assert script.stat().st_mode & 0o111
         subprocess.run(  # noqa: S603 - fixed parser and checked-in script paths
             ["/usr/bin/bash", "-n", script], check=True
@@ -56,6 +57,8 @@ def test_CLEAN_002_declares_one_fetch_then_requires_offline_rebuild() -> None:
     assert 'cache_scope: "portable-locked-dependencies-and-local-base-images"' in populate
     assert 'list table inet "${offline_table}"' in rebuild
     assert "uv build --offline" in rebuild
+    assert "runtime_requirements_sha256" in populate
+    assert "runtime_requirements_sha256" in rebuild
     assert 'rm -f "${output}/payload/python/.gitignore"' in rebuild
     assert rebuild.count("docker buildx build") == 2
     assert "rewrite-timestamp=true" in rebuild
@@ -66,6 +69,8 @@ def test_CLEAN_002_declares_one_fetch_then_requires_offline_rebuild() -> None:
     assert "Dockerfile.dashboard" in rebuild
     assert '--tag "${backend_tag}"' in rebuild
     assert '--tag "${dashboard_tag}"' in rebuild
+    assert "morpheus-agent-" in rebuild
+    assert "gzip -n" in rebuild
 
 
 def test_BUILD_001_comparator_requires_exact_artifact_identity() -> None:
@@ -76,9 +81,26 @@ def test_BUILD_001_comparator_requires_exact_artifact_identity() -> None:
     assert 'comparison: "byte-for-byte"' in compare
 
 
+def test_ART_001_agent_bundle_installer_is_offline_verified_and_atomic() -> None:
+    installer = AGENT_INSTALLER.read_text(encoding="utf-8")
+    for required in (
+        "sha256sum --check SHA256SUMS",
+        "--no-index",
+        "--require-hashes",
+        "--no-deps",
+        "pip check",
+        "mktemp -d",
+        'mv --no-clobber --no-target-directory -- "${temporary}" "${destination}"',
+    ):
+        assert required in installer
+    assert "curl" not in installer
+    assert "wget" not in installer
+
+
 def test_BUILD_001_comparator_proves_equal_rebuilds(tmp_path: Path) -> None:
     rebuilds = [tmp_path / "first", tmp_path / "second"]
     paths = [
+        "payload/agent/morpheus-agent.tar.gz",
         "payload/images/backend.oci.tar",
         "payload/images/dashboard.oci.tar",
         "payload/python/morpheus.whl",
@@ -111,7 +133,7 @@ def test_BUILD_001_comparator_proves_equal_rebuilds(tmp_path: Path) -> None:
     )
     comparison = json.loads(result.read_text(encoding="utf-8"))
     assert comparison["status"] == "pass"
-    assert comparison["artifact_count"] == 4
+    assert comparison["artifact_count"] == 5
     assert [artifact["path"] for artifact in comparison["artifacts"]] == paths
 
 
@@ -152,7 +174,7 @@ def test_ART_001_oci_producers_name_the_fetch_and_offline_steps() -> None:
         "validation/candidate/populate-cache.sh",
         "{cache-evidence-directory}",
     ]
-    for artifact_id in ("backend-oci", "dashboard-oci"):
+    for artifact_id in ("backend-oci", "dashboard-oci", "runtime-agent-bundle"):
         producer = artifacts[artifact_id]["producer"]
         assert producer["network"] is False
         assert producer["dependency_fetch"] == expected_fetch

@@ -116,6 +116,7 @@ jq -n \
   --arg node_reference "${node_reference}" \
   --arg node_image_id "${node_image_id}" \
   --arg wheelhouse_sha256 "$(sha256sum "${output}/wheelhouse/SHA256SUMS" | cut -d' ' -f1)" \
+  --arg runtime_requirements_sha256 "$(sha256sum "${output}/runtime-requirements.txt" | cut -d' ' -f1)" \
   --arg npm_cache_sha256 "$(sha256sum "${output}/npm-cache.SHA256SUMS" | cut -d' ' -f1)" \
   '{
     format: 1,
@@ -125,6 +126,7 @@ jq -n \
     cache_scope: "portable-locked-dependencies-and-local-base-images",
     dependency_inputs: {
       wheelhouse_sha256: $wheelhouse_sha256,
+      runtime_requirements_sha256: $runtime_requirements_sha256,
       npm_cache_sha256: $npm_cache_sha256
     },
     base_images: {

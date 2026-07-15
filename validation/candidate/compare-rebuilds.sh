@@ -48,7 +48,7 @@ while IFS= read -r checksum; do
   test "$(sha256sum "${first}/${path}" | cut -d' ' -f1)" = "${digest}"
   artifact_count=$((artifact_count + 1))
 done <"${first}/SHA256SUMS"
-test "${artifact_count}" -eq 4
+test "${artifact_count}" -eq 5
 
 mkdir -p "$(dirname -- "${result}")"
 jq -n \

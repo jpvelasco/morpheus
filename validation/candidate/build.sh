@@ -86,7 +86,7 @@ case "${COMMAND}" in
   rollback-bundle)
     payload_archive \
       "${OUTPUT_ROOT}/payload/rollback/morpheus-rollback-${CANDIDATE_VERSION}-${SOURCE_COMMIT:0:12}.tar.gz" \
-      payload/python payload/images payload/config payload/migrations payload/requirements
+      payload/python payload/images payload/agent payload/config payload/migrations payload/requirements
     ;;
   *)
     echo "usage: $0 {compose-config-bundle|migration-bundle|requirements-evidence|checksums|rollback-bundle}" >&2

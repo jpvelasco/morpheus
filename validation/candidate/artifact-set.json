@@ -39,6 +39,14 @@
       "producer": {"network": false, "dependency_fetch": ["validation/candidate/populate-cache.sh", "{cache-evidence-directory}"], "command": ["validation/vm/offline-egress.sh", "validation/candidate/rebuild-offline.sh", "{cache-evidence-directory}/cache-manifest.json", "{candidate-output-root}"]}
     },
     {
+      "id": "runtime-agent-bundle",
+      "required": true,
+      "path_pattern": "payload/agent/morpheus-agent-{version}-{commit}.tar.gz",
+      "media_type": "application/gzip",
+      "sources": ["deploy/agent/install.sh", "pyproject.toml", "uv.lock", "README.md", "src/morpheus/**"],
+      "producer": {"network": false, "dependency_fetch": ["validation/candidate/populate-cache.sh", "{cache-evidence-directory}"], "command": ["validation/vm/offline-egress.sh", "validation/candidate/rebuild-offline.sh", "{cache-evidence-directory}/cache-manifest.json", "{candidate-output-root}"]}
+    },
+    {
       "id": "compose-config-bundle",
       "required": true,
       "path_pattern": "payload/config/morpheus-compose-config-{version}.tar.gz",
@@ -75,7 +83,7 @@
       "required": true,
       "path_pattern": "payload/rollback/morpheus-rollback-{version}-{commit}.tar.gz",
       "media_type": "application/gzip",
-      "sources": ["python-wheel", "backend-oci", "dashboard-oci", "compose-config-bundle", "migration-bundle"],
+      "sources": ["python-wheel", "backend-oci", "dashboard-oci", "runtime-agent-bundle", "compose-config-bundle", "migration-bundle"],
       "producer": {"network": false, "command": ["validation/candidate/build.sh", "rollback-bundle"]}
     }
   ],
@@ -84,6 +92,7 @@
     "python-wheel",
     "backend-oci",
     "dashboard-oci",
+    "runtime-agent-bundle",
     "compose-config-bundle",
     "migration-bundle",
     "requirements-evidence",
@@ -93,6 +102,7 @@
     "python-wheel",
     "backend-oci",
     "dashboard-oci",
+    "runtime-agent-bundle",
     "compose-config-bundle",
     "migration-bundle",
     "requirements-evidence"
