@@ -53,6 +53,7 @@ def test_CLEAN_002_declares_one_fetch_then_requires_offline_rebuild() -> None:
     assert "--no-cache-dir" in populate
     assert "--require-hashes" in populate
     assert "--only-binary=:all:" in populate
+    assert "--no-header" in populate
     assert "npm ci --ignore-scripts --cache /npm-cache" in populate
     assert 'cache_scope: "portable-locked-dependencies-and-local-base-images"' in populate
     assert 'list table inet "${offline_table}"' in rebuild

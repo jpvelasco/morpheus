@@ -54,6 +54,7 @@ uv export \
   --frozen \
   --no-dev \
   --no-emit-project \
+  --no-header \
   --format requirements-txt \
   --output-file "${output}/runtime-requirements.txt"
 docker pull "${python_reference}"
