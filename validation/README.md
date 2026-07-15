@@ -97,16 +97,21 @@ migrations, requirements evidence, `SHA256SUMS`, and a self-contained rollback
 bundle. [`candidate/manifest.schema.json`](candidate/manifest.schema.json)
 defines the produced manifest. `morpheus.ops.candidate.verify_candidate`
 rejects missing or extra artifacts, mixed commits, unsafe paths, media-type or
-size drift, checksum mismatches, and incomplete `SHA256SUMS` coverage. The
-definition explicitly records that the two OCI producers still require network
-access; CLEAN-002 must replace that dependency with a demonstrated offline
-rebuild path before either producer can be claimed as offline.
+size drift, checksum mismatches, and incomplete `SHA256SUMS` coverage.
 
 `candidate/build.sh` supplies deterministic, offline subcommands for the
 Compose/config, migration, requirements, checksum, and rollback bundles. It
 requires `CANDIDATE_OUTPUT_ROOT`, `CANDIDATE_VERSION`, `SOURCE_DATE_EPOCH`, and
 `SOURCE_COMMIT`; archives are sorted, timestamp-normalized, numeric-owner tar
-streams compressed with timestamp-free gzip. Python and OCI producers remain
-the explicit `uv build --offline` and Buildx commands in the artifact-set
-definition. The Buildx commands are the current networked producers, not an
-offline-readiness claim.
+streams compressed with timestamp-free gzip.
+
+Python and OCI producers use an explicit two-step cache protocol. Run
+`candidate/populate-cache.sh CACHE_EVIDENCE_DIRECTORY` once with networking
+enabled. Then run
+`vm/offline-egress.sh candidate/rebuild-offline.sh CACHE_MANIFEST OUTPUT` in a
+disposable validation guest. The wrapper requires working egress before the
+test, installs a dedicated nftables table that drops guest and container
+egress while preserving the established SSH session, proves egress is blocked,
+and always removes only that table on exit. The rebuild refuses a dirty or
+different source commit and exports the Python and OCI artifacts solely from
+the populated uv and local Docker-driver caches.

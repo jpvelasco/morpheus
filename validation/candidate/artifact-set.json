@@ -28,7 +28,7 @@
       "path_pattern": "payload/images/morpheus-backend-{version}-{commit}.oci.tar",
       "media_type": "application/vnd.oci.image.layout.v1.tar",
       "sources": [".dockerignore", "deploy/Dockerfile", "pyproject.toml", "uv.lock", "README.md", "src/morpheus/**"],
-      "producer": {"network": "required-until-CLEAN-002", "command": ["docker", "buildx", "build", "--platform", "linux/amd64", "--output", "type=oci", "--file", "deploy/Dockerfile", "."]}
+      "producer": {"network": false, "dependency_fetch": ["validation/candidate/populate-cache.sh", "{cache-evidence-directory}"], "command": ["validation/vm/offline-egress.sh", "validation/candidate/rebuild-offline.sh", "{cache-evidence-directory}/cache-manifest.json", "{candidate-output-root}"]}
     },
     {
       "id": "dashboard-oci",
@@ -36,7 +36,7 @@
       "path_pattern": "payload/images/morpheus-dashboard-{version}-{commit}.oci.tar",
       "media_type": "application/vnd.oci.image.layout.v1.tar",
       "sources": [".dockerignore", "web/Dockerfile", "web/package.json", "web/package-lock.json", "web/src/**", "src/morpheus/dashboard/**"],
-      "producer": {"network": "required-until-CLEAN-002", "command": ["docker", "buildx", "build", "--platform", "linux/amd64", "--output", "type=oci", "--file", "web/Dockerfile", "."]}
+      "producer": {"network": false, "dependency_fetch": ["validation/candidate/populate-cache.sh", "{cache-evidence-directory}"], "command": ["validation/vm/offline-egress.sh", "validation/candidate/rebuild-offline.sh", "{cache-evidence-directory}/cache-manifest.json", "{candidate-output-root}"]}
     },
     {
       "id": "compose-config-bundle",

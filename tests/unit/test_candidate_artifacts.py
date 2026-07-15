@@ -41,11 +41,7 @@ def test_ART_001_definition_covers_the_complete_single_commit_candidate() -> Non
         assert artifact["producer"]["command"]
         assert "latest" not in " ".join(artifact["producer"]["command"])
 
-    offline_producers = REQUIRED_ARTIFACTS - {"backend-oci", "dashboard-oci"}
-    assert all(artifacts[item]["producer"]["network"] is False for item in offline_producers)
-    assert {
-        artifacts[item]["producer"]["network"] for item in {"backend-oci", "dashboard-oci"}
-    } == {"required-until-CLEAN-002"}
+    assert all(artifact["producer"]["network"] is False for artifact in artifacts.values())
 
     assert set(definition["checksum_scope"]) == REQUIRED_ARTIFACTS - {"checksums"}
     assert set(definition["rollback_contents"]) >= {

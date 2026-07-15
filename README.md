@@ -57,10 +57,18 @@ make bootstrap
 make gate
 ```
 
-The dashboard gate runs from `web/` with `npm ci --ignore-scripts`, followed by
-formatting, strict type checking, tests with coverage, and a production build.
-CI executes that sequence in the digest-pinned Node image recorded in the
-quality workflow. Neither gate contacts or mutates the external inference or
+The dashboard gate uses the digest-pinned Node image rather than a host Node
+installation:
+
+```bash
+docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp/home \
+  -v "$PWD/web:/work" -w /work \
+  docker.io/library/node@sha256:99351363debf40f3495cb7fc657a777334c3b21143e594dbfcc7de187439633c \
+  sh -lc 'npm ci --ignore-scripts && npm run format-check && npm run typecheck && npm test && npm run build'
+```
+
+That runs formatting, strict type checking, tests with coverage, and a
+production build. Neither gate contacts or mutates the external inference or
 Open WebUI services.
 
 ## Repository Rules
