@@ -8,6 +8,8 @@
   flows, security model, and deployment shape.
 - [Implementation plan](IMPLEMENTATION_PLAN.md): test-driven build sequence,
   quality gates, and phase exit criteria.
+- [Release validation plan](RELEASE_VALIDATION_PLAN.md): prioritized host and VM
+  prerequisites, executable validation tasks, evidence, and release gates.
 - [Inventory](inventory.md): existing local assets and candidate inputs.
 
 ## Decision Records
