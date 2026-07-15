@@ -50,12 +50,18 @@ test "$(jq -er '.version' "${cache_manifest}")" = "${version}"
 cache_root=$(cd -- "$(dirname -- "${cache_manifest}")" && pwd)
 test "$(sha256sum "${cache_root}/wheelhouse/SHA256SUMS" | cut -d' ' -f1)" = \
   "$(jq -er '.dependency_inputs.wheelhouse_sha256' "${cache_manifest}")"
+test "$(sha256sum "${cache_root}/agent-wheelhouse/SHA256SUMS" | cut -d' ' -f1)" = \
+  "$(jq -er '.dependency_inputs.agent_wheelhouse_sha256' "${cache_manifest}")"
 test "$(sha256sum "${cache_root}/runtime-requirements.txt" | cut -d' ' -f1)" = \
   "$(jq -er '.dependency_inputs.runtime_requirements_sha256' "${cache_manifest}")"
 test "$(sha256sum "${cache_root}/npm-cache.SHA256SUMS" | cut -d' ' -f1)" = \
   "$(jq -er '.dependency_inputs.npm_cache_sha256' "${cache_manifest}")"
 (
   cd "${cache_root}/wheelhouse"
+  sha256sum --check SHA256SUMS
+)
+(
+  cd "${cache_root}/agent-wheelhouse"
   sha256sum --check SHA256SUMS
 )
 (
@@ -90,7 +96,7 @@ cp -a "${cache_root}/wheelhouse" "${work}/wheelhouse"
 cp -a "${cache_root}/npm-cache" "${work}/npm-cache"
 
 mkdir -p "${work}/agent"
-cp -a "${cache_root}/wheelhouse" "${work}/agent/wheelhouse"
+cp -a "${cache_root}/agent-wheelhouse" "${work}/agent/wheelhouse"
 cp -a "${cache_root}/runtime-requirements.txt" "${work}/agent/runtime-requirements.txt"
 cp -a "${root}/deploy/agent/install.sh" "${work}/agent/install.sh"
 agent_output="${output}/payload/agent/morpheus-agent-${version}-${short_commit}.tar.gz"

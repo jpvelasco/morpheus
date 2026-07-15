@@ -48,6 +48,8 @@ def test_CLEAN_002_declares_one_fetch_then_requires_offline_rebuild() -> None:
     assert populate.count("docker buildx build") == 0
     assert populate.count("docker pull") == 2
     assert "pip download" in populate
+    assert ".venv/bin/python -m pip download" in populate
+    assert "agent-wheelhouse" in populate
     assert '"${python_reference}"' in populate
     assert "uv run --offline python -m pip download" not in populate
     assert "--no-cache-dir" in populate
@@ -60,6 +62,8 @@ def test_CLEAN_002_declares_one_fetch_then_requires_offline_rebuild() -> None:
     assert "uv build --offline" in rebuild
     assert "runtime_requirements_sha256" in populate
     assert "runtime_requirements_sha256" in rebuild
+    assert "agent_wheelhouse_sha256" in populate
+    assert "agent_wheelhouse_sha256" in rebuild
     assert 'rm -f "${output}/payload/python/.gitignore"' in rebuild
     assert rebuild.count("docker buildx build") == 2
     assert "rewrite-timestamp=true" in rebuild
