@@ -95,6 +95,9 @@ def test_ART_001_agent_bundle_installer_is_offline_verified_and_atomic() -> None
         "--no-deps",
         "pip check",
         "mktemp -d",
+        "MORPHEUS_AGENT_PYTHON",
+        "Runtime agent requires CPython 3.12",
+        "content.replace(staging, destination)",
         'mv --no-clobber --no-target-directory -- "${temporary}" "${destination}"',
     ):
         assert required in installer
