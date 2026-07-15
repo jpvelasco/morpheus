@@ -120,7 +120,7 @@ def test_BUILD_001_candidate_dockerfiles_are_offline_pinned_and_normalized() -> 
     dashboard = DASHBOARD_DOCKERFILE.read_text(encoding="utf-8")
     for dockerfile in (backend, dashboard):
         assert "python:3.12-alpine3.23@sha256:601d3d37" in dockerfile
-        assert "sha256sum --check SHA256SUMS" in dockerfile
+        assert "sha256sum -c SHA256SUMS" in dockerfile
         assert "--no-index" in dockerfile
         assert "--find-links=/wheelhouse" in dockerfile
         assert 'touch -h -d "@${SOURCE_DATE_EPOCH}"' in dockerfile
