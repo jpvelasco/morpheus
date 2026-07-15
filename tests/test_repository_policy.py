@@ -41,5 +41,20 @@ def test_example_environment_contains_no_functional_secret() -> None:
             key, value = line.split("=", 1)
             values[key] = value
 
-    for key in ("MORPHEUS_API_KEY", "MORPHEUS_AGENT_KEY", "MORPHEUS_SESSION_SECRET"):
-        assert values[key] == ""
+    for key in (
+        "MORPHEUS_API_KEY",
+        "MORPHEUS_AGENT_KEY",
+        "MORPHEUS_SESSION_SECRET",
+        "MORPHEUS_UPSTREAM_API_KEY",
+        "MORPHEUS_N8N_ENCRYPTION_KEY",
+    ):
+        assert values[key] == '""'
+
+
+def test_secret_scan_ignores_only_the_reviewed_empty_example_false_positive() -> None:
+    lines = (ROOT / ".gitleaksignore").read_text(encoding="utf-8").splitlines()
+    fingerprints = [line for line in lines if line and not line.startswith("#")]
+    assert fingerprints == [
+        "46478209f9abd0ce2e47b65cb7e92095a3aa66e8:.env.example:generic-api-key:20"
+    ]
+    assert any("adjacent empty assignments" in line for line in lines if line.startswith("#"))
