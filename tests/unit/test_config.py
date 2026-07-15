@@ -1,0 +1,79 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+from pydantic import ValidationError
+
+from morpheus.config import MorpheusSettings, load_settings
+
+
+def test_CFG_001_configuration_precedence(tmp_path: Path) -> None:
+    config = tmp_path / "config.yaml"
+    config.write_text("api_port: 7100\nllm_base_url: http://config-llm:8000/v1\n", encoding="utf-8")
+    env_file = tmp_path / ".env"
+    env_file.write_text("MORPHEUS_API_PORT=7200\n", encoding="utf-8")
+
+    settings = load_settings(
+        config_file=config,
+        env_file=env_file,
+        environ={"MORPHEUS_API_PORT": "7300"},
+        overrides={"api_port": 7400},
+    )
+
+    assert settings.api_port == 7400
+    assert str(settings.llm_base_url) == "http://config-llm:8000/v1"
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "ftp://llm.local/v1",
+        "http://user:password@llm.local/v1",
+        "http://llm.local",
+        "http://llm.local/v1/v1",
+        "http://llm.local/v1?token=secret",
+        "http:///v1",
+    ],
+)
+def test_CFG_003_rejects_unsafe_or_ambiguous_endpoint(url: str) -> None:
+    with pytest.raises(ValidationError):
+        MorpheusSettings(llm_base_url=url)
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://127.0.0.1:8082/v1",
+        "https://[::1]:8082/v1",
+        "http://qwopus-coder:8000/v1",
+    ],
+)
+def test_CFG_003_accepts_supported_endpoint_shapes(url: str) -> None:
+    assert str(MorpheusSettings(llm_base_url=url).llm_base_url) == url
+
+
+def test_CFG_002_public_configuration_excludes_secret_values() -> None:
+    settings = MorpheusSettings(
+        api_key="api-canary",
+        agent_key="agent-canary",
+        session_secret="session-canary",
+    )
+
+    public = settings.public_dict()
+    serialized = str(public)
+    assert "canary" not in serialized
+    assert public["secrets_configured"] == {
+        "agent_key": True,
+        "api_key": True,
+        "session_secret": True,
+    }
+
+
+def test_CFG_004_startup_report_has_feature_decisions() -> None:
+    settings = MorpheusSettings(enable_search=True)
+    report = settings.startup_report()
+
+    assert report["features"]["search"] is True
+    assert report["features"]["image_generation"] is False
+    assert "api_key" not in report

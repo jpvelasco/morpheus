@@ -1,0 +1,34 @@
+services:
+  workflows:
+    image: docker.io/n8nio/n8n:2.26.2@sha256:61ba01bc5e39304bbc928c9dbecd938c3a5cc1331b68affba6a34d0f654c43d9
+    profiles: [workflows]
+    restart: unless-stopped
+    init: true
+    security_opt: [no-new-privileges:true]
+    environment:
+      N8N_HOST: 127.0.0.1
+      N8N_PORT: "5678"
+      N8N_PROTOCOL: http
+      N8N_ENCRYPTION_KEY: "${MORPHEUS_N8N_ENCRYPTION_KEY:?MORPHEUS_N8N_ENCRYPTION_KEY is required}"
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_PERSONALIZATION_ENABLED: "false"
+    ports:
+      - "127.0.0.1:${MORPHEUS_N8N_PORT:-7411}:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./config/n8n/templates:/opt/morpheus/templates:ro
+    networks: [morpheus_internal, ai_default]
+    labels:
+      io.morpheus.project: "${MORPHEUS_PROJECT_ID:-morpheus}"
+      io.morpheus.component: workflows
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "2.0"
+
+volumes:
+  n8n_data:
+    labels:
+      io.morpheus.project: "${MORPHEUS_PROJECT_ID:-morpheus}"

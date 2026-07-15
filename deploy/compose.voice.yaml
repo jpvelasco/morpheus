@@ -1,0 +1,69 @@
+services:
+  stt:
+    image: docker.io/onerahmet/openai-whisper-asr-webservice:v1.9.1@sha256:03b402335881cdab2e4939b24620809df8d6ceec3bf2712217d41c8761a0f5d4
+    profiles: [voice]
+    restart: unless-stopped
+    environment:
+      ASR_ENGINE: faster_whisper
+      ASR_MODEL: base.en
+      ASR_DEVICE: cpu
+      MODEL_IDLE_TIMEOUT: "600"
+    volumes:
+      - whisper_cache:/root/.cache
+    networks: [morpheus_internal]
+    labels:
+      io.morpheus.project: "${MORPHEUS_PROJECT_ID:-morpheus}"
+      io.morpheus.component: stt
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+          cpus: "6.0"
+  tts:
+    image: ghcr.io/remsky/kokoro-fastapi-cpu:v0.6.0@sha256:d2c63627e80e32df7fab7f1e969c2b6b26272439d837ef195f40d4a82eca195e
+    profiles: [voice]
+    restart: unless-stopped
+    environment:
+      API_LOG_LEVEL: WARNING
+      DOWNLOAD_MODEL: "false"
+      ENABLE_DEBUG_ENDPOINTS: "false"
+    networks: [morpheus_internal]
+    labels:
+      io.morpheus.project: "${MORPHEUS_PROJECT_ID:-morpheus}"
+      io.morpheus.component: tts
+    deploy:
+      resources:
+        limits:
+          memory: 6G
+          cpus: "6.0"
+  voice-gateway:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    command: [morpheus-voice]
+    profiles: [voice]
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: [/tmp:size=64m,mode=1777]
+    environment:
+      MORPHEUS_API_KEY: "${MORPHEUS_API_KEY:?MORPHEUS_API_KEY is required}"
+      MORPHEUS_BIND_ADDRESS: "0.0.0.0"
+      MORPHEUS_STT_URL: http://stt:9000
+      MORPHEUS_TTS_URL: http://tts:8880
+    networks: [morpheus_internal, ai_default]
+    labels:
+      io.morpheus.project: "${MORPHEUS_PROJECT_ID:-morpheus}"
+      io.morpheus.component: voice-gateway
+    depends_on: [stt, tts]
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "1.0"
+
+volumes:
+  whisper_cache:
+    labels:
+      io.morpheus.project: "${MORPHEUS_PROJECT_ID:-morpheus}"

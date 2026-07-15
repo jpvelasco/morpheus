@@ -1,0 +1,224 @@
+import {
+  Activity,
+  AlertTriangle,
+  CheckCircle2,
+  Clock3,
+  Cpu,
+  Database,
+  Gauge,
+  LogOut,
+  RefreshCw,
+  Search,
+  Server,
+  Settings2,
+  ShieldCheck,
+  Volume2,
+} from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
+
+import { fetchOverview, type CapabilityState, type HealthState, type Overview } from './api'
+import './styles.css'
+
+const TOKEN_KEY = 'morpheus.session.api-key'
+
+function humanName(value: string): string {
+  return value.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
+}
+
+function Status({ state }: { state: HealthState | CapabilityState | 'unavailable' }) {
+  const healthy = state === 'ready' || state === 'available'
+  const Icon = healthy ? CheckCircle2 : state === 'disabled' || state === 'unavailable' ? Clock3 : AlertTriangle
+  return (
+    <span className={`status status-${state}`}>
+      <Icon aria-hidden="true" size={15} />
+      {humanName(state)}
+    </span>
+  )
+}
+
+function Login({ onLogin }: { onLogin: (token: string) => void }) {
+  const [key, setKey] = useState('')
+  function submit(event: FormEvent) {
+    event.preventDefault()
+    const token = key.trim()
+    if (token) onLogin(token)
+  }
+  return (
+    <main className="login-shell">
+      <form className="login-panel" onSubmit={submit}>
+        <div className="brand-mark" aria-hidden="true"><Activity size={24} /></div>
+        <h1>Morpheus</h1>
+        <p className="login-subtitle">Operator access</p>
+        <label htmlFor="api-key">API access key</label>
+        <input
+          id="api-key"
+          name="api-key"
+          type="password"
+          autoComplete="current-password"
+          value={key}
+          onChange={(event) => { setKey(event.target.value) }}
+          required
+        />
+        <button className="primary-command" type="submit"><ShieldCheck size={17} /> Sign in</button>
+      </form>
+    </main>
+  )
+}
+
+function OverviewPage({ overview }: { overview: Overview }) {
+  const model = overview.models[0]
+  const host = overview.host.status === 'available' ? overview.host : null
+  return (
+    <div className="page-stack">
+      <section className="summary-band" aria-labelledby="system-heading">
+        <div>
+          <p className="section-label">External inference</p>
+          <h2 id="system-heading">System overview</h2>
+        </div>
+        <Status state={overview.inference.state} />
+      </section>
+
+      <section className="metrics-grid" aria-label="Operational metrics">
+        <article className="metric-cell">
+          <Server aria-hidden="true" />
+          <span>Loaded model</span>
+          <strong>{model?.aliases[0] ?? 'Not reported'}</strong>
+          <small>{model?.root ?? 'Root identity unavailable'}</small>
+        </article>
+        <article className="metric-cell">
+          <Gauge aria-hidden="true" />
+          <span>Context window</span>
+          <strong>{model?.context_window?.toLocaleString() ?? 'Unavailable'}</strong>
+          <small>tokens</small>
+        </article>
+        <article className="metric-cell">
+          <Cpu aria-hidden="true" />
+          <span>GPU memory</span>
+          <strong>{host?.gpu ? `${host.gpu.memory_used_mib.toLocaleString()} MiB` : 'Unavailable'}</strong>
+          <small>{host?.gpu ? `${String(host.gpu.utilization_percent)}% utilization` : 'Runtime agent offline'}</small>
+        </article>
+        <article className="metric-cell">
+          <Database aria-hidden="true" />
+          <span>Storage</span>
+          <strong>{host?.disk ? `${String(Math.round(host.disk.free_bytes / 1_073_741_824))} GiB` : 'Unavailable'}</strong>
+          <small>free space</small>
+        </article>
+      </section>
+
+      <section className="feature-section" aria-labelledby="features-heading">
+        <div className="section-heading">
+          <div>
+            <p className="section-label">Morpheus-owned capabilities</p>
+            <h2 id="features-heading">Feature status</h2>
+          </div>
+          <span>{Object.keys(overview.capabilities).length} capabilities</span>
+        </div>
+        <div className="feature-table" role="table" aria-label="Feature status">
+          {Object.entries(overview.capabilities).map(([name, capability]) => {
+            const Icon = name === 'search' ? Search : name === 'voice' ? Volume2 : name === 'core' ? Activity : Settings2
+            return (
+              <div className="feature-row" role="row" key={name}>
+                <div className="feature-name" role="cell"><Icon aria-hidden="true" size={17} />{humanName(name)}</div>
+                <div role="cell"><Status state={capability.state} /></div>
+                <div className="feature-blocker" role="cell">{capability.blockers.map(humanName).join(', ') || 'No blockers reported'}</div>
+              </div>
+            )
+          })}
+        </div>
+      </section>
+    </div>
+  )
+}
+
+function DiagnosticsPage({ overview }: { overview: Overview }) {
+  const stale = Date.parse(overview.inference.expires_at) < Date.now()
+  return (
+    <section className="diagnostics-section" aria-labelledby="diagnostics-heading">
+      <div className="section-heading">
+        <div>
+          <p className="section-label">Read-only evidence</p>
+          <h2 id="diagnostics-heading">Diagnostics</h2>
+        </div>
+        <Status state={stale ? 'unknown' : overview.inference.state} />
+      </div>
+      <dl className="evidence-list">
+        <div><dt>Reason</dt><dd>{humanName(overview.inference.reason_code)}</dd></div>
+        <div><dt>Summary</dt><dd>{overview.inference.summary}</dd></div>
+        <div><dt>Source</dt><dd>{humanName(overview.inference.source)}</dd></div>
+        <div><dt>Observed</dt><dd>{new Date(overview.inference.observed_at).toLocaleString()}</dd></div>
+        <div><dt>Probe duration</dt><dd>{overview.inference.duration_ms.toFixed(1)} ms</dd></div>
+        <div><dt>Freshness</dt><dd>{stale ? 'Stale evidence' : 'Current evidence'}</dd></div>
+      </dl>
+    </section>
+  )
+}
+
+function Dashboard({ token, onLogout }: { token: string; onLogout: () => void }) {
+  const [overview, setOverview] = useState<Overview | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [view, setView] = useState<'overview' | 'diagnostics'>('overview')
+
+  const refresh = useCallback(async (signal?: AbortSignal) => {
+    setLoading((current) => current || overview === null)
+    try {
+      const next = await fetchOverview(token, signal)
+      setOverview(next)
+      setError(null)
+    } catch (reason) {
+      if (reason instanceof DOMException && reason.name === 'AbortError') return
+      setError(reason instanceof Error ? reason.message : 'Control API request failed')
+    } finally {
+      setLoading(false)
+    }
+  }, [overview, token])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    void refresh(controller.signal)
+    const interval = window.setInterval(() => {
+      if (!document.hidden) void refresh(controller.signal)
+    }, error ? 45_000 : 15_000)
+    return () => {
+      controller.abort()
+      window.clearInterval(interval)
+    }
+  }, [error, refresh])
+
+  const observed = useMemo(() => overview ? new Date(overview.observed_at).toLocaleTimeString() : 'Waiting', [overview])
+
+  return (
+    <div className="app-shell">
+      <header className="app-header">
+        <div className="app-brand"><Activity aria-hidden="true" size={21} /><span>Morpheus</span></div>
+        <div className="header-actions">
+          <span className="last-updated">Updated {observed}</span>
+          <button className="icon-command" type="button" onClick={() => { void refresh() }} aria-label="Refresh overview" title="Refresh overview"><RefreshCw size={17} /></button>
+          <button className="icon-command" type="button" onClick={() => { onLogout() }} aria-label="Sign out" title="Sign out"><LogOut size={17} /></button>
+        </div>
+      </header>
+      <nav className="view-tabs" aria-label="Dashboard views">
+        <button type="button" className={view === 'overview' ? 'active' : ''} onClick={() => { setView('overview') }}>Overview</button>
+        <button type="button" className={view === 'diagnostics' ? 'active' : ''} onClick={() => { setView('diagnostics') }}>Diagnostics</button>
+      </nav>
+      <main className="workspace">
+        {error && <div className="error-banner" role="alert"><AlertTriangle size={18} /> <span>{error}. Showing the most recent valid observation when available.</span></div>}
+        {loading && !overview && <div className="loading-state" role="status"><RefreshCw className="spin" size={19} /> Loading operational state</div>}
+        {overview && (view === 'overview' ? <OverviewPage overview={overview} /> : <DiagnosticsPage overview={overview} />)}
+      </main>
+    </div>
+  )
+}
+
+export default function App() {
+  const [token, setToken] = useState(() => sessionStorage.getItem(TOKEN_KEY) ?? '')
+  function login(value: string) {
+    sessionStorage.setItem(TOKEN_KEY, value)
+    setToken(value)
+  }
+  function logout() {
+    sessionStorage.removeItem(TOKEN_KEY)
+    setToken('')
+  }
+  return token ? <Dashboard token={token} onLogout={logout} /> : <Login onLogin={login} />
+}

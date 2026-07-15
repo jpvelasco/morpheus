@@ -1,0 +1,1 @@
+"""Optional sidecar service adapters."""

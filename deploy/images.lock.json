@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "captured_at": "2026-07-15T12:55:00Z",
+  "platform": "linux/amd64",
+  "images": [
+    {
+      "name": "searxng",
+      "source": "https://github.com/searxng/searxng",
+      "image": "docker.io/searxng/searxng",
+      "version": "2026.7.14-58e02a01a",
+      "digest": "sha256:af9aec5c8fe88767106e8043004a1232d43cabde22869e6355f3a63d26e41351",
+      "license": "AGPL-3.0-or-later",
+      "purpose": "private metasearch",
+      "status": "contract-tested"
+    },
+    {
+      "name": "whisper-asr",
+      "source": "https://github.com/ahmetoner/whisper-asr-webservice",
+      "image": "docker.io/onerahmet/openai-whisper-asr-webservice",
+      "version": "v1.9.1",
+      "digest": "sha256:03b402335881cdab2e4939b24620809df8d6ceec3bf2712217d41c8761a0f5d4",
+      "license": "MIT",
+      "purpose": "CPU speech-to-text",
+      "status": "contract-tested"
+    },
+    {
+      "name": "kokoro-tts",
+      "source": "https://github.com/remsky/Kokoro-FastAPI",
+      "image": "ghcr.io/remsky/kokoro-fastapi-cpu",
+      "version": "v0.6.0",
+      "digest": "sha256:d2c63627e80e32df7fab7f1e969c2b6b26272439d837ef195f40d4a82eca195e",
+      "license": "Apache-2.0",
+      "purpose": "CPU text-to-speech",
+      "status": "contract-tested"
+    },
+    {
+      "name": "n8n",
+      "source": "https://github.com/n8n-io/n8n",
+      "image": "docker.io/n8nio/n8n",
+      "version": "2.26.2",
+      "digest": "sha256:61ba01bc5e39304bbc928c9dbecd938c3a5cc1331b68affba6a34d0f654c43d9",
+      "license": "Sustainable Use License",
+      "purpose": "operator workflows",
+      "status": "configuration-pending-live-validation"
+    },
+    {
+      "name": "perplexica",
+      "source": "https://github.com/ItzCrazyKns/Perplexica",
+      "image": "docker.io/itzcrazykns1337/perplexica",
+      "version": "latest digest captured 2026-02-13",
+      "digest": "sha256:343d2a02858cc3c15bb35bf94b3249923f4eb5de16eb80d266eddfef6d84951d",
+      "license": "MIT",
+      "purpose": "deep research",
+      "status": "configuration-pending-live-validation"
+    }
+  ]
+}

@@ -1,0 +1,113 @@
+name: morpheus
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    init: true
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: [/tmp:size=32m,mode=1777]
+    env_file:
+      - path: ../.env
+        required: false
+    environment:
+      MORPHEUS_BIND_ADDRESS: "0.0.0.0"
+      # Container networking requires a wildcard bind; the host publication remains loopback-only.
+      MORPHEUS_ALLOW_LAN: "true"
+    ports:
+      - "127.0.0.1:${MORPHEUS_API_PORT:-7400}:7400"
+    networks: [morpheus_internal, ai_default]
+    volumes:
+      - morpheus_data:/var/lib/morpheus
+    labels:
+      io.morpheus.project: "${MORPHEUS_PROJECT_ID:-morpheus}"
+      io.morpheus.component: api
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:7400/healthz', timeout=2)"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+  dashboard:
+    build:
+      context: ..
+      dockerfile: web/Dockerfile
+    init: true
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: [/tmp:size=32m,mode=1777]
+    environment:
+      MORPHEUS_BIND_ADDRESS: "0.0.0.0"
+    ports:
+      - "127.0.0.1:${MORPHEUS_DASHBOARD_PORT:-7401}:7401"
+    networks: [morpheus_internal]
+    labels:
+      io.morpheus.project: "${MORPHEUS_PROJECT_ID:-morpheus}"
+      io.morpheus.component: dashboard
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:7401/healthz', timeout=2)"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+  telemetry:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    command: [morpheus-telemetry]
+    profiles: [telemetry]
+    init: true
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: [/tmp:size=32m,mode=1777]
+    env_file:
+      - path: ../.env
+        required: false
+    environment:
+      MORPHEUS_BIND_ADDRESS: "0.0.0.0"
+      # Container networking requires a wildcard bind; the host publication remains loopback-only.
+      MORPHEUS_ALLOW_LAN: "true"
+    ports:
+      - "127.0.0.1:${MORPHEUS_TELEMETRY_PORT:-7410}:7410"
+    networks: [morpheus_internal, ai_default]
+    volumes:
+      - morpheus_data:/var/lib/morpheus
+    labels:
+      io.morpheus.project: "${MORPHEUS_PROJECT_ID:-morpheus}"
+      io.morpheus.component: telemetry
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "1.0"
+
+networks:
+  morpheus_internal:
+    labels:
+      io.morpheus.project: "${MORPHEUS_PROJECT_ID:-morpheus}"
+  ai_default:
+    external: true
+    name: "${MORPHEUS_EXTERNAL_DOCKER_NETWORK:-ai_default}"
+
+volumes:
+  morpheus_data:
+    labels:
+      io.morpheus.project: "${MORPHEUS_PROJECT_ID:-morpheus}"

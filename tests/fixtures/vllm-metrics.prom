@@ -1,0 +1,10 @@
+# HELP vllm:num_requests_running Number of requests currently running.
+# TYPE vllm:num_requests_running gauge
+vllm:num_requests_running{model_name="qwen36-27b-nvfp4"} 2
+# HELP vllm:num_requests_waiting Number of requests waiting.
+# TYPE vllm:num_requests_waiting gauge
+vllm:num_requests_waiting{model_name="qwen36-27b-nvfp4"} 1
+vllm:gpu_cache_usage_perc{model_name="qwen36-27b-nvfp4"} 0.42
+vllm:prompt_tokens_total{model_name="qwen36-27b-nvfp4"} 1000
+vllm:generation_tokens_total{model_name="qwen36-27b-nvfp4"} 250
+vllm:unknown_future_metric{label="ignored"} 99

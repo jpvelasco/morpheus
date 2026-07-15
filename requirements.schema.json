@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["version", "specification", "requirements"],
+  "properties": {
+    "version": {"type": "string"},
+    "specification": {"type": "string"},
+    "requirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "phase", "status"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[A-Z]+-[0-9]{3}$"},
+          "phase": {"type": "integer", "minimum": 0, "maximum": 10},
+          "status": {"enum": ["planned", "implemented", "validated", "deferred"]}
+        }
+      }
+    }
+  }
+}

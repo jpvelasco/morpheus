@@ -1,0 +1,17 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "qwen36-27b-nvfp4",
+      "object": "model",
+      "root": "nvidia/Qwen3.6-27B-NVFP4",
+      "max_model_len": 131072
+    },
+    {
+      "id": "qwopus36-coder-q4km",
+      "object": "model",
+      "root": "nvidia/Qwen3.6-27B-NVFP4",
+      "max_model_len": 131072
+    }
+  ]
+}

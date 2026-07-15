@@ -369,12 +369,11 @@ is the default. The external network is disconnected but never removed.
 
 - [ADR-0001: Independent sidecar control plane](adr/0001-independent-sidecar-control-plane.md)
 - [ADR-0002: No Docker socket in web services](adr/0002-no-docker-socket-in-web-services.md)
+- [ADR-0003: React dashboard and ephemeral browser credential](adr/0003-frontend-and-browser-authentication.md)
+- [ADR-0004: Defer LiteLLM and independent RAG](adr/0004-gateway-and-rag-decision.md)
 
 Additional decisions required before implementation reaches them:
 
-- frontend framework and package manager lock strategy;
 - Python packaging and migration libraries;
-- browser authentication and LAN posture;
 - telemetry database retention defaults;
 - GPU transition mechanism for image generation;
-- whether gateway and telemetry are one process or separate services.

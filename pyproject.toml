@@ -1,0 +1,91 @@
+[build-system]
+requires = ["hatchling==1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "morpheus-control-plane"
+version = "0.1.0"
+description = "Independent control plane for an existing local AI inference server"
+readme = "README.md"
+requires-python = ">=3.12,<3.15"
+license = { text = "Proprietary - no license granted" }
+authors = [{ name = "JP Velasco", email = "jp.velasco@outlook.com" }]
+dependencies = [
+  "fastapi==0.139.0",
+  "httpx==0.28.1",
+  "pydantic-settings==2.10.1",
+  "prometheus-client==0.22.1",
+  "python-dotenv==1.2.2",
+  "PyYAML==6.0.2",
+  "python-multipart==0.0.32",
+  "starlette==1.3.1",
+  "typer==0.16.0",
+  "uvicorn[standard]==0.35.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "bandit==1.8.6",
+  "build==1.2.2.post1",
+  "hypothesis==6.135.26",
+  "httpx2==2.5.0",
+  "mypy==1.17.0",
+  "pip-audit==2.9.0",
+  "pytest==9.1.1",
+  "pytest-asyncio==1.4.0",
+  "pytest-cov==6.2.1",
+  "ruff==0.12.4",
+  "types-PyYAML==6.0.12.20250516",
+]
+
+[project.scripts]
+morpheus = "morpheus.cli.main:app"
+morpheus-api = "morpheus.api.app:run"
+morpheus-agent = "morpheus.agent.app:run"
+morpheus-telemetry = "morpheus.telemetry.app:run"
+morpheus-dashboard = "morpheus.dashboard.app:run"
+morpheus-voice = "morpheus.voice.app:run"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/morpheus"]
+
+[tool.pytest.ini_options]
+addopts = "--strict-config --strict-markers"
+testpaths = ["tests"]
+markers = [
+  "acceptance: requirement-level acceptance tests",
+  "contract: stable protocol and schema contract tests",
+  "integration: disposable dependency tests",
+  "live: opt-in, read-only live-system tests",
+]
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+branch = true
+source = ["morpheus"]
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
+skip_covered = true
+omit = ["src/morpheus/api/app.py", "src/morpheus/agent/app.py"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF", "S", "ASYNC", "C4", "DTZ", "T20"]
+ignore = ["S101"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "S105", "S106"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["morpheus"]
+
+[tool.bandit]
+exclude_dirs = ["tests"]
+skips = ["B101"]

@@ -1,0 +1,1 @@
+"""Static operational dashboard server."""
