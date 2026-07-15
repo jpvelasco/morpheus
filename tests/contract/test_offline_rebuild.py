@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import subprocess
@@ -12,12 +13,14 @@ ROOT = Path(__file__).resolve().parents[2]
 OFFLINE_GUARD = ROOT / "validation/vm/offline-egress.sh"
 POPULATE = ROOT / "validation/candidate/populate-cache.sh"
 REBUILD = ROOT / "validation/candidate/rebuild-offline.sh"
+COMPARE = ROOT / "validation/candidate/compare-rebuilds.sh"
 BACKEND_DOCKERFILE = ROOT / "validation/candidate/Dockerfile.backend"
 DASHBOARD_DOCKERFILE = ROOT / "validation/candidate/Dockerfile.dashboard"
+CANDIDATE_COMPOSE = ROOT / "validation/candidate/compose.yaml"
 
 
 def test_CLEAN_002_scripts_are_executable_and_parse_as_bash() -> None:
-    for script in (OFFLINE_GUARD, POPULATE, REBUILD):
+    for script in (OFFLINE_GUARD, POPULATE, REBUILD, COMPARE):
         assert script.stat().st_mode & 0o111
         subprocess.run(  # noqa: S603 - fixed parser and checked-in script paths
             ["/usr/bin/bash", "-n", script], check=True
@@ -58,6 +61,55 @@ def test_CLEAN_002_declares_one_fetch_then_requires_offline_rebuild() -> None:
     assert "--no-cache" in rebuild
     assert "Dockerfile.backend" in rebuild
     assert "Dockerfile.dashboard" in rebuild
+    assert '--tag "${backend_tag}"' in rebuild
+    assert '--tag "${dashboard_tag}"' in rebuild
+
+
+def test_BUILD_001_comparator_requires_exact_artifact_identity() -> None:
+    compare = COMPARE.read_text(encoding="utf-8")
+    assert "sha256sum --check SHA256SUMS" in compare
+    assert 'cmp "${first}/SHA256SUMS" "${second}/SHA256SUMS"' in compare
+    assert 'cmp "${first}/${path}" "${second}/${path}"' in compare
+    assert 'comparison: "byte-for-byte"' in compare
+
+
+def test_BUILD_001_comparator_proves_equal_rebuilds(tmp_path: Path) -> None:
+    rebuilds = [tmp_path / "first", tmp_path / "second"]
+    paths = [
+        "payload/images/backend.oci.tar",
+        "payload/images/dashboard.oci.tar",
+        "payload/python/morpheus.whl",
+        "payload/python/morpheus.tar.gz",
+    ]
+    for rebuild in rebuilds:
+        checksums: list[str] = []
+        for index, relative in enumerate(paths):
+            artifact = rebuild / relative
+            artifact.parent.mkdir(parents=True, exist_ok=True)
+            content = f"artifact-{index}".encode()
+            artifact.write_bytes(content)
+            checksums.append(f"{hashlib.sha256(content).hexdigest()}  {relative}\n")
+        (rebuild / "SHA256SUMS").write_text("".join(checksums), encoding="utf-8")
+        (rebuild / "offline-rebuild.json").write_text(
+            json.dumps(
+                {
+                    "format": 1,
+                    "source_commit": "a" * 40,
+                    "source_date_epoch": 1_784_147_805,
+                    "version": "0.1.0",
+                }
+            ),
+            encoding="utf-8",
+        )
+
+    result = tmp_path / "comparison.json"
+    subprocess.run(  # noqa: S603 - fixed checked-in script path
+        [COMPARE, rebuilds[0], rebuilds[1], result], check=True
+    )
+    comparison = json.loads(result.read_text(encoding="utf-8"))
+    assert comparison["status"] == "pass"
+    assert comparison["artifact_count"] == 4
+    assert [artifact["path"] for artifact in comparison["artifacts"]] == paths
 
 
 def test_BUILD_001_candidate_dockerfiles_are_offline_pinned_and_normalized() -> None:
@@ -76,6 +128,13 @@ def test_BUILD_001_candidate_dockerfiles_are_offline_pinned_and_normalized() -> 
         assert "wget" not in dockerfile
     assert "node:22.17.1-alpine3.22@sha256:99351363" in dashboard
     assert "npm ci --offline --ignore-scripts" in dashboard
+
+
+def test_CONT_002_compose_overlay_uses_exported_candidate_images() -> None:
+    compose = CANDIDATE_COMPOSE.read_text(encoding="utf-8")
+    assert compose.count("${MORPHEUS_BACKEND_IMAGE:") == 2
+    assert compose.count("${MORPHEUS_DASHBOARD_IMAGE:") == 1
+    assert "build:" not in compose
 
 
 def test_ART_001_oci_producers_name_the_fetch_and_offline_steps() -> None:

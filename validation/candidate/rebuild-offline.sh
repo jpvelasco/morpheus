@@ -89,6 +89,8 @@ cp -a "${cache_root}/npm-cache" "${work}/npm-cache"
 
 backend_output="${output}/payload/images/morpheus-backend-${version}-${short_commit}.oci.tar"
 dashboard_output="${output}/payload/images/morpheus-dashboard-${version}-${short_commit}.oci.tar"
+backend_tag="morpheus/backend:${version}-${short_commit}"
+dashboard_tag="morpheus/dashboard:${version}-${short_commit}"
 common_args=(
   --build-arg "MORPHEUS_VERSION=${version}"
   --build-arg "SOURCE_COMMIT=${source_commit}"
@@ -101,10 +103,12 @@ common_args=(
   --pull=false
 )
 docker buildx build "${common_args[@]}" \
+  --tag "${backend_tag}" \
   --file "${root}/validation/candidate/Dockerfile.backend" \
   --output "type=oci,dest=${backend_output},rewrite-timestamp=true" \
   "${work}"
 docker buildx build "${common_args[@]}" \
+  --tag "${dashboard_tag}" \
   --file "${root}/validation/candidate/Dockerfile.dashboard" \
   --output "type=oci,dest=${dashboard_output},rewrite-timestamp=true" \
   "${work}"
@@ -119,6 +123,8 @@ jq -n \
   --arg source_commit "${source_commit}" \
   --argjson source_date_epoch "${source_date_epoch}" \
   --arg version "${version}" \
+  --arg backend_tag "${backend_tag}" \
+  --arg dashboard_tag "${dashboard_tag}" \
   --arg cache_manifest_sha256 "$(sha256sum "${cache_manifest}" | cut -d' ' -f1)" \
   '{
     format: 1,
@@ -126,6 +132,10 @@ jq -n \
     source_date_epoch: $source_date_epoch,
     version: $version,
     network: "blocked-by-nftables",
+    images: {
+      backend: {tag: $backend_tag},
+      dashboard: {tag: $dashboard_tag}
+    },
     cache_manifest_sha256: $cache_manifest_sha256
   }' >"${output}/offline-rebuild.json.tmp"
 mv "${output}/offline-rebuild.json.tmp" "${output}/offline-rebuild.json"

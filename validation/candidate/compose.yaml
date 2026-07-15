@@ -1,0 +1,7 @@
+services:
+  api:
+    image: "${MORPHEUS_BACKEND_IMAGE:?MORPHEUS_BACKEND_IMAGE is required}"
+  dashboard:
+    image: "${MORPHEUS_DASHBOARD_IMAGE:?MORPHEUS_DASHBOARD_IMAGE is required}"
+  telemetry:
+    image: "${MORPHEUS_BACKEND_IMAGE:?MORPHEUS_BACKEND_IMAGE is required}"
