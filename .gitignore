@@ -27,6 +27,7 @@ __pycache__/
 *.so
 .python-version
 .pytest_cache/
+.hypothesis/
 .mypy_cache/
 .ruff_cache/
 .coverage
@@ -49,6 +50,9 @@ node_modules/
 .yarn/
 web/dist/
 web/coverage/
+web/*.tsbuildinfo
+web/vite.config.js
+web/vite.config.d.ts
 playwright-report/
 test-results/
 

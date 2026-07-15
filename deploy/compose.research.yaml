@@ -1,0 +1,26 @@
+services:
+  research:
+    image: docker.io/itzcrazykns1337/perplexica:latest@sha256:343d2a02858cc3c15bb35bf94b3249923f4eb5de16eb80d266eddfef6d84951d
+    profiles: [research-experimental]
+    restart: unless-stopped
+    init: true
+    security_opt: [no-new-privileges:true]
+    ports:
+      - "127.0.0.1:${MORPHEUS_RESEARCH_PORT:-7412}:3000"
+    volumes:
+      - ./config/perplexica/config.toml:/home/perplexica/config.toml:ro
+      - research_data:/home/perplexica/data
+    networks: [morpheus_internal, ai_default]
+    labels:
+      io.morpheus.project: "${MORPHEUS_PROJECT_ID:-morpheus}"
+      io.morpheus.component: research
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: "4.0"
+
+volumes:
+  research_data:
+    labels:
+      io.morpheus.project: "${MORPHEUS_PROJECT_ID:-morpheus}"

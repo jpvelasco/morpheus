@@ -1,0 +1,28 @@
+services:
+  search:
+    image: docker.io/searxng/searxng:2026.7.14-58e02a01a@sha256:af9aec5c8fe88767106e8043004a1232d43cabde22869e6355f3a63d26e41351
+    profiles: [search]
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: [/tmp:size=64m,mode=1777, /var/cache/searxng:size=64m]
+    environment:
+      SEARXNG_BASE_URL: http://search:8080/
+    volumes:
+      - ./config/searxng/settings.yml:/etc/searxng/settings.yml:ro
+    networks: [morpheus_internal, ai_default]
+    labels:
+      io.morpheus.project: "${MORPHEUS_PROJECT_ID:-morpheus}"
+      io.morpheus.component: search
+    healthcheck:
+      test: [CMD, python, -c, "import json,urllib.request; json.load(urllib.request.urlopen('http://127.0.0.1:8080/search?q=morpheus&format=json',timeout=5))"]
+      interval: 30s
+      timeout: 8s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "2.0"

@@ -8,8 +8,12 @@ reconfiguring the working inference runtime.
 
 ## Status
 
-Morpheus is in specification and repository-bootstrap stage. No production
-services are implemented yet.
+Morpheus is an unreleased development implementation. The repository contains
+the typed Python control plane, read-only runtime agent and CLI, operational
+dashboard, telemetry proxy, optional service adapters, deployment definitions,
+and non-live automated validation. It is not eligible for stable use until the
+release-level exit criteria are satisfied, including explicitly authorized live
+compatibility, recovery, soak, accessibility, and clean-machine evidence.
 
 The current external runtime is treated as an integration dependency:
 
@@ -31,7 +35,7 @@ at runtime. ODS is research input only.
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
 
-## Planned Layout
+## Repository Layout
 
 ```text
 src/morpheus/          Python domain, adapters, API, agent, and CLI
@@ -41,6 +45,21 @@ tests/                 Unit, contract, integration, acceptance, and live tests
 docs/                  Specifications, architecture, ADRs, and runbooks
 artifacts/              Ignored generated reports and benchmark captures
 ```
+
+## Development Validation
+
+The required non-live backend gate uses the locked Python environment:
+
+```bash
+make bootstrap
+make gate
+```
+
+The dashboard gate runs from `web/` with `npm ci --ignore-scripts`, followed by
+formatting, strict type checking, tests with coverage, and a production build.
+CI executes that sequence in the digest-pinned Node image recorded in the
+quality workflow. Neither gate contacts or mutates the external inference or
+Open WebUI services.
 
 ## Repository Rules
 
@@ -52,5 +71,6 @@ artifacts/              Ignored generated reports and benchmark captures
   databases.
 - Pin production container dependencies by immutable digest after validation.
 
-No installation or runtime command should be used until the relevant phase in
-the implementation plan has met its exit criteria.
+External-runtime tests remain opt-in and read-only. Installation and stateful
+runtime operations require the corresponding phase evidence and explicit
+operator authorization.

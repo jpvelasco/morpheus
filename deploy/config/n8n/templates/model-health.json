@@ -1,0 +1,19 @@
+{
+  "name": "Morpheus model health",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "={{ $env.MORPHEUS_MODEL_ENDPOINT + '/models' }}",
+        "options": {"timeout": 10000}
+      },
+      "id": "model-health-request",
+      "name": "Read model inventory",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [320, 240]
+    }
+  ],
+  "connections": {},
+  "settings": {"executionOrder": "v1"},
+  "meta": {"morpheusTemplateVersion": 1}
+}
