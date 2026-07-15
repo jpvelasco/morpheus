@@ -90,9 +90,10 @@ the lock's digest-only `reference`, never a tag copied from documentation.
 
 ## Candidate Artifact Set
 
-[`candidate/artifact-set.json`](candidate/artifact-set.json) defines the nine
+[`candidate/artifact-set.json`](candidate/artifact-set.json) defines the ten
 required outputs from one clean full Git object ID and its commit timestamp:
-Python sdist and wheel, backend and dashboard OCI layouts, Compose/config,
+Python sdist and wheel, backend and dashboard OCI layouts, an offline
+host-native runtime-agent bundle, Compose/config,
 migrations, requirements evidence, `SHA256SUMS`, and a self-contained rollback
 bundle. [`candidate/manifest.schema.json`](candidate/manifest.schema.json)
 defines the produced manifest. `morpheus.ops.candidate.verify_candidate`

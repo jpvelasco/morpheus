@@ -50,6 +50,8 @@ test "$(jq -er '.version' "${cache_manifest}")" = "${version}"
 cache_root=$(cd -- "$(dirname -- "${cache_manifest}")" && pwd)
 test "$(sha256sum "${cache_root}/wheelhouse/SHA256SUMS" | cut -d' ' -f1)" = \
   "$(jq -er '.dependency_inputs.wheelhouse_sha256' "${cache_manifest}")"
+test "$(sha256sum "${cache_root}/runtime-requirements.txt" | cut -d' ' -f1)" = \
+  "$(jq -er '.dependency_inputs.runtime_requirements_sha256' "${cache_manifest}")"
 test "$(sha256sum "${cache_root}/npm-cache.SHA256SUMS" | cut -d' ' -f1)" = \
   "$(jq -er '.dependency_inputs.npm_cache_sha256' "${cache_manifest}")"
 (
@@ -67,7 +69,7 @@ for image in python node; do
   test "${actual}" = "${expected}"
 done
 
-mkdir -p "${output}/payload/python" "${output}/payload/images"
+mkdir -p "${output}/payload/python" "${output}/payload/images" "${output}/payload/agent"
 export SOURCE_DATE_EPOCH="${source_date_epoch}"
 uv build --offline --out-dir "${output}/payload/python"
 rm -f "${output}/payload/python/.gitignore"
@@ -86,6 +88,16 @@ trap cleanup EXIT
 git archive HEAD web | tar -x -C "${work}"
 cp -a "${cache_root}/wheelhouse" "${work}/wheelhouse"
 cp -a "${cache_root}/npm-cache" "${work}/npm-cache"
+
+mkdir -p "${work}/agent"
+cp -a "${cache_root}/wheelhouse" "${work}/agent/wheelhouse"
+cp -a "${cache_root}/runtime-requirements.txt" "${work}/agent/runtime-requirements.txt"
+cp -a "${root}/deploy/agent/install.sh" "${work}/agent/install.sh"
+agent_output="${output}/payload/agent/morpheus-agent-${version}-${short_commit}.tar.gz"
+tar --create --directory="${work}" --sort=name \
+    --mtime="@${source_date_epoch}" --owner=0 --group=0 --numeric-owner \
+    --pax-option=delete=atime,delete=ctime --format=posix agent \
+  | gzip -n >"${agent_output}"
 
 backend_output="${output}/payload/images/morpheus-backend-${version}-${short_commit}.oci.tar"
 dashboard_output="${output}/payload/images/morpheus-dashboard-${version}-${short_commit}.oci.tar"

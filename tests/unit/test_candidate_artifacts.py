@@ -15,6 +15,7 @@ REQUIRED_ARTIFACTS = {
     "python-wheel",
     "backend-oci",
     "dashboard-oci",
+    "runtime-agent-bundle",
     "compose-config-bundle",
     "migration-bundle",
     "requirements-evidence",
@@ -48,6 +49,7 @@ def test_ART_001_definition_covers_the_complete_single_commit_candidate() -> Non
         "python-wheel",
         "backend-oci",
         "dashboard-oci",
+        "runtime-agent-bundle",
         "compose-config-bundle",
         "migration-bundle",
     }
