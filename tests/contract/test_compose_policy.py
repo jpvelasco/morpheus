@@ -63,6 +63,22 @@ def test_telemetry_overrides_the_backend_image_health_port() -> None:
     assert "127.0.0.1:7400/healthz" not in healthcheck
 
 
+def test_runtime_agent_overlay_mounts_only_the_authenticated_unix_socket_directory() -> None:
+    compose = yaml.safe_load((ROOT / "deploy/compose.agent.yaml").read_text(encoding="utf-8"))
+    api = compose["services"]["api"]
+    assert api["group_add"] == ["${MORPHEUS_AGENT_GID:?MORPHEUS_AGENT_GID is required}"]
+    assert api["environment"]["MORPHEUS_RUNTIME_AGENT_SOCKET"] == ("/run/morpheus-agent/agent.sock")
+    assert api["volumes"] == [
+        {
+            "type": "bind",
+            "source": "${MORPHEUS_AGENT_SOCKET_DIR:?MORPHEUS_AGENT_SOCKET_DIR is required}",
+            "target": "/run/morpheus-agent",
+            "read_only": True,
+        }
+    ]
+    assert "/var/run/docker.sock" not in str(api)
+
+
 def test_quality_workflow_runs_the_frontend_gate_in_a_pinned_container() -> None:
     workflow = yaml.safe_load((ROOT / ".github/workflows/quality.yml").read_text(encoding="utf-8"))
     frontend = workflow["jobs"]["frontend"]

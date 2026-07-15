@@ -67,7 +67,7 @@ function Login({ onLogin }: { onLogin: (token: string) => void }) {
 
 function OverviewPage({ overview }: { overview: Overview }) {
   const model = overview.models[0]
-  const host = overview.host.status === 'available' ? overview.host : null
+  const host = overview.host.status === 'unavailable' ? null : overview.host
   return (
     <div className="page-stack">
       <section className="summary-band" aria-labelledby="system-heading">
@@ -131,7 +131,6 @@ function OverviewPage({ overview }: { overview: Overview }) {
 }
 
 function DiagnosticsPage({ overview }: { overview: Overview }) {
-  const stale = Date.parse(overview.inference.expires_at) < Date.now()
   return (
     <section className="diagnostics-section" aria-labelledby="diagnostics-heading">
       <div className="section-heading">
@@ -139,16 +138,25 @@ function DiagnosticsPage({ overview }: { overview: Overview }) {
           <p className="section-label">Read-only evidence</p>
           <h2 id="diagnostics-heading">Diagnostics</h2>
         </div>
-        <Status state={stale ? 'unknown' : overview.inference.state} />
+        <Status state={overview.diagnostics.status === 'ready' ? 'ready' : overview.diagnostics.status === 'degraded' ? 'degraded' : 'unhealthy'} />
       </div>
-      <dl className="evidence-list">
-        <div><dt>Reason</dt><dd>{humanName(overview.inference.reason_code)}</dd></div>
-        <div><dt>Summary</dt><dd>{overview.inference.summary}</dd></div>
-        <div><dt>Source</dt><dd>{humanName(overview.inference.source)}</dd></div>
-        <div><dt>Observed</dt><dd>{new Date(overview.inference.observed_at).toLocaleString()}</dd></div>
-        <div><dt>Probe duration</dt><dd>{overview.inference.duration_ms.toFixed(1)} ms</dd></div>
-        <div><dt>Freshness</dt><dd>{stale ? 'Stale evidence' : 'Current evidence'}</dd></div>
-      </dl>
+      <div className="diagnostic-checks">
+        {overview.diagnostics.checks.map((check) => (
+          <article className="diagnostic-check" key={check.code}>
+            <div className="diagnostic-title">
+              <h3>{humanName(check.code)}</h3>
+              <Status state={check.status === 'pass' ? 'available' : check.status === 'fail' ? 'unhealthy' : 'unavailable'} />
+            </div>
+            <dl className="evidence-list">
+              <div><dt>Evidence</dt><dd>{check.summary}</dd></div>
+              <div><dt>Reason</dt><dd>{humanName(check.reason_code)}</dd></div>
+              <div><dt>Observed</dt><dd>{new Date(check.observed_at).toLocaleString()}</dd></div>
+              <div><dt>Freshness</dt><dd>{check.freshness === 'current' ? 'Current evidence' : 'Stale evidence'}</dd></div>
+              <div><dt>Next action</dt><dd>{check.next_action ?? 'No action required'}</dd></div>
+            </dl>
+          </article>
+        ))}
+      </div>
     </section>
   )
 }

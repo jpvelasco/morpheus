@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from datetime import UTC, datetime
+from pathlib import Path
 
 import httpx
 import pytest
@@ -54,3 +55,32 @@ async def test_SEC_001_client_rejects_incompatible_agent_response() -> None:
         client = RuntimeAgentClient(base_url="http://agent.test", key=KEY, client=http)
         with pytest.raises(ValidationError):
             await client.inspect(AgentOperation.HOST_SUMMARY)
+
+
+@pytest.mark.asyncio
+async def test_SEC_001_client_rejects_mismatched_agent_response_identity() -> None:
+    transport = httpx.MockTransport(
+        lambda request: httpx.Response(
+            200,
+            json={
+                "request_id": "different-request",
+                "operation": "host_summary",
+                "result": {},
+            },
+        )
+    )
+    async with httpx.AsyncClient(transport=transport) as http:
+        client = RuntimeAgentClient(base_url="http://agent.test", key=KEY, client=http)
+        with pytest.raises(ValueError, match="mismatched"):
+            await client.inspect(AgentOperation.HOST_SUMMARY)
+
+
+@pytest.mark.asyncio
+async def test_SEC_001_client_rejects_ambiguous_injected_transport() -> None:
+    async with httpx.AsyncClient() as client:
+        with pytest.raises(ValueError, match="Unix socket"):
+            RuntimeAgentClient(
+                key=KEY,
+                uds=Path("/run/morpheus-agent/agent.sock"),
+                client=client,
+            )

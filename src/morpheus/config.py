@@ -30,6 +30,10 @@ class MorpheusSettings(BaseModel):
     api_port: int = Field(default=7400, ge=1, le=65535)
     dashboard_port: int = Field(default=7401, ge=1, le=65535)
     agent_port: int = Field(default=7402, ge=1, le=65535)
+    runtime_agent_url: str | None = None
+    runtime_agent_socket: Path | None = None
+    release_version: str = ""
+    source_commit: str = Field(default="", pattern=r"^(?:|[0-9a-f]{40,64})$")
     data_dir: Path = Path("./data")
     llm_base_url: str = "http://history-coder:8000/v1"
     llm_model: str = "qwen36-27b-nvfp4"
@@ -69,6 +73,32 @@ class MorpheusSettings(BaseModel):
             raise ValueError("llm_base_url must contain the /v1 API base path exactly once")
         return value.rstrip("/")
 
+    @field_validator("runtime_agent_url", mode="before")
+    @classmethod
+    def validate_runtime_agent_url(cls, value: Any) -> str | None:
+        if value is None or value == "":
+            return None
+        if not isinstance(value, str):
+            raise ValueError("runtime_agent_url must be a string")
+        parsed = urlsplit(value)
+        if parsed.scheme not in {"http", "https"}:
+            raise ValueError("runtime_agent_url must use http or https")
+        if not parsed.hostname or parsed.username or parsed.password:
+            raise ValueError("runtime_agent_url must have a host and no embedded credentials")
+        if parsed.query or parsed.fragment or parsed.path.rstrip("/"):
+            raise ValueError("runtime_agent_url must not contain a path, query, or fragment")
+        return value.rstrip("/")
+
+    @field_validator("runtime_agent_socket", mode="before")
+    @classmethod
+    def validate_runtime_agent_socket(cls, value: Any) -> Path | None:
+        if value is None or value == "":
+            return None
+        path = Path(value)
+        if not path.is_absolute():
+            raise ValueError("runtime_agent_socket must be an absolute path")
+        return path
+
     @model_validator(mode="after")
     def validate_network_posture(self) -> MorpheusSettings:
         address = ipaddress.ip_address(self.bind_address)
@@ -76,6 +106,8 @@ class MorpheusSettings(BaseModel):
             raise ValueError("non-loopback binding requires allow_lan=true")
         if len({self.api_port, self.dashboard_port, self.agent_port}) != 3:
             raise ValueError("api, dashboard, and agent ports must be distinct")
+        if self.runtime_agent_url and self.runtime_agent_socket:
+            raise ValueError("configure only one runtime agent endpoint")
         return self
 
     def features(self) -> dict[str, bool]:

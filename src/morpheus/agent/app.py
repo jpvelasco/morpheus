@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import os
+import socket
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 import uvicorn
@@ -53,4 +56,28 @@ def run() -> None:
     settings = load_settings()
     inspector = SystemHostInspector(project_id=settings.project_id, data_dir=settings.data_dir)
     app = create_agent_app(settings=settings, inspector=inspector)
-    uvicorn.run(app, host="127.0.0.1", port=settings.agent_port, access_log=False)
+    if settings.runtime_agent_socket is None:
+        uvicorn.run(app, host="127.0.0.1", port=settings.agent_port, access_log=False)
+        return
+    _run_unix_socket(app, settings.runtime_agent_socket)
+
+
+def _run_unix_socket(app: FastAPI, path: Path) -> None:
+    path.parent.mkdir(mode=0o755, parents=True, exist_ok=True)
+    if path.exists():
+        if not path.is_socket():
+            raise ValueError("runtime agent socket path exists and is not a socket")
+        path.unlink()
+    listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    try:
+        previous_umask = os.umask(0o117)
+        try:
+            listener.bind(str(path))
+        finally:
+            os.umask(previous_umask)
+        listener.listen(128)
+        uvicorn.run(app, fd=listener.fileno(), access_log=False)
+    finally:
+        listener.close()
+        if path.is_socket():
+            path.unlink()

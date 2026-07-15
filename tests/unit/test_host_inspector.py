@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -29,10 +30,15 @@ def test_RUN_004_host_summary_uses_bounded_memory_and_disk_fields(
         AgentOperation.HOST_SUMMARY
     )
 
-    assert result == {
-        "memory": {"total_bytes": 1000, "available_bytes": 600},
-        "disk": {"total_bytes": 2000, "used_bytes": 750, "free_bytes": 1250},
+    assert result["memory"] == {"total_bytes": 1000, "available_bytes": 600}
+    assert result["disk"] == {
+        "total_bytes": 2000,
+        "used_bytes": 750,
+        "free_bytes": 1250,
     }
+    assert result["process"]["load_average_1m"] >= 0
+    assert result["process"]["uptime_seconds"] > 0
+    assert datetime.fromisoformat(result["clock"]["observed_at"]).tzinfo is not None
 
 
 def test_RUN_004_gpu_summary_parses_only_complete_rows(
@@ -69,16 +75,53 @@ def test_RUN_004_gpu_summary_parses_only_complete_rows(
 def test_INV_002_service_summary_uses_only_project_label(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
+    container_id = "a" * 64
+
     def run(command: list[str], **kwargs: object) -> SimpleNamespace:
-        assert "label=io.morpheus.project=project-1" in command
         assert kwargs["timeout"] == 5
-        return SimpleNamespace(stdout=json.dumps({"Names": "morpheus-api"}) + "\n")
+        if command[:2] == ["docker", "ps"]:
+            assert "label=io.morpheus.project=project-1" in command
+            return SimpleNamespace(stdout=container_id + "\n")
+        assert command[-1] == container_id
+        return SimpleNamespace(
+            stdout=json.dumps(
+                {
+                    "id": container_id,
+                    "name": "/morpheus-api",
+                    "image_id": "sha256:" + "b" * 64,
+                    "configured_image": "morpheus/backend:0.1.0-commit",
+                    "labels": {
+                        "io.morpheus.project": "project-1",
+                        "io.morpheus.component": "api",
+                        "org.opencontainers.image.revision": "c" * 40,
+                        "org.opencontainers.image.version": "0.1.0",
+                    },
+                    "state": "running",
+                    "health": "healthy",
+                }
+            )
+        )
 
     monkeypatch.setattr(host.subprocess, "run", run)
     result = SystemHostInspector(project_id="project-1", data_dir=tmp_path).inspect(
         AgentOperation.MORPHEUS_SERVICES
     )
-    assert result == {"containers": [{"Names": "morpheus-api"}]}
+    assert result == {
+        "containers": [
+            {
+                "id": container_id,
+                "name": "morpheus-api",
+                "image_id": "sha256:" + "b" * 64,
+                "configured_image": "morpheus/backend:0.1.0-commit",
+                "state": "running",
+                "health": "healthy",
+                "project": "project-1",
+                "component": "api",
+                "source_commit": "c" * 40,
+                "release_version": "0.1.0",
+            }
+        ]
+    }
 
 
 def test_agent_inspector_rejects_an_untyped_operation(tmp_path: Path) -> None:

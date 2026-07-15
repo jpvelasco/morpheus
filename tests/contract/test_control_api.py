@@ -6,6 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from morpheus.adapters.fakes import FakeClock, FakeInference
+from morpheus.agent.protocol import AgentOperation, AgentResponse
 from morpheus.api.app import create_app
 from morpheus.config import MorpheusSettings
 from morpheus.core.health import Evidence, HealthState
@@ -15,7 +16,52 @@ pytestmark = pytest.mark.contract
 NOW = datetime(2026, 7, 15, tzinfo=UTC)
 
 
-def client() -> TestClient:
+class PartialRuntimeAgent:
+    async def inspect(self, operation: AgentOperation) -> AgentResponse:
+        if operation is AgentOperation.GPU_SUMMARY:
+            raise RuntimeError("fixture GPU probe failed")
+        result = (
+            {
+                "memory": {"total_bytes": 1000, "available_bytes": 600},
+                "disk": {"total_bytes": 2000, "used_bytes": 750, "free_bytes": 1250},
+                "process": {"load_average_1m": 0.2, "uptime_seconds": 60},
+                "clock": {"observed_at": NOW.isoformat()},
+            }
+            if operation is AgentOperation.HOST_SUMMARY
+            else {"containers": [{"Names": "morpheus-api"}]}
+        )
+        return AgentResponse(request_id="fixture", operation=operation, result=result)
+
+
+class FullRuntimeAgent:
+    async def inspect(self, operation: AgentOperation) -> AgentResponse:
+        if operation is AgentOperation.HOST_SUMMARY:
+            result = {
+                "memory": {"total_bytes": 1000, "available_bytes": 600},
+                "disk": {"total_bytes": 2000, "used_bytes": 750, "free_bytes": 1250},
+                "process": {"load_average_1m": 0.2, "uptime_seconds": 60},
+                "clock": {"observed_at": NOW.isoformat()},
+            }
+        elif operation is AgentOperation.GPU_SUMMARY:
+            result = {"gpus": []}
+        else:
+            result = {
+                "containers": [
+                    {
+                        "image_id": "sha256:" + "a" * 64,
+                        "source_commit": "b" * 40,
+                        "release_version": "0.1.0",
+                    }
+                ]
+            }
+        return AgentResponse(request_id="fixture", operation=operation, result=result)
+
+
+def client(
+    *,
+    runtime_agent: PartialRuntimeAgent | FullRuntimeAgent | None = None,
+    settings: MorpheusSettings | None = None,
+) -> TestClient:
     inference = FakeInference(
         health_result=Evidence(
             state=HealthState.READY,
@@ -35,9 +81,10 @@ def client() -> TestClient:
         ),
     )
     app = create_app(
-        settings=MorpheusSettings(api_key="test-api-key"),
+        settings=settings or MorpheusSettings(api_key="test-api-key"),
         inference=inference,
         clock=FakeClock(now=NOW),
+        runtime_agent=runtime_agent,
     )
     return TestClient(app)
 
@@ -104,5 +151,61 @@ def test_UI_001_overview_consolidates_operational_state_without_fake_host_values
     assert payload["host"] == {
         "status": "unavailable",
         "reason": "runtime_agent_not_configured",
+        "observed_at": NOW.isoformat(),
+        "checks": {},
     }
     assert payload["external_controls"] == []
+
+
+def test_RUN_004_runtime_agent_partial_failure_preserves_independent_evidence() -> None:
+    response = client(runtime_agent=PartialRuntimeAgent()).get(
+        "/api/v1/overview",
+        headers={"Authorization": "Bearer test-api-key"},
+    )
+    host = response.json()["host"]
+    assert response.status_code == 200
+    assert host["status"] == "degraded"
+    assert host["memory"] == {"total_bytes": 1000, "available_bytes": 600}
+    assert host["services"] == [{"Names": "morpheus-api"}]
+    assert host["checks"]["gpu_summary"]["status"] == "fail"
+    assert "gpu" not in host
+
+
+def test_RUN_006_diagnostics_report_each_required_check_with_remediation() -> None:
+    response = client(runtime_agent=PartialRuntimeAgent()).get(
+        "/api/v1/diagnostics",
+        headers={"Authorization": "Bearer test-api-key"},
+    )
+    payload = response.json()
+    checks = {check["code"]: check for check in payload["checks"]}
+    assert response.status_code == 200
+    assert payload["status"] == "degraded"
+    assert set(checks) == {
+        "configuration",
+        "network_endpoint",
+        "service_contract",
+        "storage",
+        "clock",
+        "image_pin",
+        "runtime_agent",
+    }
+    assert checks["storage"]["status"] == "pass"
+    assert checks["runtime_agent"]["next_action"]
+
+
+def test_RUN_006_image_pin_check_matches_every_running_service_to_candidate() -> None:
+    response = client(
+        runtime_agent=FullRuntimeAgent(),
+        settings=MorpheusSettings(
+            api_key="test-api-key",
+            release_version="0.1.0",
+            source_commit="b" * 40,
+        ),
+    ).get(
+        "/api/v1/diagnostics",
+        headers={"Authorization": "Bearer test-api-key"},
+    )
+    checks = {check["code"]: check for check in response.json()["checks"]}
+    assert response.json()["status"] == "ready"
+    assert checks["image_pin"]["status"] == "pass"
+    assert checks["image_pin"]["next_action"] is None

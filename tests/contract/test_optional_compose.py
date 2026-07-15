@@ -8,12 +8,15 @@ import yaml
 
 pytestmark = pytest.mark.contract
 ROOT = Path(__file__).resolve().parents[2]
-OVERLAYS = sorted((ROOT / "deploy").glob("compose.*.yaml"))
+OVERLAYS = tuple(sorted((ROOT / "deploy").glob("compose.*.yaml")))
+OPTIONAL_OVERLAYS = tuple(path for path in OVERLAYS if path.name != "compose.agent.yaml")
 
 
-def services() -> list[tuple[Path, str, dict[str, object]]]:
+def services(
+    overlays: tuple[Path, ...] = OVERLAYS,
+) -> list[tuple[Path, str, dict[str, object]]]:
     result = []
-    for path in OVERLAYS:
+    for path in overlays:
         document = yaml.safe_load(path.read_text(encoding="utf-8"))
         for name, service in document.get("services", {}).items():
             result.append((path, name, service))
@@ -32,7 +35,7 @@ def test_SEC_005_every_upstream_image_is_digest_pinned_and_locked() -> None:
 
 
 def test_INV_002_optional_services_are_labeled_and_profile_gated() -> None:
-    for path, name, service in services():
+    for path, name, service in services(OPTIONAL_OVERLAYS):
         labels = service.get("labels", {})
         assert labels.get("io.morpheus.project") == "${MORPHEUS_PROJECT_ID:-morpheus}", name
         assert service.get("profiles"), f"{path.name}:{name} must be opt-in"

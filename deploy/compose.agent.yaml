@@ -1,0 +1,11 @@
+services:
+  api:
+    group_add:
+      - "${MORPHEUS_AGENT_GID:?MORPHEUS_AGENT_GID is required}"
+    environment:
+      MORPHEUS_RUNTIME_AGENT_SOCKET: /run/morpheus-agent/agent.sock
+    volumes:
+      - type: bind
+        source: "${MORPHEUS_AGENT_SOCKET_DIR:?MORPHEUS_AGENT_SOCKET_DIR is required}"
+        target: /run/morpheus-agent
+        read_only: true

@@ -66,8 +66,14 @@ def doctor(as_json: Annotated[bool, typer.Option("--json")] = False) -> None:
     try:
         diagnostics = _request("/api/v1/diagnostics")
         checks.append({"code": "control_api_ready", "status": "pass"})
-        payload = {"status": "ready", "checks": checks, "diagnostics": diagnostics}
-        exit_code = 0
+        diagnostic_status = diagnostics.get("status", "ready")
+        status = (
+            diagnostic_status
+            if diagnostic_status in {"ready", "degraded", "unhealthy"}
+            else "unhealthy"
+        )
+        payload = {"status": status, "checks": checks, "diagnostics": diagnostics}
+        exit_code = 0 if status == "ready" else 1
     except httpx.HTTPError as error:
         checks.append(
             {

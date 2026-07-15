@@ -36,7 +36,7 @@ export interface HostUnavailable {
 }
 
 export interface HostAvailable {
-  status: 'available'
+  status: 'available' | 'degraded'
   gpu?: {
     memory_total_mib: number
     memory_used_mib: number
@@ -47,12 +47,31 @@ export interface HostAvailable {
   disk?: { total_bytes: number; free_bytes: number }
 }
 
+export type DiagnosticStatus = 'pass' | 'fail' | 'unavailable'
+
+export interface DiagnosticCheck {
+  code: string
+  status: DiagnosticStatus
+  reason_code: string
+  summary: string
+  observed_at: string
+  freshness: 'current' | 'stale'
+  next_action: string | null
+}
+
+export interface Diagnostics {
+  status: 'ready' | 'degraded' | 'unhealthy'
+  observed_at: string
+  checks: DiagnosticCheck[]
+}
+
 export interface Overview {
   observed_at: string
   inference: Evidence
   models: ModelIdentity[]
   capabilities: Record<string, CapabilityStatus>
   host: HostUnavailable | HostAvailable
+  diagnostics: Diagnostics
   external_controls: never[]
 }
 
@@ -126,10 +145,44 @@ function parseCapabilities(value: unknown): Record<string, CapabilityStatus> {
   )
 }
 
+function parseDiagnostics(value: unknown): Diagnostics {
+  const item = record(value)
+  const status = string(item.status, 'diagnostics status')
+  if (!['ready', 'degraded', 'unhealthy'].includes(status)) {
+    throw new Error('Invalid diagnostics status')
+  }
+  if (!Array.isArray(item.checks)) throw new Error('Invalid diagnostic checks')
+  const checks = item.checks.map((candidate): DiagnosticCheck => {
+    const check = record(candidate)
+    const checkStatus = string(check.status, 'diagnostic check status')
+    if (!['pass', 'fail', 'unavailable'].includes(checkStatus)) {
+      throw new Error('Invalid diagnostic check status')
+    }
+    const freshness = string(check.freshness, 'diagnostic freshness')
+    if (freshness !== 'current' && freshness !== 'stale') {
+      throw new Error('Invalid diagnostic freshness')
+    }
+    return {
+      code: string(check.code, 'diagnostic code'),
+      status: checkStatus as DiagnosticStatus,
+      reason_code: string(check.reason_code, 'diagnostic reason'),
+      summary: string(check.summary, 'diagnostic summary'),
+      observed_at: string(check.observed_at, 'diagnostic timestamp'),
+      freshness,
+      next_action: check.next_action === null ? null : string(check.next_action, 'diagnostic next action'),
+    }
+  })
+  return {
+    status: status as Diagnostics['status'],
+    observed_at: string(item.observed_at, 'diagnostics timestamp'),
+    checks,
+  }
+}
+
 export function parseOverview(value: unknown): Overview {
   const item = record(value)
   const host = record(item.host)
-  if (host.status !== 'unavailable' && host.status !== 'available') {
+  if (host.status !== 'unavailable' && host.status !== 'available' && host.status !== 'degraded') {
     throw new Error('Invalid host status')
   }
   return {
@@ -138,6 +191,7 @@ export function parseOverview(value: unknown): Overview {
     models: parseModels(item.models),
     capabilities: parseCapabilities(item.capabilities),
     host: host as unknown as HostUnavailable | HostAvailable,
+    diagnostics: parseDiagnostics(item.diagnostics),
     external_controls: [],
   }
 }
