@@ -1,8 +1,19 @@
 {
   "version": 1,
-  "captured_at": "2026-07-15T12:55:00Z",
+  "captured_at": "2026-07-15T19:04:00Z",
   "platform": "linux/amd64",
   "images": [
+    {
+      "name": "python-runtime",
+      "source": "https://hub.docker.com/_/python",
+      "image": "docker.io/library/python",
+      "version": "3.12.11-slim",
+      "digest": "sha256:47ae396f09c1303b8653019811a8498470603d7ffefc29cb07c88f1f8cb3d19f",
+      "platform": "linux/amd64",
+      "license": "PSF-2.0 plus Debian package licenses",
+      "purpose": "Morpheus Python runtime and validation fixtures",
+      "status": "pull-and-build-verified"
+    },
     {
       "name": "searxng",
       "source": "https://github.com/searxng/searxng",

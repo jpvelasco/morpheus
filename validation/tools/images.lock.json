@@ -1,0 +1,105 @@
+{
+  "format": 1,
+  "captured_at": "2026-07-15T19:42:41Z",
+  "platform": "linux/amd64",
+  "tools": [
+    {
+      "id": "node",
+      "version": "22.17.1-alpine3.22",
+      "source": "https://github.com/nodejs/docker-node",
+      "license": "MIT plus Alpine and bundled package licenses",
+      "image": "docker.io/library/node",
+      "index_digest": "sha256:5539840ce9d013fa13e3b9814c9353024be7ac75aca5db6d039504a56c04ea59",
+      "platform_digest": "sha256:99351363debf40f3495cb7fc657a777334c3b21143e594dbfcc7de187439633c",
+      "reference": "docker.io/library/node@sha256:99351363debf40f3495cb7fc657a777334c3b21143e594dbfcc7de187439633c",
+      "platform": "linux/amd64",
+      "purpose": "locked frontend dependency, test, and production build runtime"
+    },
+    {
+      "id": "playwright",
+      "version": "1.61.1",
+      "source": "https://github.com/microsoft/playwright",
+      "license": "Apache-2.0 plus browser and Ubuntu package licenses",
+      "image": "mcr.microsoft.com/playwright",
+      "index_digest": "sha256:5b8f294aff9041b7191c34a4bab3ac270157a28774d4b0660e9743297b697e48",
+      "platform_digest": "sha256:cf0daee9b994042e011bc29f20cdff1a9f682a039b43fcd738f7d8a9d3bcd9d6",
+      "reference": "mcr.microsoft.com/playwright@sha256:cf0daee9b994042e011bc29f20cdff1a9f682a039b43fcd738f7d8a9d3bcd9d6",
+      "platform": "linux/amd64",
+      "purpose": "Chromium, Firefox, and WebKit browser E2E, trace, screenshot, and responsive checks"
+    },
+    {
+      "id": "accessibility",
+      "version": "4.12.1",
+      "source": "https://github.com/dequelabs/axe-core-npm",
+      "license": "MPL-2.0",
+      "image": "mcr.microsoft.com/playwright",
+      "index_digest": "sha256:5b8f294aff9041b7191c34a4bab3ac270157a28774d4b0660e9743297b697e48",
+      "platform_digest": "sha256:cf0daee9b994042e011bc29f20cdff1a9f682a039b43fcd738f7d8a9d3bcd9d6",
+      "reference": "mcr.microsoft.com/playwright@sha256:cf0daee9b994042e011bc29f20cdff1a9f682a039b43fcd738f7d8a9d3bcd9d6",
+      "platform": "linux/amd64",
+      "package": "@axe-core/playwright",
+      "package_integrity": "sha512-rMd7xriptqKpP+w5265i4Hdkv2X5kbu6uiBi/B2I7uf3hieRBM3qDCfaKPtxfiYb2mKXfF+yLODJwIx+Jv1GDw==",
+      "purpose": "WCAG 2.2 AA automated browser assertions installed by locked npm input"
+    },
+    {
+      "id": "secret-scan",
+      "version": "8.30.1",
+      "source": "https://github.com/gitleaks/gitleaks",
+      "license": "MIT",
+      "image": "ghcr.io/gitleaks/gitleaks",
+      "index_digest": "sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f",
+      "platform_digest": "sha256:b109bc5f8f76a38196a3e413704fc5b9e3c32360bce4e4b603bd6f45b3721dbb",
+      "reference": "ghcr.io/gitleaks/gitleaks@sha256:b109bc5f8f76a38196a3e413704fc5b9e3c32360bce4e4b603bd6f45b3721dbb",
+      "platform": "linux/amd64",
+      "purpose": "repository, worktree, build-context, and recursive release-artifact secret scan"
+    },
+    {
+      "id": "vulnerability-scan",
+      "version": "0.70.0",
+      "source": "https://github.com/aquasecurity/trivy",
+      "license": "Apache-2.0",
+      "image": "docker.io/aquasec/trivy",
+      "index_digest": "sha256:be1190afcb28352bfddc4ddeb71470835d16462af68d310f9f4bca710961a41e",
+      "platform_digest": "sha256:85e87be1a96459c38a4eea47dc64eb2d342bb14cd4b4cef96adcf6ff03378b7c",
+      "reference": "docker.io/aquasec/trivy@sha256:85e87be1a96459c38a4eea47dc64eb2d342bb14cd4b4cef96adcf6ff03378b7c",
+      "platform": "linux/amd64",
+      "purpose": "locked dependency, filesystem, OCI image, misconfiguration, and vulnerability scan"
+    },
+    {
+      "id": "sbom",
+      "version": "1.44.0",
+      "source": "https://github.com/anchore/syft",
+      "license": "Apache-2.0",
+      "image": "docker.io/anchore/syft",
+      "index_digest": "sha256:86fde6445b483d902fe011dd9f68c4987dd94e07da1e9edc004e3c2422650de6",
+      "platform_digest": "sha256:2baa4d24d90599840c0100a8d30deaa533821fcd99f405ce6f90e3d225bd836d",
+      "reference": "docker.io/anchore/syft@sha256:2baa4d24d90599840c0100a8d30deaa533821fcd99f405ce6f90e3d225bd836d",
+      "platform": "linux/amd64",
+      "purpose": "CycloneDX JSON and SPDX JSON SBOM generation for filesystems and OCI images"
+    },
+    {
+      "id": "license-scan",
+      "version": "0.70.0",
+      "source": "https://github.com/aquasecurity/trivy",
+      "license": "Apache-2.0",
+      "image": "docker.io/aquasec/trivy",
+      "index_digest": "sha256:be1190afcb28352bfddc4ddeb71470835d16462af68d310f9f4bca710961a41e",
+      "platform_digest": "sha256:85e87be1a96459c38a4eea47dc64eb2d342bb14cd4b4cef96adcf6ff03378b7c",
+      "reference": "docker.io/aquasec/trivy@sha256:85e87be1a96459c38a4eea47dc64eb2d342bb14cd4b4cef96adcf6ff03378b7c",
+      "platform": "linux/amd64",
+      "purpose": "dependency and image license inventory with release-policy enforcement"
+    },
+    {
+      "id": "load-test",
+      "version": "2.0.0",
+      "source": "https://github.com/grafana/k6",
+      "license": "AGPL-3.0-only",
+      "image": "docker.io/grafana/k6",
+      "index_digest": "sha256:a33a0cfdc4d2483d6b7a3a22e726a499ff2831a671a49239104cd34a9937523c",
+      "platform_digest": "sha256:7150033090bb941ea2d780386d68117250184dc524c733281d87ea900e711681",
+      "reference": "docker.io/grafana/k6@sha256:7150033090bb941ea2d780386d68117250184dc524c733281d87ea900e711681",
+      "platform": "linux/amd64",
+      "purpose": "bounded API load, overhead, fault, and 24-hour soak profiles"
+    }
+  ]
+}

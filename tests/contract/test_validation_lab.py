@@ -39,6 +39,8 @@ def test_vm_manifest_pins_an_official_image_and_isolated_guest() -> None:
         "host_shares": False,
         "host_docker_socket": False,
         "autostart": False,
+        "template_identity_cleaned": True,
+        "concurrent_clones": True,
     }
 
 
@@ -63,6 +65,7 @@ def test_cloud_init_is_secret_free_and_installs_declared_prerequisites() -> None
         "curl",
         "docker.io",
         "docker-compose-v2",
+        "docker-buildx",
         "git",
         "jq",
         "make",
@@ -87,6 +90,11 @@ def test_cloud_init_is_secret_free_and_installs_declared_prerequisites() -> None
     assert "systemctl disable --now apt-daily.timer apt-daily-upgrade.timer" in commands
     assert "systemctl enable --now chrony.service" in commands
 
+    template_seal = files["/usr/local/sbin/morpheus-validation-template-seal"]
+    assert "cloud-init clean --logs --machine-id --seed --configs ssh_config" in template_seal
+    assert "docker buildx version" in template_seal
+    assert "systemctl poweroff" in template_seal
+
 
 @pytest.mark.contract
 def test_cloud_init_identity_is_explicit() -> None:
@@ -107,6 +115,28 @@ def test_clone_helper_protects_the_sealed_base_and_force_copies_the_disk() -> No
     assert '[[ "${base_state}" == "shut off" ]]' in script
     assert "--force-copy vda" in script
     assert "--disk readonly=off" in script
+    assert "cloud-localds" in script
+    assert 'seed_volume="${scenario}-seed.iso"' in script
+    assert "virsh attach-disk" in script
     assert '[[ "${base_path}" != "${clone_path}" ]]' in script
     assert "--replace" not in script
     assert "--preserve-data" not in script
+
+
+@pytest.mark.contract
+def test_clone_cloud_init_regenerates_identity_without_package_changes() -> None:
+    metadata = (ROOT / "validation" / "vm" / "cloud-init" / "clone-meta-data.yaml.in").read_text(
+        encoding="utf-8"
+    )
+    user_data = yaml.safe_load(
+        (ROOT / "validation" / "vm" / "cloud-init" / "clone-user-data.yaml").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert metadata == ("instance-id: __SCENARIO_NAME__\nlocal-hostname: __SCENARIO_NAME__\n")
+    assert user_data["preserve_hostname"] is False
+    assert user_data["ssh_deletekeys"] is True
+    assert set(user_data["ssh_genkeytypes"]) == {"ed25519", "ecdsa", "rsa"}
+    assert user_data["package_update"] is False
+    assert user_data["package_upgrade"] is False

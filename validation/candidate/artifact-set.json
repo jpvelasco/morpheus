@@ -1,0 +1,100 @@
+{
+  "format": 1,
+  "source_policy": {
+    "commit": "one-full-git-object-id",
+    "source_date_epoch": "commit-timestamp",
+    "tree": "clean"
+  },
+  "artifacts": [
+    {
+      "id": "python-sdist",
+      "required": true,
+      "path_pattern": "payload/python/morpheus_control_plane-{version}.tar.gz",
+      "media_type": "application/gzip",
+      "sources": ["pyproject.toml", "uv.lock", "README.md", "src/morpheus/**"],
+      "producer": {"network": false, "command": ["uv", "build", "--offline", "--sdist"]}
+    },
+    {
+      "id": "python-wheel",
+      "required": true,
+      "path_pattern": "payload/python/morpheus_control_plane-{version}-py3-none-any.whl",
+      "media_type": "application/zip",
+      "sources": ["pyproject.toml", "uv.lock", "README.md", "src/morpheus/**"],
+      "producer": {"network": false, "command": ["uv", "build", "--offline", "--wheel"]}
+    },
+    {
+      "id": "backend-oci",
+      "required": true,
+      "path_pattern": "payload/images/morpheus-backend-{version}-{commit}.oci.tar",
+      "media_type": "application/vnd.oci.image.layout.v1.tar",
+      "sources": [".dockerignore", "deploy/Dockerfile", "pyproject.toml", "uv.lock", "README.md", "src/morpheus/**"],
+      "producer": {"network": "required-until-CLEAN-002", "command": ["docker", "buildx", "build", "--platform", "linux/amd64", "--output", "type=oci", "--file", "deploy/Dockerfile", "."]}
+    },
+    {
+      "id": "dashboard-oci",
+      "required": true,
+      "path_pattern": "payload/images/morpheus-dashboard-{version}-{commit}.oci.tar",
+      "media_type": "application/vnd.oci.image.layout.v1.tar",
+      "sources": [".dockerignore", "web/Dockerfile", "web/package.json", "web/package-lock.json", "web/src/**", "src/morpheus/dashboard/**"],
+      "producer": {"network": "required-until-CLEAN-002", "command": ["docker", "buildx", "build", "--platform", "linux/amd64", "--output", "type=oci", "--file", "web/Dockerfile", "."]}
+    },
+    {
+      "id": "compose-config-bundle",
+      "required": true,
+      "path_pattern": "payload/config/morpheus-compose-config-{version}.tar.gz",
+      "media_type": "application/gzip",
+      "sources": ["deploy/compose.yaml", "deploy/compose.*.yaml", "deploy/config/**", "deploy/images.lock.json", ".env.example"],
+      "producer": {"network": false, "command": ["validation/candidate/build.sh", "compose-config-bundle"]}
+    },
+    {
+      "id": "migration-bundle",
+      "required": true,
+      "path_pattern": "payload/migrations/morpheus-migrations-{version}.tar.gz",
+      "media_type": "application/gzip",
+      "sources": ["src/morpheus/adapters/persistence/sqlite.py"],
+      "producer": {"network": false, "command": ["validation/candidate/build.sh", "migration-bundle"]}
+    },
+    {
+      "id": "requirements-evidence",
+      "required": true,
+      "path_pattern": "payload/requirements/morpheus-requirements-{version}.tar.gz",
+      "media_type": "application/gzip",
+      "sources": ["requirements.json", "requirements.schema.json", "docs/PRODUCT_SPECIFICATION.md", "docs/IMPLEMENTATION_GAP_REVIEW.md"],
+      "producer": {"network": false, "command": ["validation/candidate/build.sh", "requirements-evidence"]}
+    },
+    {
+      "id": "checksums",
+      "required": true,
+      "path_pattern": "payload/SHA256SUMS",
+      "media_type": "text/plain",
+      "sources": ["all-required-artifacts"],
+      "producer": {"network": false, "command": ["validation/candidate/build.sh", "checksums"]}
+    },
+    {
+      "id": "rollback-bundle",
+      "required": true,
+      "path_pattern": "payload/rollback/morpheus-rollback-{version}-{commit}.tar.gz",
+      "media_type": "application/gzip",
+      "sources": ["python-wheel", "backend-oci", "dashboard-oci", "compose-config-bundle", "migration-bundle"],
+      "producer": {"network": false, "command": ["validation/candidate/build.sh", "rollback-bundle"]}
+    }
+  ],
+  "checksum_scope": [
+    "python-sdist",
+    "python-wheel",
+    "backend-oci",
+    "dashboard-oci",
+    "compose-config-bundle",
+    "migration-bundle",
+    "requirements-evidence",
+    "rollback-bundle"
+  ],
+  "rollback_contents": [
+    "python-wheel",
+    "backend-oci",
+    "dashboard-oci",
+    "compose-config-bundle",
+    "migration-bundle",
+    "requirements-evidence"
+  ]
+}

@@ -21,7 +21,9 @@
     "gpu": false,
     "host_shares": false,
     "host_docker_socket": false,
-    "autostart": false
+    "autostart": false,
+    "template_identity_cleaned": true,
+    "concurrent_clones": true
   },
   "tooling": {
     "uv": "0.8.0"

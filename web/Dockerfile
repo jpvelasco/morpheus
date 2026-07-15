@@ -5,7 +5,7 @@ RUN npm ci --ignore-scripts
 COPY web/ ./
 RUN npm run build
 
-FROM python:3.12.11-slim@sha256:27f90d79cc85e9b7b2560063ef44fa0e9eaae7a7c3f5a9f745fb6078c9c4f6c6 AS runtime
+FROM python:3.12.11-slim@sha256:47ae396f09c1303b8653019811a8498470603d7ffefc29cb07c88f1f8cb3d19f AS runtime
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 MORPHEUS_DASHBOARD_DIR=/app/web
 RUN addgroup --system morpheus && adduser --system --ingroup morpheus morpheus
 WORKDIR /app
