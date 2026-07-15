@@ -47,7 +47,11 @@ node_reference=$(jq -er \
   '.tools[] | select(.id == "node") | .reference' \
   validation/tools/images.lock.json)
 
-mkdir -p "${output}/python" "${output}/wheelhouse" "${output}/npm-cache"
+mkdir -p \
+  "${output}/python" \
+  "${output}/wheelhouse" \
+  "${output}/agent-wheelhouse" \
+  "${output}/npm-cache"
 uv build --offline --out-dir "${output}/python"
 rm -f "${output}/python/.gitignore"
 uv export \
@@ -77,6 +81,21 @@ install -m 0644 \
   "${output}/wheelhouse/"
 (
   cd "${output}/wheelhouse"
+  find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%P\0' \
+    | sort -z \
+    | xargs -0 sha256sum >SHA256SUMS
+)
+.venv/bin/python -m pip download \
+  --no-cache-dir \
+  --require-hashes \
+  --only-binary=:all: \
+  --dest "${output}/agent-wheelhouse" \
+  --requirement "${output}/runtime-requirements.txt"
+install -m 0644 \
+  "${output}/python/morpheus_control_plane-${version}-py3-none-any.whl" \
+  "${output}/agent-wheelhouse/"
+(
+  cd "${output}/agent-wheelhouse"
   find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%P\0' \
     | sort -z \
     | xargs -0 sha256sum >SHA256SUMS
@@ -117,6 +136,7 @@ jq -n \
   --arg node_reference "${node_reference}" \
   --arg node_image_id "${node_image_id}" \
   --arg wheelhouse_sha256 "$(sha256sum "${output}/wheelhouse/SHA256SUMS" | cut -d' ' -f1)" \
+  --arg agent_wheelhouse_sha256 "$(sha256sum "${output}/agent-wheelhouse/SHA256SUMS" | cut -d' ' -f1)" \
   --arg runtime_requirements_sha256 "$(sha256sum "${output}/runtime-requirements.txt" | cut -d' ' -f1)" \
   --arg npm_cache_sha256 "$(sha256sum "${output}/npm-cache.SHA256SUMS" | cut -d' ' -f1)" \
   '{
@@ -127,6 +147,7 @@ jq -n \
     cache_scope: "portable-locked-dependencies-and-local-base-images",
     dependency_inputs: {
       wheelhouse_sha256: $wheelhouse_sha256,
+      agent_wheelhouse_sha256: $agent_wheelhouse_sha256,
       runtime_requirements_sha256: $runtime_requirements_sha256,
       npm_cache_sha256: $npm_cache_sha256
     },
