@@ -1,6 +1,6 @@
-FROM python:3.12.11-slim@sha256:47ae396f09c1303b8653019811a8498470603d7ffefc29cb07c88f1f8cb3d19f
+FROM python:3.12-alpine3.23@sha256:601d3d3797e90e2534782e69c85fafb7971b43f24c7b1b079b7e48dd435e458d
 
-RUN addgroup --system fixture && adduser --system --ingroup fixture fixture
+RUN addgroup -S fixture && adduser -S -D -H -G fixture fixture
 WORKDIR /app
 COPY --chown=fixture:fixture server.py /app/server.py
 COPY --chown=fixture:fixture probe.py /app/probe.py

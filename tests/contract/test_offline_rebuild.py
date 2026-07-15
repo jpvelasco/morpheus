@@ -47,6 +47,9 @@ def test_CLEAN_002_declares_one_fetch_then_requires_offline_rebuild() -> None:
     assert populate.count("docker buildx build") == 0
     assert populate.count("docker pull") == 2
     assert "pip download" in populate
+    assert '"${python_reference}"' in populate
+    assert "uv run --offline python -m pip download" not in populate
+    assert "--no-cache-dir" in populate
     assert "--require-hashes" in populate
     assert "--only-binary=:all:" in populate
     assert "npm ci --ignore-scripts --cache /npm-cache" in populate
@@ -116,11 +119,13 @@ def test_BUILD_001_candidate_dockerfiles_are_offline_pinned_and_normalized() -> 
     backend = BACKEND_DOCKERFILE.read_text(encoding="utf-8")
     dashboard = DASHBOARD_DOCKERFILE.read_text(encoding="utf-8")
     for dockerfile in (backend, dashboard):
-        assert "python:3.12.11-slim@sha256:47ae396f" in dockerfile
+        assert "python:3.12-alpine3.23@sha256:601d3d37" in dockerfile
         assert "sha256sum --check SHA256SUMS" in dockerfile
         assert "--no-index" in dockerfile
         assert "--find-links=/wheelhouse" in dockerfile
-        assert 'touch -h --date="@${SOURCE_DATE_EPOCH}"' in dockerfile
+        assert 'touch -h -d "@${SOURCE_DATE_EPOCH}"' in dockerfile
+        assert "addgroup -S morpheus" in dockerfile
+        assert "adduser -S -D -H -G morpheus morpheus" in dockerfile
         assert "org.opencontainers.image.revision" in dockerfile
         assert "HEALTHCHECK" in dockerfile
         assert "USER morpheus" in dockerfile

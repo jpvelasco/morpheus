@@ -164,8 +164,8 @@ def test_fixture_compose_is_hardened_internal_and_loopback_only() -> None:
 
 def test_fixture_image_is_pinned_and_non_root() -> None:
     expected_base = (
-        "python:3.12.11-slim@"
-        "sha256:47ae396f09c1303b8653019811a8498470603d7ffefc29cb07c88f1f8cb3d19f"
+        "python:3.12-alpine3.23@"
+        "sha256:601d3d3797e90e2534782e69c85fafb7971b43f24c7b1b079b7e48dd435e458d"
     )
     dockerfiles = [
         ROOT / "deploy" / "Dockerfile",
@@ -177,10 +177,10 @@ def test_fixture_image_is_pinned_and_non_root() -> None:
 
     lock = json.loads((ROOT / "deploy" / "images.lock.json").read_text(encoding="utf-8"))
     python_image = next(image for image in lock["images"] if image["name"] == "python-runtime")
-    assert python_image["version"] == "3.12.11-slim"
+    assert python_image["version"] == "3.12.13-alpine3.23"
     assert python_image["digest"] == expected_base.rsplit("@", 1)[1]
     assert python_image["platform"] == "linux/amd64"
-    assert python_image["status"] == "pull-and-build-verified"
+    assert python_image["status"] == "security-scan-and-build-verified"
 
     dockerfile = dockerfiles[-1].read_text(encoding="utf-8")
     assert "USER fixture" in dockerfile
