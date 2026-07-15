@@ -132,5 +132,7 @@ allowance for unexplained OCI manifest drift.
 For container smoke tests, combine `deploy/compose.yaml` with
 `candidate/compose.yaml`, set `MORPHEUS_BACKEND_IMAGE` and
 `MORPHEUS_DASHBOARD_IMAGE` to the loaded candidate tags, and use
-`docker compose up --no-build`. This ensures startup tests consume the exported
-candidate instead of silently rebuilding a different image.
+`docker compose --env-file .env up --no-build`. Selecting the root environment
+file explicitly is required because the first Compose file is below `deploy/`.
+This ensures startup tests consume the exported candidate instead of silently
+rebuilding a different image.

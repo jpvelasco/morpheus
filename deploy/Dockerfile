@@ -4,7 +4,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     MORPHEUS_DATA_DIR=/var/lib/morpheus
 
-RUN addgroup --system morpheus && adduser --system --ingroup morpheus morpheus
+RUN addgroup --system morpheus \
+    && adduser --system --ingroup morpheus morpheus \
+    && install -d -o morpheus -g morpheus -m 0750 /var/lib/morpheus
 WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY src ./src

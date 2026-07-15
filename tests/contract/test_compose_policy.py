@@ -40,6 +40,29 @@ def test_python_services_acknowledge_the_container_bind_address() -> None:
         assert environment["MORPHEUS_ALLOW_LAN"] == "true"
 
 
+def test_tmpfs_entries_are_single_absolute_mount_specifications() -> None:
+    for path in sorted((ROOT / "deploy").glob("compose*.yaml")):
+        compose = yaml.safe_load(path.read_text(encoding="utf-8"))
+        for name, service in compose.get("services", {}).items():
+            for tmpfs in service.get("tmpfs", []):
+                assert str(tmpfs).startswith("/"), f"{path.name}:{name}:{tmpfs}"
+                assert not str(tmpfs).startswith("mode="), f"{path.name}:{name}:{tmpfs}"
+
+
+def test_runtime_image_prepares_the_nonroot_data_directory() -> None:
+    dockerfile = (ROOT / "deploy/Dockerfile").read_text(encoding="utf-8")
+    ownership = "install -d -o morpheus -g morpheus -m 0750 /var/lib/morpheus"
+    assert ownership in dockerfile
+    assert dockerfile.index(ownership) < dockerfile.index("USER morpheus")
+
+
+def test_telemetry_overrides_the_backend_image_health_port() -> None:
+    compose = yaml.safe_load((ROOT / "deploy/compose.yaml").read_text(encoding="utf-8"))
+    healthcheck = " ".join(compose["services"]["telemetry"]["healthcheck"]["test"])
+    assert "127.0.0.1:7410/healthz" in healthcheck
+    assert "127.0.0.1:7400/healthz" not in healthcheck
+
+
 def test_quality_workflow_runs_the_frontend_gate_in_a_pinned_container() -> None:
     workflow = yaml.safe_load((ROOT / ".github/workflows/quality.yml").read_text(encoding="utf-8"))
     frontend = workflow["jobs"]["frontend"]

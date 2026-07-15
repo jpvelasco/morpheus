@@ -17,8 +17,10 @@ LABEL org.opencontainers.image.title="Morpheus control API" \
 
 RUN addgroup --system morpheus \
     && adduser --system --ingroup morpheus morpheus \
+    && install -d -o morpheus -g morpheus -m 0750 /var/lib/morpheus \
     && touch -h --date="@${SOURCE_DATE_EPOCH}" \
-      /etc/group /etc/gshadow /etc/passwd /etc/shadow /run/adduser
+      /etc/group /etc/gshadow /etc/passwd /etc/shadow /run/adduser \
+      /var/lib/morpheus
 RUN --mount=type=bind,source=wheelhouse,target=/wheelhouse,ro \
     cd /wheelhouse \
     && sha256sum --check SHA256SUMS \

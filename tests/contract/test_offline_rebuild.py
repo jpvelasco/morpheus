@@ -128,6 +128,7 @@ def test_BUILD_001_candidate_dockerfiles_are_offline_pinned_and_normalized() -> 
         assert "wget" not in dockerfile
     assert "node:22.17.1-alpine3.22@sha256:99351363" in dashboard
     assert "npm ci --offline --ignore-scripts" in dashboard
+    assert "install -d -o morpheus -g morpheus -m 0750 /var/lib/morpheus" in backend
 
 
 def test_CONT_002_compose_overlay_uses_exported_candidate_images() -> None:
