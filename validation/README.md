@@ -114,4 +114,9 @@ test, installs a dedicated nftables table that drops guest and container
 egress while preserving the established SSH session, proves egress is blocked,
 and always removes only that table on exit. The rebuild refuses a dirty or
 different source commit and exports the Python and OCI artifacts solely from
-the populated uv and local Docker-driver caches.
+the populated, hash-inventoried wheelhouse and npm content cache. Only the two
+digest-pinned base images remain in the local Docker store. Candidate image
+builds use the dedicated offline Dockerfiles, `--network=none`, and
+`--no-cache`; they verify the wheelhouse, run npm in offline mode, normalize
+generated filesystem timestamps to the commit, and attach OCI identity and
+health metadata.

@@ -27,7 +27,7 @@
       "required": true,
       "path_pattern": "payload/images/morpheus-backend-{version}-{commit}.oci.tar",
       "media_type": "application/vnd.oci.image.layout.v1.tar",
-      "sources": [".dockerignore", "deploy/Dockerfile", "pyproject.toml", "uv.lock", "README.md", "src/morpheus/**"],
+      "sources": ["validation/candidate/Dockerfile.backend", "validation/candidate/populate-cache.sh", "validation/candidate/rebuild-offline.sh", "deploy/images.lock.json", "validation/tools/images.lock.json", "pyproject.toml", "uv.lock", "README.md", "src/morpheus/**"],
       "producer": {"network": false, "dependency_fetch": ["validation/candidate/populate-cache.sh", "{cache-evidence-directory}"], "command": ["validation/vm/offline-egress.sh", "validation/candidate/rebuild-offline.sh", "{cache-evidence-directory}/cache-manifest.json", "{candidate-output-root}"]}
     },
     {
@@ -35,7 +35,7 @@
       "required": true,
       "path_pattern": "payload/images/morpheus-dashboard-{version}-{commit}.oci.tar",
       "media_type": "application/vnd.oci.image.layout.v1.tar",
-      "sources": [".dockerignore", "web/Dockerfile", "web/package.json", "web/package-lock.json", "web/src/**", "src/morpheus/dashboard/**"],
+      "sources": ["validation/candidate/Dockerfile.dashboard", "validation/candidate/populate-cache.sh", "validation/candidate/rebuild-offline.sh", "deploy/images.lock.json", "validation/tools/images.lock.json", "pyproject.toml", "uv.lock", "README.md", "src/morpheus/**", "web/package.json", "web/package-lock.json", "web/src/**"],
       "producer": {"network": false, "dependency_fetch": ["validation/candidate/populate-cache.sh", "{cache-evidence-directory}"], "command": ["validation/vm/offline-egress.sh", "validation/candidate/rebuild-offline.sh", "{cache-evidence-directory}/cache-manifest.json", "{candidate-output-root}"]}
     },
     {

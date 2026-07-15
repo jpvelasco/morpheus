@@ -22,7 +22,7 @@ if [[ -e "${output}" ]]; then
   exit 2
 fi
 
-for command in docker git jq sha256sum uv; do
+for command in cmp cp docker git jq sha256sum tar uv; do
   command -v "${command}" >/dev/null || {
     echo "Missing required command: ${command}" >&2
     exit 1
@@ -47,10 +47,23 @@ test "$(jq -er '.format' "${cache_manifest}")" = 1
 test "$(jq -er '.source_commit' "${cache_manifest}")" = "${source_commit}"
 test "$(jq -er '.source_date_epoch' "${cache_manifest}")" = "${source_date_epoch}"
 test "$(jq -er '.version' "${cache_manifest}")" = "${version}"
-for image in backend dashboard; do
-  tag=$(jq -er ".images.${image}.tag" "${cache_manifest}")
-  expected=$(jq -er ".images.${image}.id" "${cache_manifest}")
-  actual=$(docker image inspect --format '{{.Id}}' "${tag}")
+cache_root=$(cd -- "$(dirname -- "${cache_manifest}")" && pwd)
+test "$(sha256sum "${cache_root}/wheelhouse/SHA256SUMS" | cut -d' ' -f1)" = \
+  "$(jq -er '.dependency_inputs.wheelhouse_sha256' "${cache_manifest}")"
+test "$(sha256sum "${cache_root}/npm-cache.SHA256SUMS" | cut -d' ' -f1)" = \
+  "$(jq -er '.dependency_inputs.npm_cache_sha256' "${cache_manifest}")"
+(
+  cd "${cache_root}/wheelhouse"
+  sha256sum --check SHA256SUMS
+)
+(
+  cd "${cache_root}/npm-cache"
+  sha256sum --check "${cache_root}/npm-cache.SHA256SUMS"
+)
+for image in python node; do
+  reference=$(jq -er ".base_images.${image}.reference" "${cache_manifest}")
+  expected=$(jq -er ".base_images.${image}.id" "${cache_manifest}")
+  actual=$(docker image inspect --format '{{.Id}}' "${reference}")
   test "${actual}" = "${expected}"
 done
 
@@ -58,6 +71,21 @@ mkdir -p "${output}/payload/python" "${output}/payload/images"
 export SOURCE_DATE_EPOCH="${source_date_epoch}"
 uv build --offline --out-dir "${output}/payload/python"
 rm -f "${output}/payload/python/.gitignore"
+cmp \
+  "${cache_root}/python/morpheus_control_plane-${version}-py3-none-any.whl" \
+  "${output}/payload/python/morpheus_control_plane-${version}-py3-none-any.whl"
+cmp \
+  "${cache_root}/python/morpheus_control_plane-${version}.tar.gz" \
+  "${output}/payload/python/morpheus_control_plane-${version}.tar.gz"
+
+work=$(mktemp -d)
+cleanup() {
+  rm -rf "${work}"
+}
+trap cleanup EXIT
+git archive HEAD web | tar -x -C "${work}"
+cp -a "${cache_root}/wheelhouse" "${work}/wheelhouse"
+cp -a "${cache_root}/npm-cache" "${work}/npm-cache"
 
 backend_output="${output}/payload/images/morpheus-backend-${version}-${short_commit}.oci.tar"
 dashboard_output="${output}/payload/images/morpheus-dashboard-${version}-${short_commit}.oci.tar"
@@ -66,21 +94,27 @@ common_args=(
   --build-arg "SOURCE_COMMIT=${source_commit}"
   --build-arg "SOURCE_CREATED=${source_created}"
   --build-arg "SOURCE_DATE_EPOCH=${source_date_epoch}"
+  --network=none
+  --no-cache
+  --platform linux/amd64
   --provenance=false
   --pull=false
 )
 docker buildx build "${common_args[@]}" \
-  --file deploy/Dockerfile \
+  --file "${root}/validation/candidate/Dockerfile.backend" \
   --output "type=oci,dest=${backend_output},rewrite-timestamp=true" \
-  .
+  "${work}"
 docker buildx build "${common_args[@]}" \
-  --file web/Dockerfile \
+  --file "${root}/validation/candidate/Dockerfile.dashboard" \
   --output "type=oci,dest=${dashboard_output},rewrite-timestamp=true" \
-  .
+  "${work}"
 
-find "${output}/payload" -type f -print0 \
-  | sort -z \
-  | xargs -0 sha256sum >"${output}/SHA256SUMS"
+(
+  cd "${output}"
+  find payload -type f -print0 \
+    | sort -z \
+    | xargs -0 sha256sum >SHA256SUMS
+)
 jq -n \
   --arg source_commit "${source_commit}" \
   --argjson source_date_epoch "${source_date_epoch}" \
