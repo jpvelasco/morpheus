@@ -1,0 +1,46 @@
+name: morpheus-validation-fixtures
+
+services:
+  openai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: morpheus-validation/openai-fixture:local
+    init: true
+    restart: "no"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: ["/tmp:size=16m,mode=1777"]
+    environment:
+      FIXTURE_API_KEY: morpheus-fixture-key
+      FIXTURE_BIND_ADDRESS: "0.0.0.0"
+      FIXTURE_PORT: "8000"
+    expose: ["8000"]
+    networks: [fixture_external]
+    labels:
+      io.morpheus.project: morpheus-validation
+      io.morpheus.component: openai-fixture
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2)"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+      start_period: 2s
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.5"
+    logging:
+      driver: local
+      options:
+        max-size: 1m
+        max-file: "1"
+        compress: "false"
+
+networks:
+  fixture_external:
+    internal: true
+    labels:
+      io.morpheus.project: morpheus-validation

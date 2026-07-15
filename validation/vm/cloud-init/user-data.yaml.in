@@ -24,6 +24,7 @@ packages:
   - curl
   - docker.io
   - docker-compose-v2
+  - docker-buildx
   - git
   - jq
   - make
@@ -40,6 +41,20 @@ write_files:
     content: |
       APT::Periodic::Update-Package-Lists "0";
       APT::Periodic::Unattended-Upgrade "0";
+  - path: /usr/local/sbin/morpheus-validation-template-seal
+    owner: root:root
+    permissions: "0750"
+    content: |
+      #!/bin/sh
+      set -eu
+      test "$(id -u)" = "0"
+      cloud-init status --wait
+      test -e /var/lib/morpheus-validation-ready
+      docker info >/dev/null
+      docker buildx version
+      cloud-init clean --logs --machine-id --seed --configs ssh_config
+      sync
+      systemctl poweroff
 
 growpart:
   mode: auto

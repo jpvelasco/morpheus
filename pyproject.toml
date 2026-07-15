@@ -44,6 +44,7 @@ morpheus-api = "morpheus.api.app:run"
 morpheus-agent = "morpheus.agent.app:run"
 morpheus-telemetry = "morpheus.telemetry.app:run"
 morpheus-dashboard = "morpheus.dashboard.app:run"
+morpheus-evidence = "morpheus.ops.evidence_cli:entrypoint"
 morpheus-voice = "morpheus.voice.app:run"
 
 [tool.hatch.build.targets.wheel]

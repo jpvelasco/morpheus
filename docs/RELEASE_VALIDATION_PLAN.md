@@ -71,7 +71,8 @@ Current verified state:
   1.5 TiB available under `/var/lib/libvirt/images`.
 - [x] A transient guest exercised libvirt, enforcing AppArmor, QEMU/KVM, and a
   virtio NIC successfully, then left no VM or disk behind.
-- [x] Docker Engine, Compose, Git, Make, `uv`, curl, jq, OpenSSL, SSH, and rsync.
+- [x] Docker Engine, Compose, Buildx, Git, Make, `uv`, curl, jq, OpenSSL, SSH,
+  and rsync. Buildx 0.30.1 is installed from the Ubuntu package user-locally.
 - [x] NVIDIA driver and Container Toolkit for later host-only observation.
 - [x] Host NTP is enabled and synchronized; hardware clock remains in UTC.
 - [ ] Record a redacted host baseline and external-resource identity snapshot.
@@ -88,7 +89,7 @@ Create one reproducible Ubuntu 26.04 cloud-image guest with:
 - libvirt NAT only, no LAN bridge, port forward, shared host directory, GPU, or
   Docker socket from Batwing;
 - a dedicated SSH key and an unprivileged `batjp` user with sudo;
-- Docker Engine and Compose, Git, Make, curl, jq, rsync, OpenSSH, CA
+- Docker Engine, Compose, and Buildx, Git, Make, curl, jq, rsync, OpenSSH, CA
   certificates, pipx, and a project-pinned `uv`;
 - automatic security updates disabled during a single reproducibility run but
   applied and recorded when the baseline image is refreshed;
@@ -102,11 +103,14 @@ cloud-init input digest, and resulting baseline disk digest. Preserve the base
 volume as read-only and clone it for every clean-install scenario.
 
 Batwing status on 2026-07-15: complete. The powered-off, non-autostarting
-`morpheus-validation-base` domain has a read-only 160 GiB disk definition and
-no seed attached. The checksum-verified Ubuntu release image, secret-free
-cloud-init inputs, package inventory, sealed disk digest, and successful
-independent-clone boot are recorded in the ignored local LAB-001 evidence. No
-Morpheus or external-service state is present in the baseline.
+`morpheus-validation-base` domain has a read-only 160 GiB disk definition, no
+seed attached, and cleaned cloud-init, machine, and SSH identity. The
+checksum-verified Ubuntu release image, secret-free cloud-init inputs, package
+inventory, sealed disk digest, and successful independent-clone boots are
+recorded in ignored local evidence. Two simultaneous clones received distinct
+hostnames, machine IDs, cloud-init instance IDs, SSH host keys, addresses,
+seeds, and writable disks. No Morpheus or external-service state is present in
+the baseline.
 
 ### 3.3 Test Tooling Policy
 
@@ -146,38 +150,40 @@ The VM must provide:
   cleanly, preserve the base volume, and prove a clone boots independently.
   Environment: VM. Evidence: image and cloud-init digests, package inventory,
   guest-agent status, and clone smoke result.
-- [ ] **LAB-002 — Add a clean Docker build context.** Commit `.dockerignore`
+- [x] **LAB-002 — Add a clean Docker build context.** Commit `.dockerignore`
   rules excluding Git state, virtual environments, caches, coverage, build
   output, artifacts, databases, secrets, and frontend dependencies. Prove clean
   and dirty developer trees produce identical build inputs. Environment: DEV.
-- [ ] **LAB-003 — Build the fixture external stack.** Implement deterministic
+- [x] **LAB-003 — Build the fixture external stack.** Implement deterministic
   OpenAI, metrics, slow/error, and streaming fixtures plus a disposable external
   network. It must never resolve or route to Batwing's external AI services.
   Environment: VM.
-- [ ] **LAB-004 — Give concurrent scenario clones unique identity.** Regenerate
+- [x] **LAB-004 — Give concurrent scenario clones unique identity.** Regenerate
   hostname, machine ID, cloud-init instance identity, and SSH host keys without
   changing the sealed base. Prove two clones can run together without identity
   or known-host collisions. Until this passes, the runner must reject concurrent
   clones and execute scenarios serially. Environment: VM.
-- [ ] **EVID-001 — Implement the evidence runner.** Create run directories,
+- [x] **EVID-001 — Implement the evidence runner.** Create run directories,
   structured manifests, redaction, checksums, tool inventories, and explicit
   pass/fail/blocked states. Environment: DEV/VM.
-- [ ] **EVID-002 — Prove evidence privacy.** Seed every canary class and scan all
+- [x] **EVID-002 — Prove evidence privacy.** Seed every canary class and scan all
   logs, metrics, database exports, support bundles, screenshots, traces, and
   reports. Only deliberately hashed canary identifiers may remain. Requirements:
   CFG-002, TEL-003, OPS-003, SEC-005.
-- [ ] **TRACE-001 — Expand requirement metadata.** For every entry in
+- [x] **TRACE-001 — Expand requirement metadata.** For every entry in
   `requirements.json`, record owning tests, risk, required environment, live or
   hardware evidence, first satisfying version, and real status. CI must reject
   `validated` without linked green evidence.
-- [ ] **TRACE-002 — Perform an implementation gap review.** Reconcile the
+- [x] **TRACE-002 — Perform an implementation gap review.** Reconcile the
   current code against every product requirement. Existing component tests do
   not by themselves establish completion. Record missing product behavior as
-  implementation tasks before scheduling validation.
-- [ ] **TOOL-001 — Pin release-validation tools.** Record Node, Playwright,
+  implementation tasks before scheduling validation. The dated result and
+  prioritized `IMP-*` backlog are in
+  [`IMPLEMENTATION_GAP_REVIEW.md`](IMPLEMENTATION_GAP_REVIEW.md).
+- [x] **TOOL-001 — Pin release-validation tools.** Record Node, Playwright,
   accessibility, secret-scan, vulnerability-scan, SBOM, license, and load-tool
   images by immutable digest and license.
-- [ ] **ART-001 — Define the candidate artifact set.** Versioned Python sdist and
+- [x] **ART-001 — Define the candidate artifact set.** Versioned Python sdist and
   wheel, backend and dashboard OCI images, Compose/config bundle, migrations,
   requirements evidence, checksums, and rollback inputs must come from one
   commit and one reproducible build.
