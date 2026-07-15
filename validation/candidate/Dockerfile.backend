@@ -1,0 +1,36 @@
+FROM python:3.12.11-slim@sha256:47ae396f09c1303b8653019811a8498470603d7ffefc29cb07c88f1f8cb3d19f
+
+ARG MORPHEUS_VERSION
+ARG SOURCE_COMMIT
+ARG SOURCE_CREATED
+ARG SOURCE_DATE_EPOCH
+
+ENV PATH=/opt/morpheus/bin:/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    MORPHEUS_DATA_DIR=/var/lib/morpheus
+
+LABEL org.opencontainers.image.title="Morpheus control API" \
+      org.opencontainers.image.version="${MORPHEUS_VERSION}" \
+      org.opencontainers.image.revision="${SOURCE_COMMIT}" \
+      org.opencontainers.image.created="${SOURCE_CREATED}"
+
+RUN addgroup --system morpheus \
+    && adduser --system --ingroup morpheus morpheus \
+    && touch -h --date="@${SOURCE_DATE_EPOCH}" \
+      /etc/group /etc/gshadow /etc/passwd /etc/shadow /run/adduser
+RUN --mount=type=bind,source=wheelhouse,target=/wheelhouse,ro \
+    cd /wheelhouse \
+    && sha256sum --check SHA256SUMS \
+    && python -m venv /opt/morpheus \
+    && /opt/morpheus/bin/pip install \
+      --no-cache-dir --no-compile --no-index --find-links=/wheelhouse \
+      "morpheus-control-plane==${MORPHEUS_VERSION}" \
+    && find /opt/morpheus -exec touch -h --date="@${SOURCE_DATE_EPOCH}" '{}' +
+
+WORKDIR /app
+USER morpheus
+EXPOSE 7400
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:7400/healthz', timeout=2)"]
+CMD ["morpheus-api"]

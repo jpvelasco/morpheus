@@ -31,64 +31,102 @@ fi
 
 source_commit=$(git rev-parse HEAD)
 source_date_epoch=$(git show -s --format=%ct HEAD)
-source_created=$(date --utc --date="@${source_date_epoch}" +%Y-%m-%dT%H:%M:%SZ)
-version=$(uv run --no-sync python -c \
-  'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')
-short_commit=${source_commit:0:12}
-backend_tag="morpheus/backend:cache-${short_commit}"
-dashboard_tag="morpheus/dashboard:cache-${short_commit}"
-
-mkdir -p "${output}/python"
 export SOURCE_DATE_EPOCH="${source_date_epoch}"
 
-# This is the one declared network-enabled dependency-fetch phase. The later
-# rebuild must run through validation/vm/offline-egress.sh.
+# This is the one declared network-enabled dependency-fetch phase. It creates
+# portable, hash-inventoried Python and npm inputs and pulls only the two exact
+# candidate base images. The later image build runs no-cache under an egress
+# block and does not depend on application-layer cache hits.
 uv sync --python 3.12 --extra dev --frozen
+version=$(uv run --offline --no-sync python -c \
+  'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')
+python_reference=$(jq -er \
+  '.images[] | select(.name == "python-runtime") | "\(.image)@\(.digest)"' \
+  deploy/images.lock.json)
+node_reference=$(jq -er \
+  '.tools[] | select(.id == "node") | .reference' \
+  validation/tools/images.lock.json)
+
+mkdir -p "${output}/python" "${output}/wheelhouse" "${output}/npm-cache"
 uv build --offline --out-dir "${output}/python"
 rm -f "${output}/python/.gitignore"
-docker buildx build \
-  --build-arg "MORPHEUS_VERSION=${version}" \
-  --build-arg "SOURCE_COMMIT=${source_commit}" \
-  --build-arg "SOURCE_CREATED=${source_created}" \
-  --build-arg "SOURCE_DATE_EPOCH=${source_date_epoch}" \
-  --file deploy/Dockerfile \
-  --load \
-  --provenance=false \
-  --tag "${backend_tag}" \
-  .
-docker buildx build \
-  --build-arg "MORPHEUS_VERSION=${version}" \
-  --build-arg "SOURCE_COMMIT=${source_commit}" \
-  --build-arg "SOURCE_CREATED=${source_created}" \
-  --build-arg "SOURCE_DATE_EPOCH=${source_date_epoch}" \
-  --file web/Dockerfile \
-  --load \
-  --provenance=false \
-  --tag "${dashboard_tag}" \
-  .
+uv export \
+  --frozen \
+  --no-dev \
+  --no-emit-project \
+  --format requirements-txt \
+  --output-file "${output}/runtime-requirements.txt"
+uv run --offline python -m pip download \
+  --require-hashes \
+  --only-binary=:all: \
+  --dest "${output}/wheelhouse" \
+  --requirement "${output}/runtime-requirements.txt"
+install -m 0644 \
+  "${output}/python/morpheus_control_plane-${version}-py3-none-any.whl" \
+  "${output}/wheelhouse/"
+(
+  cd "${output}/wheelhouse"
+  find . -maxdepth 1 -type f ! -name SHA256SUMS -printf '%P\0' \
+    | sort -z \
+    | xargs -0 sha256sum >SHA256SUMS
+)
 
-backend_id=$(docker image inspect --format '{{.Id}}' "${backend_tag}")
-dashboard_id=$(docker image inspect --format '{{.Id}}' "${dashboard_tag}")
+work=$(mktemp -d)
+cleanup() {
+  rm -rf "${work}"
+}
+trap cleanup EXIT
+git archive HEAD web | tar -x -C "${work}"
+docker run --rm \
+  --user "$(id -u):$(id -g)" \
+  --env HOME=/tmp/home \
+  --volume "${work}/web:/work" \
+  --volume "${output}/npm-cache:/npm-cache" \
+  --workdir /work \
+  "${node_reference}" \
+  npm ci --ignore-scripts --cache /npm-cache
+rm -rf "${output}/npm-cache/_logs"
+rm -f "${output}/npm-cache/_update-notifier-last-checked"
+(
+  cd "${output}/npm-cache"
+  find . -type f -printf '%P\0' \
+    | sort -z \
+    | xargs -0 sha256sum >"${output}/npm-cache.SHA256SUMS"
+)
+
+docker pull "${python_reference}"
+docker pull "${node_reference}"
+python_image_id=$(docker image inspect --format '{{.Id}}' "${python_reference}")
+node_image_id=$(docker image inspect --format '{{.Id}}' "${node_reference}")
 jq -n \
   --arg source_commit "${source_commit}" \
   --argjson source_date_epoch "${source_date_epoch}" \
   --arg version "${version}" \
-  --arg backend_tag "${backend_tag}" \
-  --arg backend_id "${backend_id}" \
-  --arg dashboard_tag "${dashboard_tag}" \
-  --arg dashboard_id "${dashboard_id}" \
+  --arg python_reference "${python_reference}" \
+  --arg python_image_id "${python_image_id}" \
+  --arg node_reference "${node_reference}" \
+  --arg node_image_id "${node_image_id}" \
+  --arg wheelhouse_sha256 "$(sha256sum "${output}/wheelhouse/SHA256SUMS" | cut -d' ' -f1)" \
+  --arg npm_cache_sha256 "$(sha256sum "${output}/npm-cache.SHA256SUMS" | cut -d' ' -f1)" \
   '{
     format: 1,
     source_commit: $source_commit,
     source_date_epoch: $source_date_epoch,
     version: $version,
-    cache_scope: "local-docker-driver-and-uv-cache",
-    images: {
-      backend: {tag: $backend_tag, id: $backend_id},
-      dashboard: {tag: $dashboard_tag, id: $dashboard_id}
+    cache_scope: "portable-locked-dependencies-and-local-base-images",
+    dependency_inputs: {
+      wheelhouse_sha256: $wheelhouse_sha256,
+      npm_cache_sha256: $npm_cache_sha256
+    },
+    base_images: {
+      python: {reference: $python_reference, id: $python_image_id},
+      node: {reference: $node_reference, id: $node_image_id}
     }
   }' >"${output}/cache-manifest.json.tmp"
 mv "${output}/cache-manifest.json.tmp" "${output}/cache-manifest.json"
-sha256sum "${output}"/python/* >"${output}/python/SHA256SUMS"
+(
+  cd "${output}/python"
+  sha256sum ./* >SHA256SUMS
+)
 
 echo "cache_manifest=${output}/cache-manifest.json"
