@@ -46,7 +46,7 @@ services:
     read_only: true
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
-    tmpfs: [/tmp:size=64m,mode=1777]
+    tmpfs: ["/tmp:size=64m,mode=1777"]
     environment:
       MORPHEUS_API_KEY: "${MORPHEUS_API_KEY:?MORPHEUS_API_KEY is required}"
       MORPHEUS_BIND_ADDRESS: "0.0.0.0"
