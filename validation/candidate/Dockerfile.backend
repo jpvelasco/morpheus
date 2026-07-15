@@ -23,7 +23,7 @@ RUN addgroup -S morpheus \
       /var/lib/morpheus
 RUN --mount=type=bind,source=wheelhouse,target=/wheelhouse,ro \
     cd /wheelhouse \
-    && sha256sum --check SHA256SUMS \
+    && sha256sum -c SHA256SUMS \
     && python -m venv /opt/morpheus \
     && /opt/morpheus/bin/pip install \
       --no-cache-dir --no-compile --no-index --find-links=/wheelhouse \
