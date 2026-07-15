@@ -1,0 +1,61 @@
+#cloud-config
+users:
+  - default
+  - name: operator
+    gecos: Morpheus validation operator
+    groups:
+      - adm
+      - sudo
+    lock_passwd: true
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    ssh_authorized_keys:
+      - __SSH_PUBLIC_KEY__
+
+ssh_pwauth: false
+disable_root: true
+timezone: Etc/UTC
+package_update: true
+package_upgrade: false
+
+packages:
+  - ca-certificates
+  - chrony
+  - curl
+  - docker.io
+  - docker-compose-v2
+  - git
+  - jq
+  - make
+  - openssh-server
+  - openssl
+  - pipx
+  - qemu-guest-agent
+  - rsync
+
+write_files:
+  - path: /etc/apt/apt.conf.d/20auto-upgrades
+    owner: root:root
+    permissions: "0644"
+    content: |
+      APT::Periodic::Update-Package-Lists "0";
+      APT::Periodic::Unattended-Upgrade "0";
+
+growpart:
+  mode: auto
+  devices:
+    - /
+  ignore_growroot_disabled: false
+resize_rootfs: true
+
+runcmd:
+  - [systemctl, disable, --now, apt-daily.timer, apt-daily-upgrade.timer]
+  - [systemctl, enable, --now, chrony.service]
+  - [systemctl, enable, --now, docker.service]
+  - [systemctl, enable, --now, qemu-guest-agent.service]
+  - [usermod, -aG, docker, operator]
+  - [sudo, -u, operator, -H, pipx, install, "uv==0.8.0"]
+  - [install, -d, -o, operator, -g, operator, -m, "0750", /home/operator/validation]
+  - [touch, /var/lib/morpheus-validation-ready]
+
+final_message: Morpheus validation baseline prerequisites are ready.

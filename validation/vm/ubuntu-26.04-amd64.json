@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "image": {
+    "distribution": "Ubuntu",
+    "release": "26.04 LTS (Resolute Raccoon)",
+    "architecture": "amd64",
+    "release_build": "20260713",
+    "url": "https://cloud-images.ubuntu.com/releases/resolute/release/ubuntu-26.04-server-cloudimg-amd64.img",
+    "sha256": "0826c5005ebc70edcfc4519e5d65eca766782f16426231c4c3e92b811ba8df0b"
+  },
+  "guest": {
+    "name": "morpheus-validation-base",
+    "vcpus": 12,
+    "memory_mib": 32768,
+    "disk_gib": 160,
+    "firmware": "uefi",
+    "cloud_init_transport": "virtio",
+    "network": "default",
+    "storage_pool": "default",
+    "graphics": "none",
+    "gpu": false,
+    "host_shares": false,
+    "host_docker_socket": false,
+    "autostart": false
+  },
+  "tooling": {
+    "uv": "0.8.0"
+  }
+}

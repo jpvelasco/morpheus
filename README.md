@@ -31,6 +31,7 @@ at runtime. ODS is research input only.
 - [Product specification](docs/PRODUCT_SPECIFICATION.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [TDD implementation plan](docs/IMPLEMENTATION_PLAN.md)
+- [Release validation plan](docs/RELEASE_VALIDATION_PLAN.md)
 - [Existing asset inventory](docs/inventory.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
@@ -43,6 +44,7 @@ web/                   TypeScript dashboard
 deploy/                Morpheus-owned Compose and service configuration
 tests/                 Unit, contract, integration, acceptance, and live tests
 docs/                  Specifications, architecture, ADRs, and runbooks
+validation/            Secret-free release-lab manifests and VM inputs
 artifacts/              Ignored generated reports and benchmark captures
 ```
 
