@@ -39,11 +39,13 @@ backend_tag="morpheus/backend:cache-${short_commit}"
 dashboard_tag="morpheus/dashboard:cache-${short_commit}"
 
 mkdir -p "${output}/python"
+export SOURCE_DATE_EPOCH="${source_date_epoch}"
 
 # This is the one declared network-enabled dependency-fetch phase. The later
 # rebuild must run through validation/vm/offline-egress.sh.
 uv sync --python 3.12 --extra dev --frozen
 uv build --offline --out-dir "${output}/python"
+rm -f "${output}/python/.gitignore"
 docker buildx build \
   --build-arg "MORPHEUS_VERSION=${version}" \
   --build-arg "SOURCE_COMMIT=${source_commit}" \
