@@ -119,4 +119,18 @@ digest-pinned base images remain in the local Docker store. Candidate image
 builds use the dedicated offline Dockerfiles, `--network=none`, and
 `--no-cache`; they verify the wheelhouse, run npm in offline mode, normalize
 generated filesystem timestamps to the commit, and attach OCI identity and
-health metadata.
+health metadata. Each OCI archive also carries the deterministic
+`morpheus/backend:<version>-<commit>` or
+`morpheus/dashboard:<version>-<commit>` name used by `docker load`.
+
+Run `candidate/compare-rebuilds.sh FIRST SECOND RESULT_JSON` on rebuilds from
+two independent VM clones. It verifies each checksum inventory, requires the
+source identity to match, and byte-compares all four artifacts. The candidate
+is reproducible only when the generated result has `status: pass`; there is no
+allowance for unexplained OCI manifest drift.
+
+For container smoke tests, combine `deploy/compose.yaml` with
+`candidate/compose.yaml`, set `MORPHEUS_BACKEND_IMAGE` and
+`MORPHEUS_DASHBOARD_IMAGE` to the loaded candidate tags, and use
+`docker compose up --no-build`. This ensures startup tests consume the exported
+candidate instead of silently rebuilding a different image.
