@@ -9,7 +9,7 @@ COPY web/ ./
 RUN npm run build \
     && find /build/dist -exec touch -h -d "@${SOURCE_DATE_EPOCH}" '{}' +
 
-FROM python:3.12.11-slim@sha256:47ae396f09c1303b8653019811a8498470603d7ffefc29cb07c88f1f8cb3d19f
+FROM python:3.12-alpine3.23@sha256:601d3d3797e90e2534782e69c85fafb7971b43f24c7b1b079b7e48dd435e458d
 
 ARG MORPHEUS_VERSION
 ARG SOURCE_COMMIT
@@ -26,10 +26,10 @@ LABEL org.opencontainers.image.title="Morpheus dashboard" \
       org.opencontainers.image.revision="${SOURCE_COMMIT}" \
       org.opencontainers.image.created="${SOURCE_CREATED}"
 
-RUN addgroup --system morpheus \
-    && adduser --system --ingroup morpheus morpheus \
-    && touch -h --date="@${SOURCE_DATE_EPOCH}" \
-      /etc/group /etc/gshadow /etc/passwd /etc/shadow /run/adduser
+RUN addgroup -S morpheus \
+    && adduser -S -D -H -G morpheus morpheus \
+    && touch -h -d "@${SOURCE_DATE_EPOCH}" \
+      /etc/group /etc/gshadow /etc/passwd /etc/shadow
 RUN --mount=type=bind,source=wheelhouse,target=/wheelhouse,ro \
     cd /wheelhouse \
     && sha256sum --check SHA256SUMS \
@@ -37,7 +37,7 @@ RUN --mount=type=bind,source=wheelhouse,target=/wheelhouse,ro \
     && /opt/morpheus/bin/pip install \
       --no-cache-dir --no-compile --no-index --find-links=/wheelhouse \
       "morpheus-control-plane==${MORPHEUS_VERSION}" \
-    && find /opt/morpheus -exec touch -h --date="@${SOURCE_DATE_EPOCH}" '{}' +
+    && find /opt/morpheus -exec touch -h -d "@${SOURCE_DATE_EPOCH}" '{}' +
 
 WORKDIR /app
 COPY --from=build /build/dist ./web

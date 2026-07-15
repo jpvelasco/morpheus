@@ -56,11 +56,21 @@ uv export \
   --no-emit-project \
   --format requirements-txt \
   --output-file "${output}/runtime-requirements.txt"
-uv run --offline python -m pip download \
-  --require-hashes \
-  --only-binary=:all: \
-  --dest "${output}/wheelhouse" \
-  --requirement "${output}/runtime-requirements.txt"
+docker pull "${python_reference}"
+docker run --rm \
+  --user "$(id -u):$(id -g)" \
+  --read-only \
+  --tmpfs /tmp:size=64m,mode=1777 \
+  --env HOME=/tmp/home \
+  --volume "${output}/runtime-requirements.txt:/requirements.txt:ro" \
+  --volume "${output}/wheelhouse:/wheelhouse" \
+  "${python_reference}" \
+  python -m pip download \
+    --no-cache-dir \
+    --require-hashes \
+    --only-binary=:all: \
+    --dest /wheelhouse \
+    --requirement /requirements.txt
 install -m 0644 \
   "${output}/python/morpheus_control_plane-${version}-py3-none-any.whl" \
   "${output}/wheelhouse/"
@@ -94,7 +104,6 @@ rm -f "${output}/npm-cache/_update-notifier-last-checked"
     | xargs -0 sha256sum >"${output}/npm-cache.SHA256SUMS"
 )
 
-docker pull "${python_reference}"
 docker pull "${node_reference}"
 python_image_id=$(docker image inspect --format '{{.Id}}' "${python_reference}")
 node_image_id=$(docker image inspect --format '{{.Id}}' "${node_reference}")
