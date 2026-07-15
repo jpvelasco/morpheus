@@ -37,10 +37,13 @@ def test_CLEAN_002_declares_one_fetch_then_requires_offline_rebuild() -> None:
     populate = POPULATE.read_text(encoding="utf-8")
     rebuild = REBUILD.read_text(encoding="utf-8")
     assert "uv sync --python 3.12 --extra dev --frozen" in populate
+    assert 'export SOURCE_DATE_EPOCH="${source_date_epoch}"' in populate
+    assert 'rm -f "${output}/python/.gitignore"' in populate
     assert populate.count("docker buildx build") == 2
     assert 'cache_scope: "local-docker-driver-and-uv-cache"' in populate
     assert 'list table inet "${offline_table}"' in rebuild
     assert "uv build --offline" in rebuild
+    assert 'rm -f "${output}/payload/python/.gitignore"' in rebuild
     assert rebuild.count("docker buildx build") == 2
     assert "rewrite-timestamp=true" in rebuild
     assert "--pull=false" in rebuild

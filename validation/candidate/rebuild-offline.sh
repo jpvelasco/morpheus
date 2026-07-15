@@ -57,6 +57,7 @@ done
 mkdir -p "${output}/payload/python" "${output}/payload/images"
 export SOURCE_DATE_EPOCH="${source_date_epoch}"
 uv build --offline --out-dir "${output}/payload/python"
+rm -f "${output}/payload/python/.gitignore"
 
 backend_output="${output}/payload/images/morpheus-backend-${version}-${short_commit}.oci.tar"
 dashboard_output="${output}/payload/images/morpheus-dashboard-${version}-${short_commit}.oci.tar"
