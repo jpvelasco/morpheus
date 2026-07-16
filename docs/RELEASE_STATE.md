@@ -13,7 +13,7 @@ private request data, host addresses, or unredacted evidence.
 - **Current release development line:** post-baseline source changes will be
   frozen into a new candidate only after the pre-soak implementation queue is
   complete.
-- **Implementation inventory:** 39 implemented, 16 planned, 3 deferred; see
+- **Implementation inventory:** 40 implemented, 15 planned, 3 deferred; see
   [`requirements.json`](../requirements.json) and the
   [implementation gap review](IMPLEMENTATION_GAP_REVIEW.md).
 - **Release posture:** not yet release-ready. A passing candidate does not
@@ -44,16 +44,17 @@ workspace; refer to the candidate commit and task ID in its redacted manifest.
 | Current development line | RUN-005 now derives optional-capability state from live, Morpheus-owned runtime-agent container health evidence. |
 | Current development line | SEC-002 now authorizes only explicit read-only resource actions on owned, non-protected identities. |
 | Current development line | SEC-006 now resolves configured data, persistence, archives, generated output, evidence, and restore staging through owned-path boundaries. |
+| Current development line | REL-002 now applies bounded retry/backoff/deadline recovery to idempotent inference discovery. |
 
 ## Active Milestone
 
-**IMP-REL-002-01 — bounded recovery.** Add a reusable retry policy with
-exponential backoff, jitter, hard attempt limits, and monotonic deadlines, and
-use bounded work queues wherever background work is introduced.
+**IMP-OPS-002-01 — restore durability.** Add free-space and schema-compatibility
+preflight, durable staging, fsync boundaries, rollback-on-failure, and
+incompatible/partial archive cases to restore.
 
 ## Pre-Soak Queue
 
-1. Remaining P0 implementation: SEC-005, REL-002, OPS-002, and REL-003.
+1. Remaining P0 implementation: SEC-005, OPS-002, and REL-003.
 2. Rebuild and validate the exact frozen candidate: current-container startup,
    hardening, loopback exposure, security/SBOM evidence, installation, runtime
    agent, and external-runtime integrity.

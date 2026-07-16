@@ -7,6 +7,7 @@ from typing import Any, Self
 
 import httpx
 
+from morpheus.core.concurrency import RetryPolicy
 from morpheus.core.health import Evidence, HealthState
 from morpheus.core.models import ModelIdentity
 from morpheus.ports.protocols import Clock
@@ -25,12 +26,14 @@ class OpenAIInferenceAdapter:
         timeout_seconds: float,
         client: httpx.AsyncClient | None = None,
         api_key: str = "",
+        retry_policy: RetryPolicy | None = None,
     ) -> None:
         self._base_url = base_url.rstrip("/")
         self._clock = clock
         self._timeout = httpx.Timeout(timeout_seconds)
         self._headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
         self._client = client or httpx.AsyncClient()
+        self._retry_policy = retry_policy or RetryPolicy()
 
     async def __aenter__(self) -> Self:
         return self
@@ -39,6 +42,9 @@ class OpenAIInferenceAdapter:
         await self._client.aclose()
 
     async def models(self) -> tuple[ModelIdentity, ...]:
+        return await self._retry_policy.run(self._models_once, retryable=_retryable_models_error)
+
+    async def _models_once(self) -> tuple[ModelIdentity, ...]:
         response = await self._client.get(
             f"{self._base_url}/models", headers=self._headers, timeout=self._timeout
         )
@@ -143,3 +149,17 @@ def _context_window(item: dict[str, Any]) -> int | None:
             raise InferenceContractError(f"{field} must be a positive integer")
         return int(value)
     return None
+
+
+def _retryable_models_error(error: Exception) -> bool:
+    if isinstance(error, httpx.TimeoutException | httpx.NetworkError):
+        return True
+    return isinstance(error, httpx.HTTPStatusError) and error.response.status_code in {
+        408,
+        425,
+        429,
+        500,
+        502,
+        503,
+        504,
+    }

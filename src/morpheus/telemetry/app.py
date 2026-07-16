@@ -16,7 +16,7 @@ from morpheus.adapters.persistence.sqlite import SqliteStore
 from morpheus.api.app import SystemClock
 from morpheus.api.body_limit import BodyLimitMiddleware
 from morpheus.config import MorpheusSettings, load_settings
-from morpheus.core.concurrency import ConcurrencyLimiter, FixedWindowRateLimiter
+from morpheus.core.concurrency import ConcurrencyLimiter, FixedWindowRateLimiter, RetryPolicy
 from morpheus.core.telemetry import TelemetryEvent
 from morpheus.ports.protocols import Clock, InferencePort
 from morpheus.telemetry.stream import observe_nonstream, observe_stream
@@ -168,6 +168,10 @@ def run() -> None:
         clock=clock,
         timeout_seconds=settings.request_timeout_seconds,
         api_key=settings.upstream_api_key.get_secret_value(),
+        retry_policy=RetryPolicy(
+            max_attempts=settings.retry_max_attempts,
+            deadline_seconds=settings.retry_deadline_seconds,
+        ),
     )
     app = create_proxy_app(settings=settings, inference=inference, store=store, clock=clock)
     uvicorn.run(app, host=settings.bind_address, port=7410, access_log=False)

@@ -316,10 +316,10 @@
       "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
     },
     {
-      "id": "REL-002", "phase": 1, "status": "planned",
+      "id": "REL-002", "phase": 1, "status": "implemented",
       "owning_tests": ["tests/unit/test_telemetry.py", "tests/contract/test_telemetry_proxy.py"], "risk": "high",
       "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-REL-002-01"]
+      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
     },
     {
       "id": "REL-003", "phase": 9, "status": "planned",

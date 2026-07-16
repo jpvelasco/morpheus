@@ -1,7 +1,74 @@
 from __future__ import annotations
 
 import asyncio
+import random
 import time
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
+from typing import TypeVar
+
+T = TypeVar("T")
+
+
+class RetryDeadlineExceeded(TimeoutError):
+    """A retry operation exhausted its monotonic deadline."""
+
+
+@dataclass(frozen=True, slots=True)
+class RetryPolicy:
+    """Bounded retries for explicitly idempotent operations only."""
+
+    max_attempts: int = 3
+    initial_delay_seconds: float = 0.05
+    max_delay_seconds: float = 1.0
+    deadline_seconds: float = 15.0
+    jitter_ratio: float = 0.25
+
+    def __post_init__(self) -> None:
+        if self.max_attempts < 1:
+            raise ValueError("retry max_attempts must be positive")
+        if self.initial_delay_seconds <= 0 or self.max_delay_seconds <= 0:
+            raise ValueError("retry delays must be positive")
+        if self.initial_delay_seconds > self.max_delay_seconds:
+            raise ValueError("retry initial delay cannot exceed maximum delay")
+        if self.deadline_seconds <= 0:
+            raise ValueError("retry deadline must be positive")
+        if not 0 <= self.jitter_ratio <= 1:
+            raise ValueError("retry jitter ratio must be between zero and one")
+
+    async def run(
+        self,
+        operation: Callable[[], Awaitable[T]],
+        *,
+        retryable: Callable[[Exception], bool],
+        monotonic: Callable[[], float] = time.monotonic,
+        sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+        random_fraction: Callable[[], float] = random.random,
+    ) -> T:
+        deadline = monotonic() + self.deadline_seconds
+        for attempt in range(1, self.max_attempts + 1):
+            remaining = deadline - monotonic()
+            if remaining <= 0:
+                raise RetryDeadlineExceeded("retry deadline elapsed before an attempt could start")
+            try:
+                async with asyncio.timeout(remaining):
+                    return await operation()
+            except Exception as error:
+                if attempt == self.max_attempts or not retryable(error):
+                    raise
+                delay = self._delay(attempt=attempt, random_fraction=random_fraction)
+                if delay >= deadline - monotonic():
+                    raise RetryDeadlineExceeded(
+                        "retry deadline elapsed before the next attempt"
+                    ) from error
+                await sleep(delay)
+        raise AssertionError("retry attempts must either return or raise")
+
+    def _delay(self, *, attempt: int, random_fraction: Callable[[], float]) -> float:
+        base = min(self.max_delay_seconds, self.initial_delay_seconds * (2 ** (attempt - 1)))
+        random_value = min(1.0, max(0.0, random_fraction()))
+        multiplier = 1 - self.jitter_ratio + (2 * self.jitter_ratio * random_value)
+        return float(base * multiplier)
 
 
 class ConcurrencyLimiter:

@@ -48,6 +48,8 @@ class MorpheusSettings(BaseModel):
     session_cookie_secure: bool = True
     max_concurrent_requests: int = Field(default=16, ge=1, le=256)
     max_requests_per_minute: int = Field(default=120, ge=1, le=10_000)
+    retry_max_attempts: int = Field(default=3, ge=1, le=5)
+    retry_deadline_seconds: float = Field(default=15.0, gt=0, le=120)
     enable_search: bool = False
     enable_voice: bool = False
     enable_telemetry: bool = False
