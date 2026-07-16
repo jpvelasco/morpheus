@@ -16,10 +16,12 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from morpheus.adapters.inference.openai import OpenAIInferenceAdapter
 from morpheus.adapters.runtime.agent import RuntimeAgentClient
+from morpheus.api.body_limit import BodyLimitMiddleware
 from morpheus.api.runtime import runtime_snapshot
 from morpheus.api.session import BrowserSession, SessionCodec, SessionValidationError
 from morpheus.config import MorpheusSettings, load_settings
 from morpheus.core.capabilities import Capability, evaluate_capabilities
+from morpheus.core.concurrency import ConcurrencyLimiter, FixedWindowRateLimiter
 from morpheus.core.health import Evidence, HealthState
 from morpheus.ports.protocols import Clock, InferencePort, RuntimeAgentPort
 
@@ -67,12 +69,15 @@ def create_app(
     app.state.settings = settings
     app.state.inference = inference
     app.state.clock = clock
+    app.add_middleware(BodyLimitMiddleware, max_body_bytes=settings.max_request_bytes)
     session_secret = settings.session_secret.get_secret_value().encode()
     session_codec = (
         SessionCodec(secret=session_secret, ttl_seconds=settings.session_ttl_seconds)
         if session_secret
         else None
     )
+    request_limiter = ConcurrencyLimiter(settings.max_concurrent_requests)
+    rate_limiter = FixedWindowRateLimiter(settings.max_requests_per_minute)
     allowed_origins = [
         f"http://127.0.0.1:{settings.dashboard_port}",
         f"http://localhost:{settings.dashboard_port}",
@@ -142,7 +147,39 @@ def create_app(
                         },
                     )
                 )
-        return secured(await call_next(request))
+        limited = request.url.path.startswith("/api/") and request.method != "OPTIONS"
+        client_key = request.client.host if request.client is not None else "local"
+        if limited and not await rate_limiter.allow(client_key):
+            return secured(
+                JSONResponse(
+                    status_code=429,
+                    headers={"Retry-After": "60"},
+                    content={
+                        "error": {
+                            "code": "request_rate_limited",
+                            "message": "Request rate is temporarily limited",
+                        }
+                    },
+                )
+            )
+        if limited and not await request_limiter.try_acquire():
+            return secured(
+                JSONResponse(
+                    status_code=429,
+                    headers={"Retry-After": "1"},
+                    content={
+                        "error": {
+                            "code": "request_capacity_exhausted",
+                            "message": "Request capacity is temporarily exhausted",
+                        }
+                    },
+                )
+            )
+        try:
+            return secured(await call_next(request))
+        finally:
+            if limited:
+                await request_limiter.release()
 
     @app.exception_handler(AuthenticationRequired)
     async def authentication_error(request: Request, error: AuthenticationRequired) -> JSONResponse:

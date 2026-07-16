@@ -139,6 +139,29 @@ def test_SEC_004_rejects_malformed_content_length_safely(content_length: str) ->
     assert response.headers["x-content-type-options"] == "nosniff"
 
 
+def test_SEC_003_rejects_oversized_session_body() -> None:
+    response = client(settings=MorpheusSettings(max_request_bytes=1024)).post(
+        "/api/v1/session",
+        content=b"x" * 1025,
+        headers={"Content-Type": "application/json"},
+    )
+
+    assert response.status_code == 413
+    assert response.json()["error"]["code"] == "request_too_large"
+
+
+def test_SEC_003_control_api_rate_limits_sensitive_requests() -> None:
+    test_client = client(
+        settings=MorpheusSettings(api_key="test-api-key", max_requests_per_minute=1)
+    )
+    headers = {"Authorization": "Bearer test-api-key"}
+
+    assert test_client.get("/api/v1/models", headers=headers).status_code == 200
+    limited = test_client.get("/api/v1/health", headers=headers)
+    assert limited.status_code == 429
+    assert limited.json()["error"]["code"] == "request_rate_limited"
+
+
 def test_SEC_004_browser_session_uses_secure_cookie_and_csrf_protected_logout() -> None:
     test_client = client()
     login = test_client.post("/api/v1/session", json={"api_key": "test-api-key"})

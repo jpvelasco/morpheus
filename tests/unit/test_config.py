@@ -88,6 +88,18 @@ def test_SEC_004_browser_sessions_default_to_short_lived_secure_cookies() -> Non
     assert settings.session_cookie_secure is True
 
 
+@pytest.mark.parametrize("limit", [0, 257])
+def test_SEC_003_rejects_concurrency_limits_outside_safe_bounds(limit: int) -> None:
+    with pytest.raises(ValidationError):
+        MorpheusSettings(max_concurrent_requests=limit)
+
+
+@pytest.mark.parametrize("limit", [0, 10_001])
+def test_SEC_003_rejects_rate_limits_outside_safe_bounds(limit: int) -> None:
+    with pytest.raises(ValidationError):
+        MorpheusSettings(max_requests_per_minute=limit)
+
+
 def test_CFG_004_startup_report_has_feature_decisions() -> None:
     settings = MorpheusSettings(enable_search=True)
     report = settings.startup_report()

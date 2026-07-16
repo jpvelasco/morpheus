@@ -14,7 +14,9 @@ from fastapi.responses import JSONResponse, Response, StreamingResponse
 from morpheus.adapters.inference.openai import OpenAIInferenceAdapter
 from morpheus.adapters.persistence.sqlite import SqliteStore
 from morpheus.api.app import SystemClock
+from morpheus.api.body_limit import BodyLimitMiddleware
 from morpheus.config import MorpheusSettings, load_settings
+from morpheus.core.concurrency import ConcurrencyLimiter, FixedWindowRateLimiter
 from morpheus.core.telemetry import TelemetryEvent
 from morpheus.ports.protocols import Clock, InferencePort
 from morpheus.telemetry.stream import observe_nonstream, observe_stream
@@ -72,6 +74,9 @@ def create_proxy_app(
         redoc_url=None,
         lifespan=lifespan,
     )
+    app.add_middleware(BodyLimitMiddleware, max_body_bytes=settings.max_request_bytes)
+    request_limiter = ConcurrencyLimiter(settings.max_concurrent_requests)
+    rate_limiter = FixedWindowRateLimiter(settings.max_requests_per_minute)
 
     @app.get("/healthz")
     async def health() -> dict[str, str]:
@@ -79,6 +84,9 @@ def create_proxy_app(
 
     @app.post("/v1/chat/completions")
     async def chat_completions(request: Request) -> Response:
+        client_key = request.client.host if request.client is not None else "local"
+        if not await rate_limiter.allow(client_key):
+            return _error(429, "request_rate_limited", "Request rate is temporarily limited")
         if not _authorized(request, settings):
             return _error(401, "authentication_required", "Authentication is required")
         content_type = request.headers.get("Content-Type", "").split(";", 1)[0].lower()
@@ -89,6 +97,8 @@ def create_proxy_app(
                 declared_size = int(request.headers["Content-Length"])
             except ValueError:
                 return _error(400, "invalid_content_length", "Content-Length is invalid")
+            if declared_size < 0:
+                return _error(400, "invalid_content_length", "Content-Length is invalid")
             if declared_size > settings.max_request_bytes:
                 return _error(413, "request_too_large", "Request body exceeds the configured limit")
         body = await request.body()
@@ -98,41 +108,53 @@ def create_proxy_app(
         if validation_error is not None:
             return validation_error
 
-        event = TelemetryEvent.new(
-            correlation_id=secrets.token_hex(16),
-            model_requested=payload["model"],
-            started_at=clock.monotonic(),
-        )
-        upstream = inference.forward_chat(body)
-        if payload.get("stream") is True:
-
-            async def streamed() -> Any:
-                try:
-                    async for chunk in observe_stream(upstream, event=event, clock=clock):
-                        yield chunk
-                finally:
-                    await store.record_telemetry(event)
-
-            return StreamingResponse(
-                streamed(),
-                media_type="text/event-stream",
-                headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        if not await request_limiter.try_acquire():
+            return _error(
+                429, "request_capacity_exhausted", "Request capacity is temporarily exhausted"
             )
+        release_slot = True
 
         try:
-            response_body = await observe_nonstream(
-                upstream,
-                event=event,
-                clock=clock,
-                max_bytes=16 * 1024 * 1024,
+            event = TelemetryEvent.new(
+                correlation_id=secrets.token_hex(16),
+                model_requested=payload["model"],
+                started_at=clock.monotonic(),
             )
-        except ValueError:
-            return _error(
-                502, "upstream_contract_error", "Upstream returned an incompatible response"
-            )
+            upstream = inference.forward_chat(body)
+            if payload.get("stream") is True:
+
+                async def streamed() -> Any:
+                    try:
+                        async for chunk in observe_stream(upstream, event=event, clock=clock):
+                            yield chunk
+                    finally:
+                        await store.record_telemetry(event)
+                        await request_limiter.release()
+
+                release_slot = False
+                return StreamingResponse(
+                    streamed(),
+                    media_type="text/event-stream",
+                    headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+                )
+
+            try:
+                response_body = await observe_nonstream(
+                    upstream,
+                    event=event,
+                    clock=clock,
+                    max_bytes=16 * 1024 * 1024,
+                )
+            except ValueError:
+                return _error(
+                    502, "upstream_contract_error", "Upstream returned an incompatible response"
+                )
+            finally:
+                await store.record_telemetry(event)
+            return Response(content=response_body, media_type="application/json")
         finally:
-            await store.record_telemetry(event)
-        return Response(content=response_body, media_type="application/json")
+            if release_slot:
+                await request_limiter.release()
 
     return app
 
