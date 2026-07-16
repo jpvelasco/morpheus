@@ -17,7 +17,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from morpheus.adapters.inference.openai import OpenAIInferenceAdapter
 from morpheus.adapters.runtime.agent import RuntimeAgentClient
 from morpheus.api.body_limit import BodyLimitMiddleware
-from morpheus.api.runtime import runtime_snapshot
+from morpheus.api.runtime import runtime_services_snapshot, runtime_snapshot
 from morpheus.api.session import BrowserSession, SessionCodec, SessionValidationError
 from morpheus.config import MorpheusSettings, load_settings
 from morpheus.core.capabilities import Capability, evaluate_capabilities
@@ -46,6 +46,17 @@ class SessionLogin(BaseModel):
 
 _SESSION_COOKIE = "morpheus_session"
 _CSRF_COOKIE = "morpheus_csrf"
+
+_CAPABILITY_COMPONENTS: dict[Capability, tuple[str, ...]] = {
+    Capability.SEARCH: ("search",),
+    # The gateway is the voice capability's public contract; an operator must
+    # configure a Docker health check before it can be reported available.
+    Capability.VOICE: ("voice-gateway",),
+    Capability.TELEMETRY: ("telemetry",),
+    Capability.WORKFLOWS: ("workflows",),
+    Capability.RESEARCH: ("research",),
+    Capability.IMAGE_GENERATION: ("image",),
+}
 
 
 def _evidence_json(evidence: Evidence) -> dict[str, Any]:
@@ -270,19 +281,21 @@ def create_app(
             samesite="strict",
         )
 
-    def capability_payload(evidence: Evidence) -> dict[str, Any]:
+    def capability_payload(evidence: Evidence, service_evidence: dict[str, Any]) -> dict[str, Any]:
         configured: dict[Capability, bool] = {
             Capability.CORE: True,
             **{Capability(name): enabled for name, enabled in settings.features().items()},
         }
         dependency_health = {Capability.CORE: evidence.state is HealthState.READY}
-        blockers: dict[Capability, tuple[str, ...]] = {
-            capability: (f"{capability.value}_dependency_health_not_integrated",)
-            for capability, enabled in configured.items()
-            if capability is not Capability.CORE and enabled
-        }
+        blockers: dict[Capability, tuple[str, ...]] = {}
         if evidence.state is not HealthState.READY:
             blockers[Capability.CORE] = (evidence.reason_code,)
+        _add_optional_capability_health(
+            configured=configured,
+            dependency_health=dependency_health,
+            blockers=blockers,
+            service_evidence=service_evidence,
+        )
         report = evaluate_capabilities(
             configured=configured,
             dependency_health=dependency_health,
@@ -336,7 +349,8 @@ def create_app(
     @app.get("/api/v1/capabilities", dependencies=[Depends(require_api_key)])
     async def capabilities() -> dict[str, Any]:
         evidence = await inference.health()
-        return {"capabilities": capability_payload(evidence)}
+        service_evidence = await runtime_services_snapshot(runtime_agent, clock=clock)
+        return {"capabilities": capability_payload(evidence, service_evidence)}
 
     @app.get("/api/v1/overview", dependencies=[Depends(require_api_key)])
     async def overview() -> dict[str, Any]:
@@ -348,7 +362,7 @@ def create_app(
             "observed_at": observed_at,
             "inference": _evidence_json(evidence),
             "models": [asdict(model) for model in discovered],
-            "capabilities": capability_payload(evidence),
+            "capabilities": capability_payload(evidence, _service_evidence_from_host(host)),
             "host": host,
             "diagnostics": _diagnostics_payload(
                 settings=settings,
@@ -385,6 +399,80 @@ def create_app(
         }
 
     return app
+
+
+def _service_evidence_from_host(host: dict[str, Any]) -> dict[str, Any]:
+    checks = host.get("checks")
+    services = host.get("services")
+    service_check = checks.get("morpheus_services") if isinstance(checks, dict) else None
+    if (
+        isinstance(service_check, dict)
+        and service_check.get("status") == "pass"
+        and isinstance(services, list)
+    ):
+        return {"status": "available", "services": services}
+    return {
+        "status": "unavailable",
+        "reason": str(host.get("reason", "runtime_agent_service_evidence_unavailable")),
+    }
+
+
+def _add_optional_capability_health(
+    *,
+    configured: dict[Capability, bool],
+    dependency_health: dict[Capability, bool],
+    blockers: dict[Capability, tuple[str, ...]],
+    service_evidence: dict[str, Any],
+) -> None:
+    """Use the runtime agent's owned-container health evidence conservatively.
+
+    A running container without a Docker health result is intentionally
+    *blocked*, because its dependency contract has not been verified.  Only a
+    healthy component can make an enabled optional capability available.
+    """
+    services = service_evidence.get("services")
+    for capability, enabled in configured.items():
+        if capability is Capability.CORE or not enabled:
+            continue
+        components = _CAPABILITY_COMPONENTS.get(capability)
+        if not components:
+            blockers[capability] = ("dependency_mapping_not_configured",)
+            continue
+        if service_evidence.get("status") != "available" or not isinstance(services, list):
+            blockers[capability] = (
+                str(service_evidence.get("reason", "runtime_agent_service_evidence_unavailable")),
+            )
+            continue
+        by_component: dict[str, list[dict[str, Any]]] = {}
+        for service in services:
+            if isinstance(service, dict) and isinstance(service.get("component"), str):
+                by_component.setdefault(service["component"], []).append(service)
+        capability_blockers: list[str] = []
+        health_values: list[bool] = []
+        health_unverified = False
+        for component in components:
+            matching = by_component.get(component, [])
+            if not matching:
+                capability_blockers.append(f"component_not_running:{component}")
+                health_unverified = True
+                continue
+            for service in matching:
+                health = service.get("health")
+                if health == "healthy":
+                    health_values.append(True)
+                elif health == "unhealthy":
+                    health_values.append(False)
+                    capability_blockers.append(f"component_unhealthy:{component}")
+                elif health == "starting":
+                    capability_blockers.append(f"component_health_pending:{component}")
+                    health_unverified = True
+                else:
+                    capability_blockers.append(f"component_health_unavailable:{component}")
+                    health_unverified = True
+        if capability_blockers:
+            blockers[capability] = tuple(dict.fromkeys(capability_blockers))
+        if health_values and not health_unverified:
+            dependency_health[capability] = all(health_values)
 
 
 def _diagnostic_check(

@@ -57,6 +57,20 @@ class FullRuntimeAgent:
         return AgentResponse(request_id="fixture", operation=operation, result=result)
 
 
+class ServicesRuntimeAgent:
+    def __init__(self, containers: list[dict[str, object]]) -> None:
+        self._containers = containers
+
+    async def inspect(self, operation: AgentOperation) -> AgentResponse:
+        if operation is not AgentOperation.MORPHEUS_SERVICES:
+            raise RuntimeError("only service evidence is expected")
+        return AgentResponse(
+            request_id="fixture",
+            operation=operation,
+            result={"containers": self._containers},
+        )
+
+
 def client(
     *,
     runtime_agent: PartialRuntimeAgent | FullRuntimeAgent | None = None,
@@ -226,6 +240,68 @@ def test_RUN_005_capabilities_report_disabled_features_honestly() -> None:
     assert response.status_code == 200
     assert response.json()["capabilities"]["core"]["state"] == "available"
     assert response.json()["capabilities"]["search"]["state"] == "disabled"
+
+
+def test_RUN_005_capabilities_require_healthy_owned_service_evidence() -> None:
+    test_client = client(
+        settings=MorpheusSettings(api_key="test-api-key", enable_search=True),
+        runtime_agent=ServicesRuntimeAgent(
+            [{"component": "search", "state": "running", "health": "healthy"}]
+        ),
+    )
+
+    response = test_client.get(
+        "/api/v1/capabilities", headers={"Authorization": "Bearer test-api-key"}
+    )
+
+    assert response.status_code == 200
+    assert response.json()["capabilities"]["search"] == {"state": "available", "blockers": []}
+
+
+def test_RUN_005_capabilities_report_unhealthy_or_unverified_dependencies() -> None:
+    unhealthy_client = client(
+        settings=MorpheusSettings(api_key="test-api-key", enable_search=True),
+        runtime_agent=ServicesRuntimeAgent(
+            [{"component": "search", "state": "running", "health": "unhealthy"}]
+        ),
+    )
+    unverified_client = client(
+        settings=MorpheusSettings(api_key="test-api-key", enable_search=True)
+    )
+
+    unhealthy = unhealthy_client.get(
+        "/api/v1/capabilities", headers={"Authorization": "Bearer test-api-key"}
+    )
+    unverified = unverified_client.get(
+        "/api/v1/capabilities", headers={"Authorization": "Bearer test-api-key"}
+    )
+
+    assert unhealthy.json()["capabilities"]["search"] == {
+        "state": "unhealthy",
+        "blockers": ["component_unhealthy:search"],
+    }
+    assert unverified.json()["capabilities"]["search"] == {
+        "state": "blocked",
+        "blockers": ["runtime_agent_not_configured"],
+    }
+
+
+def test_RUN_005_capabilities_block_running_service_without_health_contract() -> None:
+    test_client = client(
+        settings=MorpheusSettings(api_key="test-api-key", enable_search=True),
+        runtime_agent=ServicesRuntimeAgent(
+            [{"component": "search", "state": "running", "health": None}]
+        ),
+    )
+
+    response = test_client.get(
+        "/api/v1/capabilities", headers={"Authorization": "Bearer test-api-key"}
+    )
+
+    assert response.json()["capabilities"]["search"] == {
+        "state": "blocked",
+        "blockers": ["component_health_unavailable:search"],
+    }
 
 
 def test_UI_001_overview_consolidates_operational_state_without_fake_host_values() -> None:

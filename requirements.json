@@ -52,10 +52,10 @@
       "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
     },
     {
-      "id": "RUN-005", "phase": 1, "status": "planned",
+      "id": "RUN-005", "phase": 1, "status": "implemented",
       "owning_tests": ["tests/unit/test_models_and_capabilities.py", "tests/contract/test_control_api.py"], "risk": "high",
       "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-RUN-005-01"]
+      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
     },
     {
       "id": "RUN-006", "phase": 2, "status": "implemented",
