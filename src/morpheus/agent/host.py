@@ -12,12 +12,14 @@ from pathlib import Path
 from typing import Any
 
 from morpheus.agent.protocol import AgentOperation
+from morpheus.core.ownership import OwnershipPolicy, ResourceAction, ResourceIdentity, ResourceKind
 
 
 class SystemHostInspector:
     def __init__(self, *, project_id: str, data_dir: Path) -> None:
         self._project_id = project_id
         self._data_dir = data_dir
+        self._authorization = OwnershipPolicy(project_id=project_id)
 
     def inspect(self, operation: AgentOperation) -> dict[str, Any]:
         if operation is AgentOperation.HOST_SUMMARY:
@@ -103,9 +105,18 @@ class SystemHostInspector:
         labels = value.get("labels") if isinstance(value, dict) else None
         if not isinstance(labels, dict) or labels.get("io.morpheus.project") != self._project_id:
             raise ValueError("Docker ownership label changed during inspection")
+        name = str(value.get("name", "")).removeprefix("/")
+        self._authorization.authorize(
+            action=ResourceAction.INSPECT,
+            resource=ResourceIdentity(
+                kind=ResourceKind.CONTAINER,
+                name=name,
+                labels={key: str(item) for key, item in labels.items()},
+            ),
+        )
         return {
             "id": value.get("id"),
-            "name": str(value.get("name", "")).removeprefix("/"),
+            "name": name,
             "image_id": value.get("image_id"),
             "configured_image": value.get("configured_image"),
             "state": value.get("state"),

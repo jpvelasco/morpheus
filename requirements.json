@@ -274,10 +274,10 @@
       "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
     },
     {
-      "id": "SEC-002", "phase": 2, "status": "planned",
+      "id": "SEC-002", "phase": 2, "status": "implemented",
       "owning_tests": ["tests/unit/test_ownership.py", "tests/unit/test_host_inspector.py"], "risk": "critical",
       "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-SEC-002-01"]
+      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
     },
     {
       "id": "SEC-003", "phase": 2, "status": "implemented",

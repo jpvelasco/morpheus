@@ -88,7 +88,12 @@ def create_agent_app(*, settings: MorpheusSettings, inspector: SystemHostInspect
                 content={"error": {"code": "request_capacity_exhausted"}},
             )
         try:
-            result = inspector.inspect(parsed.operation)
+            try:
+                result = inspector.inspect(parsed.operation)
+            except PermissionError:
+                return JSONResponse(
+                    status_code=403, content={"error": {"code": "authorization_denied"}}
+                )
             return AgentResponse(
                 request_id=parsed.request_id, operation=parsed.operation, result=result
             )

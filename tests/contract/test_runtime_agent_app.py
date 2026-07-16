@@ -20,11 +20,17 @@ class FakeInspector:
         return {"operation": str(operation)}
 
 
-def agent(**settings_overrides: object) -> TestClient:
+class DenyingInspector:
+    def inspect(self, operation: object) -> dict[str, Any]:
+        del operation
+        raise PermissionError("resource action is not authorized")
+
+
+def agent(*, inspector: object | None = None, **settings_overrides: object) -> TestClient:
     return TestClient(
         create_agent_app(
             settings=MorpheusSettings(agent_key=KEY.decode(), **settings_overrides),
-            inspector=FakeInspector(),  # type: ignore[arg-type]
+            inspector=inspector or FakeInspector(),  # type: ignore[arg-type]
         )
     )
 
@@ -95,3 +101,14 @@ def test_SEC_003_agent_rate_limits_before_inspection() -> None:
     )
     assert limited.status_code == 429
     assert limited.json()["error"]["code"] == "request_rate_limited"
+
+
+def test_SEC_002_agent_normalizes_authorization_denial() -> None:
+    body = json.dumps({"request_id": "valid-request", "operation": "morpheus_services"}).encode()
+
+    response = agent(inspector=DenyingInspector()).post(
+        "/v1/inspect", content=body, headers=signed_headers(body)
+    )
+
+    assert response.status_code == 403
+    assert response.json() == {"error": {"code": "authorization_denied"}}
