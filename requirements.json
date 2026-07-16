@@ -46,10 +46,10 @@
       "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
     },
     {
-      "id": "RUN-004", "phase": 2, "status": "planned",
-      "owning_tests": ["tests/unit/test_host_inspector.py"], "risk": "critical",
+      "id": "RUN-004", "phase": 2, "status": "implemented",
+      "owning_tests": ["tests/unit/test_host_inspector.py", "tests/contract/test_control_api.py", "tests/contract/test_runtime_agent_client.py"], "risk": "critical",
       "required_environments": ["VM", "HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": true,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-RUN-004-01"]
+      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
     },
     {
       "id": "RUN-005", "phase": 1, "status": "planned",
@@ -58,10 +58,10 @@
       "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-RUN-005-01"]
     },
     {
-      "id": "RUN-006", "phase": 2, "status": "planned",
-      "owning_tests": ["tests/unit/test_cli.py", "tests/acceptance/test_read_only_operator.py"], "risk": "high",
+      "id": "RUN-006", "phase": 2, "status": "implemented",
+      "owning_tests": ["tests/unit/test_cli.py", "tests/acceptance/test_read_only_operator.py", "tests/contract/test_control_api.py"], "risk": "high",
       "required_environments": ["VM", "HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-RUN-006-01"]
+      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
     },
     {
       "id": "UI-001", "phase": 3, "status": "implemented",
@@ -70,10 +70,10 @@
       "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
     },
     {
-      "id": "UI-002", "phase": 3, "status": "planned",
-      "owning_tests": ["web/tests/App.test.tsx"], "risk": "medium",
+      "id": "UI-002", "phase": 3, "status": "implemented",
+      "owning_tests": ["web/tests/App.test.tsx", "tests/contract/test_control_api.py"], "risk": "medium",
       "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-UI-002-01"]
+      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
     },
     {
       "id": "UI-003", "phase": 3, "status": "planned",
