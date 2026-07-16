@@ -10,6 +10,9 @@ private request data, host addresses, or unredacted evidence.
 - **Validated baseline candidate:** `ae3a98d74b055672c37ae608805e21804d4e609b`
   (`security: bound API request work`). Its build evidence remains valid only
   for that source revision.
+- **Current handoff commit:** `e0cd976f6bf8479ab60de9a8b798daa03b86847b`
+  (`feat: harden restore preflight and rollback`; 2026-07-15). The worktree
+  was clean when this ledger was refreshed.
 - **Current release development line:** post-baseline source changes will be
   frozen into a new candidate only after the pre-soak implementation queue is
   complete.
@@ -22,6 +25,32 @@ private request data, host addresses, or unredacted evidence.
   pre-soak core-release lane. It requires a later, separately authorized
   host-maintenance release candidate.
 
+## Handoff and Resume
+
+An agent starting from the repository should read this file first, then
+[`IMPLEMENTATION_GAP_REVIEW.md`](IMPLEMENTATION_GAP_REVIEW.md),
+[`requirements.json`](../requirements.json), and
+[`validation/README.md`](../validation/README.md). Those files define the
+remaining requirements, priority, environment boundaries, evidence policy,
+and next task; no chat transcript is required to select the next source task.
+
+The next source task is **IMP-SEC-005-01**. Implement the documented pinned
+tooling so every release artifact and OCI image gets an SBOM and the lock,
+secret, static, dependency, filesystem, and container scans are release
+blocking. Keep evidence redacted and ignored; do not put credentials, host
+addresses, or request data in Git.
+
+After SEC-005, implement **IMP-REL-003-01** as described in the P0 table in
+the gap review. Then create a new candidate from the exact resulting commit;
+the older baseline evidence must not be relabelled as evidence for that new
+candidate.
+
+Normal validation must never restart, reconfigure, or otherwise mutate the
+external inference or Open WebUI services. Use disposable stacks/VMs for all
+mutating tests. Do not enable persistent user-service linger. GPU allocation,
+voice-GPU, and image-generation work are excluded until separately authorized
+host-maintenance work begins.
+
 ## Completed Current-Candidate Evidence
 
 | Milestone | Result | Notes |
@@ -29,6 +58,15 @@ private request data, host addresses, or unredacted evidence.
 | Python quality gate | Pass | 311 tests, 90.28% coverage; format, lint, type checking, Bandit, and offline package build passed. |
 | Dashboard quality gate | Pass | Pinned offline Node image: formatting, type check, 31 tests, and production build passed. |
 | Reproducible candidate build | Pass | Two independent disposable VM builds used blocked outbound networking and produced five byte-identical artifacts: Python sdist/wheel, agent bundle, backend OCI image, and dashboard OCI image. |
+
+## Current-Line Checkpoint (Not a Frozen Release Candidate)
+
+At handoff commit `e0cd976`, the Python quality gate passed with 345 tests and
+90.52% coverage; formatting, lint, type checking, Bandit, pip-audit, and the
+offline package build also passed. This confirms source health at that point,
+but it is not release evidence: SEC-005 and REL-003 remain, no candidate has
+been frozen, and all candidate-specific startup/lifecycle/browser/load/soak
+evidence must be produced again after the freeze.
 
 Release evidence is intentionally ignored from Git. Store it only under the
 configured `artifacts/release-validation/` location or a disposable validation
@@ -41,11 +79,11 @@ workspace; refer to the candidate commit and task ID in its redacted manifest.
 | `ae3a98d` | Request body limits, content/schema checks, timeouts, rate limits, and bounded concurrency across exposed APIs. |
 | `ffe5f0d` | Signed browser-session decision record and validation-plan correction. |
 | `4d20d86` | Browser API-key removal; signed, expiring cookie sessions with CSRF-protected logout. |
-| Current development line | RUN-005 now derives optional-capability state from live, Morpheus-owned runtime-agent container health evidence. |
-| Current development line | SEC-002 now authorizes only explicit read-only resource actions on owned, non-protected identities. |
-| Current development line | SEC-006 now resolves configured data, persistence, archives, generated output, evidence, and restore staging through owned-path boundaries. |
-| Current development line | REL-002 now applies bounded retry/backoff/deadline recovery to idempotent inference discovery. |
-| Current development line | OPS-002 now preflights schema/free space and performs durable rollback-capable restore swaps. |
+| `ed29681` | RUN-005 now derives optional-capability state from live, Morpheus-owned runtime-agent container health evidence. |
+| `ff02687` | SEC-002 now authorizes only explicit read-only resource actions on owned, non-protected identities. |
+| `a740dee` | SEC-006 now resolves configured data, persistence, archives, generated output, evidence, and restore staging through owned-path boundaries. |
+| `4c6342c` | REL-002 now applies bounded retry/backoff/deadline recovery to idempotent inference discovery. |
+| `e0cd976` | OPS-002 now preflights schema/free space and performs durable rollback-capable restore swaps. |
 
 ## Active Milestone
 
