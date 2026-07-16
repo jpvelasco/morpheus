@@ -352,8 +352,8 @@ test is outside this lane and requires a separate authorization.
 - [ ] **BROW-005 — Responsive visual evidence.** Capture reviewed screenshots at
   supported sizes and assert no overlap, clipped text, hidden focus, horizontal
   overflow, or color-only state.
-- [ ] **BROW-006 — Browser security.** Test CSP, CORS, storage lifetime, bearer
-  handling, CSRF non-applicability, framing, request IDs, and the absence of
+- [ ] **BROW-006 — Browser security.** Test CSP, CORS, storage lifetime, signed
+  session handling, CSRF enforcement, framing, request IDs, and the absence of
   credentials from traces, screenshots, URLs, and console output.
 
 P3 exit gate: guarded live read-only checks preserve ubuntu-1's external state;
