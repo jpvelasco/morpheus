@@ -13,6 +13,47 @@ _OPERATIONS = (
 )
 
 
+async def runtime_services_snapshot(
+    runtime_agent: RuntimeAgentPort | None,
+    *,
+    clock: Clock,
+) -> dict[str, Any]:
+    """Return only the owned-service evidence needed for capability health.
+
+    Capability checks deliberately avoid the unrelated host and GPU probes.  A
+    missing or failed runtime-agent response is evidence that the dependency
+    cannot be verified, not evidence that it is healthy.
+    """
+    observed_at = clock.utc_now().isoformat()
+    if runtime_agent is None:
+        return {
+            "status": "unavailable",
+            "reason": "runtime_agent_not_configured",
+            "observed_at": observed_at,
+        }
+    try:
+        response = await runtime_agent.inspect(AgentOperation.MORPHEUS_SERVICES)
+    except Exception:  # Runtime evidence is advisory and must not fail the control API.
+        return {
+            "status": "unavailable",
+            "reason": "runtime_agent_service_evidence_unavailable",
+            "observed_at": observed_at,
+        }
+    if not isinstance(response, AgentResponse) or not isinstance(
+        response.result.get("containers"), list
+    ):
+        return {
+            "status": "unavailable",
+            "reason": "runtime_agent_service_evidence_invalid",
+            "observed_at": observed_at,
+        }
+    return {
+        "status": "available",
+        "observed_at": observed_at,
+        "services": response.result["containers"],
+    }
+
+
 async def runtime_snapshot(
     runtime_agent: RuntimeAgentPort | None,
     *,

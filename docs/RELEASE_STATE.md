@@ -7,9 +7,13 @@ private request data, host addresses, or unredacted evidence.
 
 ## Current Position
 
-- **Current candidate:** `ae3a98d74b055672c37ae608805e21804d4e609b`
-  (`security: bound API request work`)
-- **Implementation inventory:** 36 implemented, 19 planned, 3 deferred; see
+- **Validated baseline candidate:** `ae3a98d74b055672c37ae608805e21804d4e609b`
+  (`security: bound API request work`). Its build evidence remains valid only
+  for that source revision.
+- **Current release development line:** post-baseline source changes will be
+  frozen into a new candidate only after the pre-soak implementation queue is
+  complete.
+- **Implementation inventory:** 37 implemented, 18 planned, 3 deferred; see
   [`requirements.json`](../requirements.json) and the
   [implementation gap review](IMPLEMENTATION_GAP_REVIEW.md).
 - **Release posture:** not yet release-ready. A passing candidate does not
@@ -37,17 +41,18 @@ workspace; refer to the candidate commit and task ID in its redacted manifest.
 | `ae3a98d` | Request body limits, content/schema checks, timeouts, rate limits, and bounded concurrency across exposed APIs. |
 | `ffe5f0d` | Signed browser-session decision record and validation-plan correction. |
 | `4d20d86` | Browser API-key removal; signed, expiring cookie sessions with CSRF-protected logout. |
+| Current development line | RUN-005 now derives optional-capability state from live, Morpheus-owned runtime-agent container health evidence. |
 
 ## Active Milestone
 
-**IMP-RUN-005-01 — real optional-capability health.** Replace placeholder
-capability blockers with dependency checks that distinguish disabled,
-available, unhealthy, and blocked states without modifying external services.
+**IMP-SEC-002-01 — action-aware authorization.** Add authorization that joins
+the requested resource type, Morpheus ownership label, protected identity, and
+an explicit operation allowlist.
 
 ## Pre-Soak Queue
 
-1. Remaining P0 implementation: RUN-005, SEC-002, SEC-005, SEC-006,
-   REL-002, OPS-002, and REL-003.
+1. Remaining P0 implementation: SEC-002, SEC-005, SEC-006, REL-002, OPS-002,
+   and REL-003.
 2. Rebuild and validate the exact frozen candidate: current-container startup,
    hardening, loopback exposure, security/SBOM evidence, installation, runtime
    agent, and external-runtime integrity.
