@@ -256,10 +256,10 @@
       "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
     },
     {
-      "id": "OPS-002", "phase": 10, "status": "planned",
+      "id": "OPS-002", "phase": 10, "status": "implemented",
       "owning_tests": ["tests/integration/test_backup_restore.py"], "risk": "critical",
       "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-OPS-002-01"]
+      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
     },
     {
       "id": "OPS-003", "phase": 10, "status": "implemented",
