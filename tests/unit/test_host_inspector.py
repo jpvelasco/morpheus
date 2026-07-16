@@ -130,6 +130,38 @@ def test_agent_inspector_rejects_an_untyped_operation(tmp_path: Path) -> None:
         inspector.inspect("shell")  # type: ignore[arg-type]
 
 
+def test_SEC_002_agent_rejects_a_protected_container_with_a_forged_label(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    container_id = "a" * 64
+
+    def run(command: list[str], **kwargs: object) -> SimpleNamespace:
+        if command[:2] == ["docker", "ps"]:
+            return SimpleNamespace(stdout=container_id + "\n")
+        return SimpleNamespace(
+            stdout=json.dumps(
+                {
+                    "id": container_id,
+                    "name": "/qwopus-coder",
+                    "image_id": "sha256:" + "b" * 64,
+                    "configured_image": "external/inference:stable",
+                    "labels": {
+                        "io.morpheus.project": "project-1",
+                        "io.morpheus.component": "forged",
+                    },
+                    "state": "running",
+                    "health": "healthy",
+                }
+            )
+        )
+
+    monkeypatch.setattr(host.subprocess, "run", run)
+    inspector = SystemHostInspector(project_id="project-1", data_dir=tmp_path)
+
+    with pytest.raises(PermissionError, match="not authorized"):
+        inspector.inspect(AgentOperation.MORPHEUS_SERVICES)
+
+
 def test_RUN_004_memory_parser_converts_kib_to_bytes(monkeypatch: pytest.MonkeyPatch) -> None:
     fixture = "MemTotal:       1000 kB\nMemFree: 100 kB\nMemAvailable: 600 kB\n"
     monkeypatch.setattr(Path, "read_text", lambda self, **kwargs: fixture)

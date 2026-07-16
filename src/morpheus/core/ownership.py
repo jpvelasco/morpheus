@@ -16,6 +16,26 @@ class ResourceKind(StrEnum):
     IMAGE = "image"
 
 
+class ResourceAction(StrEnum):
+    INSPECT = "inspect"
+    START = "start"
+    STOP = "stop"
+    RESTART = "restart"
+    REMOVE = "remove"
+    BACKUP = "backup"
+    RESTORE = "restore"
+
+
+_ALLOWED_ACTIONS: Mapping[ResourceKind, frozenset[ResourceAction]] = MappingProxyType(
+    {
+        ResourceKind.CONTAINER: frozenset({ResourceAction.INSPECT}),
+        ResourceKind.NETWORK: frozenset({ResourceAction.INSPECT}),
+        ResourceKind.VOLUME: frozenset({ResourceAction.INSPECT}),
+        ResourceKind.IMAGE: frozenset({ResourceAction.INSPECT}),
+    }
+)
+
+
 @dataclass(frozen=True, slots=True)
 class ResourceIdentity:
     kind: ResourceKind
@@ -36,3 +56,16 @@ class OwnershipPolicy:
             resource.name not in self.protected_names
             and resource.labels.get(PROJECT_LABEL) == self.project_id
         )
+
+    def allows(self, *, action: ResourceAction, resource: ResourceIdentity) -> bool:
+        """Authorize only explicit, read-only operations on owned resources.
+
+        Matching an ownership label is necessary but never sufficient.  The
+        resource must also be outside the protected inventory and the action
+        must appear in the code-owned allowlist for its resource type.
+        """
+        return self.is_owned(resource) and action in _ALLOWED_ACTIONS[resource.kind]
+
+    def authorize(self, *, action: ResourceAction, resource: ResourceIdentity) -> None:
+        if not self.allows(action=action, resource=resource):
+            raise PermissionError("resource action is not authorized")
