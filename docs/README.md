@@ -10,6 +10,8 @@
   quality gates, and phase exit criteria.
 - [Release validation plan](RELEASE_VALIDATION_PLAN.md): prioritized host and VM
   prerequisites, executable validation tasks, evidence, and release gates.
+- [Release state](RELEASE_STATE.md): durable current-candidate ledger, completed
+  milestones, active work, and resume constraints.
 - [Inventory](inventory.md): existing local assets and candidate inputs.
 
 ## Decision Records
