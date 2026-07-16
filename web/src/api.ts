@@ -196,12 +196,40 @@ export function parseOverview(value: unknown): Overview {
   }
 }
 
-export async function fetchOverview(token: string, signal?: AbortSignal): Promise<Overview> {
-  const response = await fetch(`${API_BASE}/api/v1/overview`, {
-    headers: { Authorization: `Bearer ${token}` },
-    signal,
-  })
+function csrfToken(): string {
+  const item = document.cookie.split('; ').find((value) => value.startsWith('morpheus_csrf='))
+  return item ? decodeURIComponent(item.slice('morpheus_csrf='.length)) : ''
+}
+
+function requireSuccess(response: Response): void {
   if (response.status === 401) throw new Error('Authentication failed')
   if (!response.ok) throw new Error(`Control API failed with HTTP ${String(response.status)}`)
+}
+
+export async function createSession(apiKey: string): Promise<void> {
+  const response = await fetch(`${API_BASE}/api/v1/session`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ api_key: apiKey }),
+  })
+  requireSuccess(response)
+}
+
+export async function destroySession(): Promise<void> {
+  const response = await fetch(`${API_BASE}/api/v1/session`, {
+    method: 'DELETE',
+    credentials: 'include',
+    headers: { 'X-CSRF-Token': csrfToken() },
+  })
+  requireSuccess(response)
+}
+
+export async function fetchOverview(signal?: AbortSignal): Promise<Overview> {
+  const response = await fetch(`${API_BASE}/api/v1/overview`, {
+    credentials: 'include',
+    signal,
+  })
+  requireSuccess(response)
   return parseOverview(await response.json())
 }

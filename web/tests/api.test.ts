@@ -1,4 +1,4 @@
-import { fetchOverview, parseOverview } from '../src/api'
+import { createSession, destroySession, fetchOverview, parseOverview } from '../src/api'
 
 function validOverview() {
   return {
@@ -78,13 +78,37 @@ test('accepts available host telemetry and a non-null next action', () => {
   expect(parseOverview(payload).inference.next_action).toBe('Check runtime agent')
 })
 
-test('fetch sends bearer authentication and parses a successful response', async () => {
+test('fetch uses an HttpOnly cookie session and parses a successful response', async () => {
   const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(validOverview()), { status: 200 }))
   vi.stubGlobal('fetch', fetchMock)
-  await expect(fetchOverview('secret-token')).resolves.toMatchObject({ observed_at: validOverview().observed_at })
+  await expect(fetchOverview()).resolves.toMatchObject({ observed_at: validOverview().observed_at })
   expect(fetchMock).toHaveBeenCalledWith(
     'http://127.0.0.1:7400/api/v1/overview',
-    expect.objectContaining({ headers: { Authorization: 'Bearer secret-token' } }),
+    expect.objectContaining({ credentials: 'include' }),
+  )
+})
+
+test('session setup sends the access key once and logout sends the CSRF token', async () => {
+  document.cookie = 'morpheus_csrf=csrf-token; path=/'
+  const fetchMock = vi.fn().mockResolvedValue(new Response('{}', { status: 200 }))
+  vi.stubGlobal('fetch', fetchMock)
+
+  await createSession('secret-token')
+  await destroySession()
+
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    1,
+    'http://127.0.0.1:7400/api/v1/session',
+    expect.objectContaining({
+      method: 'POST', credentials: 'include', body: JSON.stringify({ api_key: 'secret-token' }),
+    }),
+  )
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    2,
+    'http://127.0.0.1:7400/api/v1/session',
+    expect.objectContaining({
+      method: 'DELETE', credentials: 'include', headers: { 'X-CSRF-Token': 'csrf-token' },
+    }),
   )
 })
 
@@ -93,5 +117,5 @@ test.each([
   [503, 'HTTP 503'],
 ])('fetch maps HTTP %i to a safe error', async (status, message) => {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{}', { status })))
-  await expect(fetchOverview('token')).rejects.toThrow(message)
+  await expect(fetchOverview()).rejects.toThrow(message)
 })

@@ -57,7 +57,7 @@ def test_CFG_002_public_configuration_excludes_secret_values() -> None:
     settings = MorpheusSettings(
         api_key="api-canary",
         agent_key="agent-canary",
-        session_secret="session-canary",
+        session_secret="session-secret-canary",
     )
 
     public = settings.public_dict()
@@ -68,6 +68,24 @@ def test_CFG_002_public_configuration_excludes_secret_values() -> None:
         "api_key": True,
         "session_secret": True,
     }
+
+
+@pytest.mark.parametrize("ttl_seconds", [59, 86_401])
+def test_SEC_004_rejects_browser_session_lifetime_outside_safe_bounds(ttl_seconds: int) -> None:
+    with pytest.raises(ValidationError):
+        MorpheusSettings(session_ttl_seconds=ttl_seconds)
+
+
+def test_SEC_004_rejects_an_unsafe_browser_session_secret() -> None:
+    with pytest.raises(ValidationError, match="at least 16 bytes"):
+        MorpheusSettings(session_secret="too-short")
+
+
+def test_SEC_004_browser_sessions_default_to_short_lived_secure_cookies() -> None:
+    settings = MorpheusSettings()
+
+    assert settings.session_ttl_seconds == 900
+    assert settings.session_cookie_secure is True
 
 
 def test_CFG_004_startup_report_has_feature_decisions() -> None:

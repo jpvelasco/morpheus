@@ -38,10 +38,13 @@ const overview = {
 }
 
 function mockFetch(payload: unknown = overview, status = 200) {
-  vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve(new Response(JSON.stringify(payload), {
-    status,
-    headers: { 'Content-Type': 'application/json' },
-  }))))
+  vi.stubGlobal('fetch', vi.fn().mockImplementation((_: string, options?: RequestInit) => {
+    const sessionRequest = options?.method === 'POST' || options?.method === 'DELETE'
+    return Promise.resolve(new Response(JSON.stringify(sessionRequest ? { status: 'authenticated' } : payload), {
+      status: sessionRequest ? 200 : status,
+      headers: { 'Content-Type': 'application/json' },
+    }))
+  }))
 }
 
 async function signIn() {
@@ -62,7 +65,8 @@ test('UI-005 login is keyboard and label accessible', async () => {
   if (form === null) throw new Error('Login form is missing')
   fireEvent.submit(form)
   await screen.findByRole('heading', { name: 'System overview' })
-  expect(sessionStorage.getItem('morpheus.session.api-key')).toBe('test-key')
+  expect(sessionStorage.getItem('morpheus.session.active')).toBe('1')
+  expect(sessionStorage.getItem('morpheus.session.api-key')).toBeNull()
 })
 
 test('UI-001 renders model status and honest unavailable host telemetry', async () => {
@@ -97,13 +101,14 @@ test('UI-004 retains layout and reports a partial API failure', async () => {
   expect(screen.getByRole('button', { name: 'Sign out' })).toBeVisible()
 })
 
-test('session sign out removes browser-held API key', async () => {
+test('session sign out removes only the browser session marker', async () => {
   mockFetch()
   render(<App />)
   await signIn()
   await screen.findByRole('heading', { name: 'System overview' })
   await userEvent.click(screen.getByRole('button', { name: 'Sign out' }))
   await waitFor(() => expect(screen.getByLabelText('API access key')).toBeVisible())
+  expect(sessionStorage.getItem('morpheus.session.active')).toBeNull()
   expect(sessionStorage.getItem('morpheus.session.api-key')).toBeNull()
 })
 
@@ -115,7 +120,7 @@ test('blank credentials do not create a dashboard session', () => {
   if (form === null) throw new Error('Login form is missing')
   fireEvent.submit(form)
   expect(screen.getByLabelText('API access key')).toBeVisible()
-  expect(sessionStorage.getItem('morpheus.session.api-key')).toBeNull()
+  expect(sessionStorage.getItem('morpheus.session.active')).toBeNull()
 })
 
 test('available host metrics, blockers, and alternate feature icons render', async () => {
