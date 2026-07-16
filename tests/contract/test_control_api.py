@@ -81,12 +81,13 @@ def client(
         ),
     )
     app = create_app(
-        settings=settings or MorpheusSettings(api_key="test-api-key"),
+        settings=settings
+        or MorpheusSettings(api_key="test-api-key", session_secret="session-test-secret"),
         inference=inference,
         clock=FakeClock(now=NOW),
         runtime_agent=runtime_agent,
     )
-    return TestClient(app)
+    return TestClient(app, base_url="https://testserver")
 
 
 def test_SEC_001_public_health_is_minimal() -> None:
@@ -127,6 +128,71 @@ def test_SEC_004_responses_include_browser_security_headers_and_request_id() -> 
     assert response.headers["x-content-type-options"] == "nosniff"
     assert response.headers["x-frame-options"] == "DENY"
     assert response.headers["x-request-id"]
+
+
+@pytest.mark.parametrize("content_length", ["invalid", "-1"])
+def test_SEC_004_rejects_malformed_content_length_safely(content_length: str) -> None:
+    response = client().get("/healthz", headers={"Content-Length": content_length})
+
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "invalid_content_length"
+    assert response.headers["x-content-type-options"] == "nosniff"
+
+
+def test_SEC_004_browser_session_uses_secure_cookie_and_csrf_protected_logout() -> None:
+    test_client = client()
+    login = test_client.post("/api/v1/session", json={"api_key": "test-api-key"})
+
+    assert login.status_code == 200
+    assert login.json() == {"status": "authenticated"}
+    assert "HttpOnly" in login.headers["set-cookie"]
+    assert "SameSite=strict" in login.headers["set-cookie"]
+    assert "Secure" in login.headers["set-cookie"]
+    assert test_client.get("/api/v1/models").status_code == 200
+
+    assert test_client.delete("/api/v1/session").status_code == 403
+    csrf_token = test_client.cookies.get("morpheus_csrf")
+    assert csrf_token
+    logout = test_client.delete("/api/v1/session", headers={"X-CSRF-Token": csrf_token})
+
+    assert logout.status_code == 200
+    assert logout.json() == {"status": "signed_out"}
+    assert test_client.get("/api/v1/models").status_code == 401
+
+
+def test_SEC_004_browser_session_is_unavailable_without_a_session_secret() -> None:
+    test_client = client(settings=MorpheusSettings(api_key="test-api-key"))
+
+    assert test_client.post("/api/v1/session", json={"api_key": "test-api-key"}).status_code == 503
+    assert (
+        test_client.get(
+            "/api/v1/models", headers={"Authorization": "Bearer test-api-key"}
+        ).status_code
+        == 200
+    )
+
+
+def test_SEC_004_browser_session_rejects_unexpected_credential_fields() -> None:
+    response = client().post(
+        "/api/v1/session", json={"api_key": "test-api-key", "unexpected": "value"}
+    )
+
+    assert response.status_code == 422
+
+
+def test_SEC_004_cors_allows_only_the_dashboard_origin_and_csrf_header() -> None:
+    response = client().options(
+        "/api/v1/session",
+        headers={
+            "Origin": "http://127.0.0.1:7401",
+            "Access-Control-Request-Method": "DELETE",
+            "Access-Control-Request-Headers": "X-CSRF-Token",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://127.0.0.1:7401"
+    assert "X-CSRF-Token" in response.headers["access-control-allow-headers"]
 
 
 def test_RUN_005_capabilities_report_disabled_features_honestly() -> None:

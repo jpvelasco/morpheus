@@ -16,10 +16,10 @@ import {
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 
-import { fetchOverview, type CapabilityState, type HealthState, type Overview } from './api'
+import { createSession, destroySession, fetchOverview, type CapabilityState, type HealthState, type Overview } from './api'
 import './styles.css'
 
-const TOKEN_KEY = 'morpheus.session.api-key'
+const SESSION_MARKER = 'morpheus.session.active'
 
 function humanName(value: string): string {
   return value.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
@@ -36,12 +36,23 @@ function Status({ state }: { state: HealthState | CapabilityState | 'unavailable
   )
 }
 
-function Login({ onLogin }: { onLogin: (token: string) => void }) {
+function Login({ onLogin }: { onLogin: (token: string) => Promise<void> }) {
   const [key, setKey] = useState('')
+  const [error, setError] = useState<string | null>(null)
   function submit(event: FormEvent) {
     event.preventDefault()
     const token = key.trim()
-    if (token) onLogin(token)
+    if (!token) return
+    void authenticate(token)
+  }
+  async function authenticate(token: string) {
+    try {
+      await onLogin(token)
+      setKey('')
+      setError(null)
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Authentication failed')
+    }
   }
   return (
     <main className="login-shell">
@@ -60,6 +71,7 @@ function Login({ onLogin }: { onLogin: (token: string) => void }) {
           required
         />
         <button className="primary-command" type="submit"><ShieldCheck size={17} /> Sign in</button>
+        {error && <p className="login-error" role="alert">{error}</p>}
       </form>
     </main>
   )
@@ -161,7 +173,7 @@ function DiagnosticsPage({ overview }: { overview: Overview }) {
   )
 }
 
-function Dashboard({ token, onLogout }: { token: string; onLogout: () => void }) {
+function Dashboard({ onLogout, onSessionExpired }: { onLogout: () => Promise<void>; onSessionExpired: () => void }) {
   const [overview, setOverview] = useState<Overview | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -170,16 +182,18 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   const refresh = useCallback(async (signal?: AbortSignal) => {
     setLoading((current) => current || overview === null)
     try {
-      const next = await fetchOverview(token, signal)
+      const next = await fetchOverview(signal)
       setOverview(next)
       setError(null)
     } catch (reason) {
       if (reason instanceof DOMException && reason.name === 'AbortError') return
-      setError(reason instanceof Error ? reason.message : 'Control API request failed')
+      const message = reason instanceof Error ? reason.message : 'Control API request failed'
+      if (message === 'Authentication failed') onSessionExpired()
+      setError(message)
     } finally {
       setLoading(false)
     }
-  }, [overview, token])
+  }, [onSessionExpired, overview])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -202,7 +216,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
         <div className="header-actions">
           <span className="last-updated">Updated {observed}</span>
           <button className="icon-command" type="button" onClick={() => { void refresh() }} aria-label="Refresh overview" title="Refresh overview"><RefreshCw size={17} /></button>
-          <button className="icon-command" type="button" onClick={() => { onLogout() }} aria-label="Sign out" title="Sign out"><LogOut size={17} /></button>
+          <button className="icon-command" type="button" onClick={() => { void onLogout() }} aria-label="Sign out" title="Sign out"><LogOut size={17} /></button>
         </div>
       </header>
       <nav className="view-tabs" aria-label="Dashboard views">
@@ -219,14 +233,23 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
 }
 
 export default function App() {
-  const [token, setToken] = useState(() => sessionStorage.getItem(TOKEN_KEY) ?? '')
-  function login(value: string) {
-    sessionStorage.setItem(TOKEN_KEY, value)
-    setToken(value)
+  const [signedIn, setSignedIn] = useState(() => sessionStorage.getItem(SESSION_MARKER) === '1')
+  async function login(value: string) {
+    await createSession(value)
+    sessionStorage.setItem(SESSION_MARKER, '1')
+    setSignedIn(true)
   }
-  function logout() {
-    sessionStorage.removeItem(TOKEN_KEY)
-    setToken('')
+  async function logout() {
+    try {
+      await destroySession()
+    } finally {
+      sessionStorage.removeItem(SESSION_MARKER)
+      setSignedIn(false)
+    }
   }
-  return token ? <Dashboard token={token} onLogout={logout} /> : <Login onLogin={login} />
+  function sessionExpired() {
+    sessionStorage.removeItem(SESSION_MARKER)
+    setSignedIn(false)
+  }
+  return signedIn ? <Dashboard onLogout={logout} onSessionExpired={sessionExpired} /> : <Login onLogin={login} />
 }

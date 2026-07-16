@@ -42,6 +42,8 @@ class MorpheusSettings(BaseModel):
     upstream_api_key: SecretStr = SecretStr("")
     agent_key: SecretStr = SecretStr("")
     session_secret: SecretStr = SecretStr("")
+    session_ttl_seconds: int = Field(default=900, ge=60, le=86_400)
+    session_cookie_secure: bool = True
     enable_search: bool = False
     enable_voice: bool = False
     enable_telemetry: bool = False
@@ -98,6 +100,14 @@ class MorpheusSettings(BaseModel):
         if not path.is_absolute():
             raise ValueError("runtime_agent_socket must be an absolute path")
         return path
+
+    @field_validator("session_secret")
+    @classmethod
+    def validate_session_secret(cls, value: SecretStr) -> SecretStr:
+        secret = value.get_secret_value()
+        if secret and len(secret.encode()) < 16:
+            raise ValueError("session_secret must contain at least 16 bytes when configured")
+        return value
 
     @model_validator(mode="after")
     def validate_network_posture(self) -> MorpheusSettings:

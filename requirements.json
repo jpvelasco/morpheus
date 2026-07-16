@@ -286,10 +286,10 @@
       "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-SEC-003-01"]
     },
     {
-      "id": "SEC-004", "phase": 3, "status": "planned",
-      "owning_tests": ["tests/contract/test_control_api.py", "web/tests/App.test.tsx"], "risk": "critical",
+      "id": "SEC-004", "phase": 3, "status": "implemented",
+      "owning_tests": ["tests/unit/test_browser_sessions.py", "tests/contract/test_control_api.py", "web/tests/App.test.tsx", "web/tests/api.test.ts"], "risk": "critical",
       "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-SEC-004-01"]
+      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
     },
     {
       "id": "SEC-005", "phase": 10, "status": "planned",

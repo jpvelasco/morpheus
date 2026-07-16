@@ -9,13 +9,15 @@ from typing import Any
 
 import httpx
 import uvicorn
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Header, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel, ConfigDict, Field
 
 from morpheus.adapters.inference.openai import OpenAIInferenceAdapter
 from morpheus.adapters.runtime.agent import RuntimeAgentClient
 from morpheus.api.runtime import runtime_snapshot
+from morpheus.api.session import BrowserSession, SessionCodec, SessionValidationError
 from morpheus.config import MorpheusSettings, load_settings
 from morpheus.core.capabilities import Capability, evaluate_capabilities
 from morpheus.core.health import Evidence, HealthState
@@ -24,6 +26,24 @@ from morpheus.ports.protocols import Clock, InferencePort, RuntimeAgentPort
 
 class AuthenticationRequired(Exception):
     pass
+
+
+class CsrfValidationError(Exception):
+    pass
+
+
+class SessionUnavailable(Exception):
+    pass
+
+
+class SessionLogin(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    api_key: str = Field(min_length=1, max_length=512)
+
+
+_SESSION_COOKIE = "morpheus_session"
+_CSRF_COOKIE = "morpheus_csrf"
 
 
 def _evidence_json(evidence: Evidence) -> dict[str, Any]:
@@ -47,6 +67,12 @@ def create_app(
     app.state.settings = settings
     app.state.inference = inference
     app.state.clock = clock
+    session_secret = settings.session_secret.get_secret_value().encode()
+    session_codec = (
+        SessionCodec(secret=session_secret, ttl_seconds=settings.session_ttl_seconds)
+        if session_secret
+        else None
+    )
     allowed_origins = [
         f"http://127.0.0.1:{settings.dashboard_port}",
         f"http://localhost:{settings.dashboard_port}",
@@ -55,8 +81,8 @@ def create_app(
         CORSMiddleware,
         allow_origins=allowed_origins,
         allow_credentials=True,
-        allow_methods=["GET", "POST"],
-        allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
+        allow_methods=["GET", "POST", "DELETE"],
+        allow_headers=["Authorization", "Content-Type", "X-CSRF-Token", "X-Request-ID"],
     )
 
     @app.middleware("http")
@@ -65,13 +91,58 @@ def create_app(
         call_next: Callable[[Request], Awaitable[Any]],
     ) -> Any:
         request_id = request.headers.get("X-Request-ID") or secrets.token_hex(16)
-        response = await call_next(request)
-        response.headers["X-Request-ID"] = request_id[:128]
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "DENY"
-        response.headers["Referrer-Policy"] = "no-referrer"
-        response.headers["Content-Security-Policy"] = "default-src 'self'; frame-ancestors 'none'"
-        return response
+
+        def secured(response: Response) -> Response:
+            response.headers["X-Request-ID"] = request_id[:128]
+            response.headers["X-Content-Type-Options"] = "nosniff"
+            response.headers["X-Frame-Options"] = "DENY"
+            response.headers["Referrer-Policy"] = "no-referrer"
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'self'; frame-ancestors 'none'"
+            )
+            return response
+
+        content_length = request.headers.get("Content-Length")
+        if content_length:
+            try:
+                declared_size = int(content_length)
+            except ValueError:
+                return secured(
+                    JSONResponse(
+                        status_code=400,
+                        content={
+                            "error": {
+                                "code": "invalid_content_length",
+                                "message": "Content-Length must be a non-negative integer",
+                            }
+                        },
+                    )
+                )
+            if declared_size < 0:
+                return secured(
+                    JSONResponse(
+                        status_code=400,
+                        content={
+                            "error": {
+                                "code": "invalid_content_length",
+                                "message": "Content-Length must be a non-negative integer",
+                            }
+                        },
+                    )
+                )
+            if declared_size > settings.max_request_bytes:
+                return secured(
+                    JSONResponse(
+                        status_code=413,
+                        content={
+                            "error": {
+                                "code": "request_too_large",
+                                "message": "Request body is too large",
+                            }
+                        },
+                    )
+                )
+        return secured(await call_next(request))
 
     @app.exception_handler(AuthenticationRequired)
     async def authentication_error(request: Request, error: AuthenticationRequired) -> JSONResponse:
@@ -87,11 +158,80 @@ def create_app(
             },
         )
 
+    @app.exception_handler(CsrfValidationError)
+    async def csrf_error(request: Request, error: CsrfValidationError) -> JSONResponse:
+        del request, error
+        return JSONResponse(
+            status_code=403,
+            content={
+                "error": {"code": "csrf_validation_failed", "message": "CSRF validation failed"}
+            },
+        )
+
+    @app.exception_handler(SessionUnavailable)
+    async def session_unavailable(request: Request, error: SessionUnavailable) -> JSONResponse:
+        del request, error
+        return JSONResponse(
+            status_code=503,
+            content={
+                "error": {
+                    "code": "session_unavailable",
+                    "message": "Browser sessions are unavailable",
+                }
+            },
+        )
+
+    def browser_session(request: Request) -> BrowserSession:
+        if session_codec is None:
+            raise AuthenticationRequired
+        token = request.cookies.get(_SESSION_COOKIE, "")
+        try:
+            return session_codec.verify(token, now=clock.utc_now())
+        except SessionValidationError:
+            raise AuthenticationRequired from None
+
     def require_api_key(request: Request) -> None:
         expected = settings.api_key.get_secret_value()
         supplied = request.headers.get("Authorization", "").removeprefix("Bearer ")
-        if not expected or not hmac.compare_digest(supplied, expected):
-            raise AuthenticationRequired
+        if expected and hmac.compare_digest(supplied, expected):
+            return
+        browser_session(request)
+
+    def set_session_cookies(response: Response, *, token: str, session: BrowserSession) -> None:
+        response.set_cookie(
+            _SESSION_COOKIE,
+            token,
+            max_age=settings.session_ttl_seconds,
+            path="/",
+            secure=settings.session_cookie_secure,
+            httponly=True,
+            samesite="strict",
+        )
+        response.set_cookie(
+            _CSRF_COOKIE,
+            session.csrf_token,
+            max_age=settings.session_ttl_seconds,
+            path="/",
+            secure=settings.session_cookie_secure,
+            httponly=False,
+            samesite="strict",
+        )
+
+    def clear_session_cookies(response: Response) -> None:
+        response.delete_cookie(
+            _SESSION_COOKIE,
+            path="/",
+            secure=settings.session_cookie_secure,
+            httponly=True,
+            samesite="strict",
+        )
+        response.delete_cookie(
+            _CSRF_COOKIE,
+            path="/",
+            secure=settings.session_cookie_secure,
+            httponly=False,
+            samesite="strict",
+        )
 
     def capability_payload(evidence: Evidence) -> dict[str, Any]:
         configured: dict[Capability, bool] = {
@@ -122,6 +262,29 @@ def create_app(
     @app.get("/healthz")
     async def public_health() -> dict[str, str]:
         return {"status": "ok"}
+
+    @app.post("/api/v1/session")
+    async def login(credentials: SessionLogin, response: Response) -> dict[str, str]:
+        expected = settings.api_key.get_secret_value()
+        if not expected or not hmac.compare_digest(credentials.api_key, expected):
+            raise AuthenticationRequired
+        if session_codec is None:
+            raise SessionUnavailable
+        token, session = session_codec.issue(now=clock.utc_now())
+        set_session_cookies(response, token=token, session=session)
+        return {"status": "authenticated"}
+
+    @app.delete("/api/v1/session")
+    async def logout(
+        request: Request,
+        response: Response,
+        x_csrf_token: str | None = Header(default=None, alias="X-CSRF-Token"),
+    ) -> dict[str, str]:
+        session = browser_session(request)
+        if not x_csrf_token or not hmac.compare_digest(x_csrf_token, session.csrf_token):
+            raise CsrfValidationError
+        clear_session_cookies(response)
+        return {"status": "signed_out"}
 
     @app.get("/api/v1/health", dependencies=[Depends(require_api_key)])
     async def health() -> dict[str, Any]:
