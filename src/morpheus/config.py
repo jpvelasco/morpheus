@@ -44,6 +44,8 @@ class MorpheusSettings(BaseModel):
     session_secret: SecretStr = SecretStr("")
     session_ttl_seconds: int = Field(default=900, ge=60, le=86_400)
     session_cookie_secure: bool = True
+    max_concurrent_requests: int = Field(default=16, ge=1, le=256)
+    max_requests_per_minute: int = Field(default=120, ge=1, le=10_000)
     enable_search: bool = False
     enable_voice: bool = False
     enable_telemetry: bool = False

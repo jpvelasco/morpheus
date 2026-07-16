@@ -9,17 +9,23 @@ from typing import Any
 import uvicorn
 from fastapi import FastAPI, Header, Request
 from fastapi.responses import JSONResponse
+from pydantic import ValidationError
 
 from morpheus.agent.auth import AgentAuthenticationError, AgentAuthenticator
 from morpheus.agent.host import SystemHostInspector
 from morpheus.agent.protocol import AgentRequest, AgentResponse
+from morpheus.api.body_limit import BodyLimitMiddleware
 from morpheus.config import MorpheusSettings, load_settings
+from morpheus.core.concurrency import ConcurrencyLimiter, FixedWindowRateLimiter
 
 
 def create_agent_app(*, settings: MorpheusSettings, inspector: SystemHostInspector) -> FastAPI:
     key = settings.agent_key.get_secret_value().encode()
     authenticator = AgentAuthenticator(key)
     app = FastAPI(title="Morpheus Runtime Agent", docs_url=None, redoc_url=None)
+    app.add_middleware(BodyLimitMiddleware, max_body_bytes=4096)
+    request_limiter = ConcurrencyLimiter(settings.max_concurrent_requests)
+    rate_limiter = FixedWindowRateLimiter(settings.max_requests_per_minute)
 
     @app.post("/v1/inspect")
     async def inspect(
@@ -28,6 +34,34 @@ def create_agent_app(*, settings: MorpheusSettings, inspector: SystemHostInspect
         x_morpheus_nonce: str = Header(),
         x_morpheus_signature: str = Header(),
     ) -> Any:
+        client_key = request.client.host if request.client is not None else "local"
+        if not await rate_limiter.allow(client_key):
+            return JSONResponse(
+                status_code=429,
+                headers={"Retry-After": "60"},
+                content={"error": {"code": "request_rate_limited"}},
+            )
+        content_type = request.headers.get("Content-Type", "").split(";", 1)[0].lower()
+        if content_type != "application/json":
+            return JSONResponse(
+                status_code=415, content={"error": {"code": "unsupported_content_type"}}
+            )
+        content_length = request.headers.get("Content-Length")
+        if content_length:
+            try:
+                declared_size = int(content_length)
+            except ValueError:
+                return JSONResponse(
+                    status_code=400, content={"error": {"code": "invalid_content_length"}}
+                )
+            if declared_size < 0:
+                return JSONResponse(
+                    status_code=400, content={"error": {"code": "invalid_content_length"}}
+                )
+            if declared_size > 4096:
+                return JSONResponse(
+                    status_code=413, content={"error": {"code": "request_too_large"}}
+                )
         body = await request.body()
         if len(body) > 4096:
             return JSONResponse(status_code=413, content={"error": {"code": "request_too_large"}})
@@ -43,11 +77,23 @@ def create_agent_app(*, settings: MorpheusSettings, inspector: SystemHostInspect
             return JSONResponse(
                 status_code=401, content={"error": {"code": "authentication_failed"}}
             )
-        parsed = AgentRequest.model_validate_json(body)
-        result = inspector.inspect(parsed.operation)
-        return AgentResponse(
-            request_id=parsed.request_id, operation=parsed.operation, result=result
-        )
+        try:
+            parsed = AgentRequest.model_validate_json(body)
+        except ValidationError:
+            return JSONResponse(status_code=422, content={"error": {"code": "invalid_request"}})
+        if not await request_limiter.try_acquire():
+            return JSONResponse(
+                status_code=429,
+                headers={"Retry-After": "1"},
+                content={"error": {"code": "request_capacity_exhausted"}},
+            )
+        try:
+            result = inspector.inspect(parsed.operation)
+            return AgentResponse(
+                request_id=parsed.request_id, operation=parsed.operation, result=result
+            )
+        finally:
+            await request_limiter.release()
 
     return app
 

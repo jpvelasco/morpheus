@@ -29,7 +29,9 @@ class MemoryTelemetryStore:
         self.events.append(event)
 
 
-def proxy(chunks: list[bytes]) -> tuple[TestClient, MemoryTelemetryStore]:
+def proxy(
+    chunks: list[bytes], **settings_overrides: object
+) -> tuple[TestClient, MemoryTelemetryStore]:
     now = datetime(2026, 7, 15, tzinfo=UTC)
     inference = FakeInference(
         health_result=Evidence(
@@ -46,7 +48,7 @@ def proxy(chunks: list[bytes]) -> tuple[TestClient, MemoryTelemetryStore]:
     )
     store = MemoryTelemetryStore()
     app = create_proxy_app(
-        settings=MorpheusSettings(api_key="proxy-key", enable_telemetry=True),
+        settings=MorpheusSettings(api_key="proxy-key", enable_telemetry=True, **settings_overrides),
         inference=inference,
         store=store,
         clock=FakeClock(now=now, monotonic_value=2),
@@ -127,3 +129,42 @@ def test_SEC_003_proxy_rejects_oversized_body_before_upstream() -> None:
     )
     assert response.status_code == 413
     assert store.events == []
+
+
+def test_SEC_003_proxy_rejects_invalid_declared_body_length() -> None:
+    client, store = proxy([])
+    response = client.post(
+        "/v1/chat/completions",
+        headers={
+            "Authorization": "Bearer proxy-key",
+            "Content-Type": "application/json",
+            "Content-Length": "-1",
+        },
+        content=b"{}",
+    )
+
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "invalid_content_length"
+    assert store.events == []
+
+
+def test_SEC_003_proxy_rate_limits_before_upstream() -> None:
+    client, store = proxy(
+        [
+            json.dumps(
+                {
+                    "choices": [{"finish_reason": "stop"}],
+                    "usage": {"prompt_tokens": 1, "completion_tokens": 1},
+                }
+            ).encode()
+        ],
+        max_requests_per_minute=1,
+    )
+    headers = {"Authorization": "Bearer proxy-key"}
+    payload = {"model": "alias", "messages": []}
+
+    assert client.post("/v1/chat/completions", headers=headers, json=payload).status_code == 200
+    limited = client.post("/v1/chat/completions", headers=headers, json=payload)
+    assert limited.status_code == 429
+    assert limited.json()["error"]["code"] == "request_rate_limited"
+    assert len(store.events) == 1

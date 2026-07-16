@@ -16,7 +16,7 @@ AUTH = {"Authorization": "Bearer voice-key"}
 
 @dataclass
 class FakeUpstream:
-    responses: list[httpx.Response]
+    responses: list[httpx.Response | httpx.HTTPError]
     requests: list[tuple[str, dict[str, Any]]] = field(default_factory=list)
 
     async def __aenter__(self) -> FakeUpstream:
@@ -27,7 +27,10 @@ class FakeUpstream:
 
     async def post(self, url: str, **kwargs: Any) -> httpx.Response:
         self.requests.append((url, kwargs))
-        return self.responses.pop(0)
+        response = self.responses.pop(0)
+        if isinstance(response, httpx.HTTPError):
+            raise response
+        return response
 
 
 def client(monkeypatch: pytest.MonkeyPatch, upstream: FakeUpstream, **kwargs: Any) -> TestClient:
@@ -90,6 +93,26 @@ def test_VOICE_004_gateway_bounds_audio_before_upstream(
 
 
 @pytest.mark.parametrize(
+    ("path", "content_type", "content"),
+    [
+        ("/v1/audio/transcriptions", "application/json", b"{}"),
+        ("/v1/audio/speech", "text/plain", b"hello"),
+    ],
+)
+def test_SEC_003_voice_gateway_rejects_wrong_content_type(
+    monkeypatch: pytest.MonkeyPatch, path: str, content_type: str, content: bytes
+) -> None:
+    response = client(monkeypatch, FakeUpstream([])).post(
+        path,
+        headers={**AUTH, "Content-Type": content_type},
+        content=content,
+    )
+
+    assert response.status_code == 415
+    assert response.json()["error"]["code"] == "unsupported_content_type"
+
+
+@pytest.mark.parametrize(
     ("upstream", "code"),
     [
         (httpx.Response(503), "stt_unavailable"),
@@ -106,6 +129,33 @@ def test_VOICE_001_gateway_normalizes_stt_failures(
     )
     assert response.status_code == 502
     assert response.json()["error"]["code"] == code
+
+
+def test_SEC_003_voice_gateway_normalizes_upstream_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    response = client(monkeypatch, FakeUpstream([httpx.ReadTimeout("timed out")])).post(
+        "/v1/audio/speech",
+        headers=AUTH,
+        json={"model": "kokoro", "input": "hello", "voice": "af_heart"},
+    )
+
+    assert response.status_code == 502
+    assert response.json()["error"]["code"] == "tts_unavailable"
+
+
+def test_SEC_003_voice_gateway_rate_limits_before_upstream(monkeypatch: pytest.MonkeyPatch) -> None:
+    upstream = FakeUpstream(
+        [httpx.Response(200, content=b"ID3audio", headers={"Content-Type": "audio/mpeg"})]
+    )
+    gateway = client(monkeypatch, upstream, max_requests_per_minute=1)
+    payload = {"model": "kokoro", "input": "hello", "voice": "af_heart"}
+
+    assert gateway.post("/v1/audio/speech", headers=AUTH, json=payload).status_code == 200
+    limited = gateway.post("/v1/audio/speech", headers=AUTH, json=payload)
+    assert limited.status_code == 429
+    assert limited.json()["error"]["code"] == "request_rate_limited"
+    assert len(upstream.requests) == 1
 
 
 def test_VOICE_002_gateway_forwards_speech(monkeypatch: pytest.MonkeyPatch) -> None:

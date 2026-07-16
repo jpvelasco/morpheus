@@ -280,10 +280,10 @@
       "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-SEC-002-01"]
     },
     {
-      "id": "SEC-003", "phase": 2, "status": "planned",
-      "owning_tests": ["tests/contract/test_telemetry_proxy.py", "tests/contract/test_voice_gateway.py"], "risk": "critical",
+      "id": "SEC-003", "phase": 2, "status": "implemented",
+      "owning_tests": ["tests/unit/test_body_limit.py", "tests/unit/test_concurrency.py", "tests/contract/test_control_api.py", "tests/contract/test_runtime_agent_app.py", "tests/contract/test_telemetry_proxy.py", "tests/contract/test_voice_gateway.py"], "risk": "critical",
       "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-SEC-003-01"]
+      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
     },
     {
       "id": "SEC-004", "phase": 3, "status": "implemented",
