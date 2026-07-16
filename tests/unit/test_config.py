@@ -109,6 +109,12 @@ def test_CFG_004_startup_report_has_feature_decisions() -> None:
     assert "api_key" not in report
 
 
+def test_SEC_006_canonicalizes_the_configured_owned_data_root(tmp_path: Path) -> None:
+    settings = MorpheusSettings(data_dir=tmp_path / "owned" / "nested" / "..")
+
+    assert settings.data_dir == (tmp_path / "owned").resolve()
+
+
 @pytest.mark.parametrize(
     "url",
     [

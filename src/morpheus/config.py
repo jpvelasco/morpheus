@@ -11,6 +11,8 @@ import yaml
 from dotenv import dotenv_values
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator, model_validator
 
+from morpheus.core.paths import OwnedPathError, OwnedPathResolver
+
 FEATURE_FIELDS = {
     "search": "enable_search",
     "voice": "enable_voice",
@@ -102,6 +104,16 @@ class MorpheusSettings(BaseModel):
         if not path.is_absolute():
             raise ValueError("runtime_agent_socket must be an absolute path")
         return path
+
+    @field_validator("data_dir", mode="before")
+    @classmethod
+    def validate_data_dir(cls, value: Any) -> Path:
+        if value is None or value == "":
+            raise ValueError("data_dir must be configured")
+        try:
+            return OwnedPathResolver(Path(value)).root
+        except (OSError, OwnedPathError, TypeError, ValueError) as error:
+            raise ValueError("data_dir must resolve to a usable owned root") from error
 
     @field_validator("session_secret")
     @classmethod

@@ -7,6 +7,7 @@ import zipfile
 from pathlib import Path
 from typing import Any
 
+from morpheus.core.paths import OwnedPathResolver
 from morpheus.core.redaction import redact
 
 
@@ -15,6 +16,9 @@ def _json_bytes(value: Any) -> bytes:
 
 
 class SupportBundleBuilder:
+    def __init__(self, *, owned_root: Path | None = None) -> None:
+        self._owned_root = owned_root
+
     def build(
         self,
         destination: Path,
@@ -24,6 +28,7 @@ class SupportBundleBuilder:
         health: dict[str, Any],
         errors: list[dict[str, Any]],
     ) -> Path:
+        destination = OwnedPathResolver(self._owned_root or destination.parent).resolve(destination)
         safe_errors = [
             {
                 key: value

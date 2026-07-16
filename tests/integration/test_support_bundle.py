@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from morpheus.core.paths import OwnedPathError
 from morpheus.ops.support import SupportBundleBuilder
 
 pytestmark = pytest.mark.integration
@@ -57,3 +58,18 @@ def test_OPS_003_bundle_write_is_atomic(tmp_path: Path) -> None:
     )
     assert destination.is_file()
     assert not (tmp_path / ".support.zip.tmp").exists()
+
+
+def test_SEC_006_support_bundle_rejects_generated_output_outside_the_owned_root(
+    tmp_path: Path,
+) -> None:
+    owned = tmp_path / "owned"
+
+    with pytest.raises(OwnedPathError, match="escapes"):
+        SupportBundleBuilder(owned_root=owned).build(
+            tmp_path / "outside.zip",
+            version="0.1.0",
+            configuration={},
+            health={},
+            errors=[],
+        )

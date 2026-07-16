@@ -162,7 +162,7 @@ def create_proxy_app(
 def run() -> None:
     settings = load_settings()
     clock = SystemClock()
-    store = SqliteStore(settings.data_dir / "morpheus.sqlite3")
+    store = SqliteStore(settings.data_dir / "morpheus.sqlite3", owned_root=settings.data_dir)
     inference = OpenAIInferenceAdapter(
         base_url=settings.llm_base_url,
         clock=clock,
