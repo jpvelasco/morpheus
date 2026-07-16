@@ -13,7 +13,7 @@ private request data, host addresses, or unredacted evidence.
 - **Current release development line:** post-baseline source changes will be
   frozen into a new candidate only after the pre-soak implementation queue is
   complete.
-- **Implementation inventory:** 40 implemented, 15 planned, 3 deferred; see
+- **Implementation inventory:** 41 implemented, 14 planned, 3 deferred; see
   [`requirements.json`](../requirements.json) and the
   [implementation gap review](IMPLEMENTATION_GAP_REVIEW.md).
 - **Release posture:** not yet release-ready. A passing candidate does not
@@ -45,16 +45,17 @@ workspace; refer to the candidate commit and task ID in its redacted manifest.
 | Current development line | SEC-002 now authorizes only explicit read-only resource actions on owned, non-protected identities. |
 | Current development line | SEC-006 now resolves configured data, persistence, archives, generated output, evidence, and restore staging through owned-path boundaries. |
 | Current development line | REL-002 now applies bounded retry/backoff/deadline recovery to idempotent inference discovery. |
+| Current development line | OPS-002 now preflights schema/free space and performs durable rollback-capable restore swaps. |
 
 ## Active Milestone
 
-**IMP-OPS-002-01 — restore durability.** Add free-space and schema-compatibility
-preflight, durable staging, fsync boundaries, rollback-on-failure, and
-incompatible/partial archive cases to restore.
+**IMP-SEC-005-01 — supply chain.** Generate SBOMs for every artifact/image and
+make lock, secret, static, dependency, filesystem, and container vulnerability
+scans release-blocking.
 
 ## Pre-Soak Queue
 
-1. Remaining P0 implementation: SEC-005, OPS-002, and REL-003.
+1. Remaining P0 implementation: SEC-005 and REL-003.
 2. Rebuild and validate the exact frozen candidate: current-container startup,
    hardening, loopback exposure, security/SBOM evidence, installation, runtime
    agent, and external-runtime integrity.
