@@ -70,3 +70,8 @@ def test_context_equivalence_proof_uses_docker_and_representative_dirty_state() 
     assert script.count("docker build") == 2
     assert '[[ "${clean_id}" == "${dirty_id}" ]]' in script
     assert "--pull=false" in script
+
+
+def test_context_probe_image_declares_a_nonroot_user() -> None:
+    dockerfile = (ROOT / "validation" / "docker-context" / "Dockerfile").read_text(encoding="utf-8")
+    assert "USER 65532:65532" in dockerfile
