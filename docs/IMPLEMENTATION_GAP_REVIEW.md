@@ -16,7 +16,7 @@ Source of truth: [`requirements.json`](../requirements.json)
 
 The review compared all 58 requirements in the product specification against
 the Python services, dashboard, Compose definitions, configuration, operator
-documentation, and current tests. The result is 39 implemented, 16 planned,
+documentation, and current tests. The result is 40 implemented, 15 planned,
 3 deferred, and 0 validated. Existing tests therefore establish useful code
 coverage without overstating production-release completion.
 
@@ -25,11 +25,11 @@ coverage without overstating production-release completion.
 - Implemented: CFG-001 through CFG-004; RUN-001 through RUN-006;
   UI-001, UI-002, UI-004, UI-005; SRCH-001, SRCH-003; VOICE-001, VOICE-002;
   TEL-001 through TEL-005; FLOW-001, FLOW-002; GATE-002, GATE-003; OPS-001,
-  OPS-003; SEC-001 through SEC-004, SEC-006, SEC-007; REL-001, REL-004; PERF-001,
+  OPS-003; SEC-001 through SEC-004, SEC-006, SEC-007; REL-001, REL-002, REL-004; PERF-001,
   PERF-003.
 - Planned: UI-003; SRCH-002; VOICE-003,
   VOICE-004; RSCH-001, RSCH-002; GATE-001; IMG-001 through IMG-004; OPS-002;
-  SEC-005; REL-002, REL-003; PERF-002.
+  SEC-005; REL-003; PERF-002.
 - Deferred: RAG-001 through RAG-003 under ADR-0004. Reopen only after a
   measured retrieval gap, privacy constraints, relevance judgments, and a
   reindex plan exist.
@@ -44,7 +44,6 @@ remains isolated to an explicitly authorized maintenance window.
 
 | Priority | Task | Requirement | Environment | Completion criterion |
 |---|---|---|---|---|
-| P0 | IMP-REL-002-01 | REL-002 | DEV, VM | Add bounded queues/concurrency and a reusable retry policy with exponential backoff, jitter, hard attempt limits, and monotonic deadlines. |
 | P0 | IMP-OPS-002-01 | OPS-002 | DEV, VM | Add free-space and schema-compatibility preflight, durable staging, fsync boundaries, rollback-on-failure, and incompatible/partial archive cases to restore. |
 | P0 | IMP-REL-003-01 | REL-003 | VM | Implement idempotent install, validate, start, stop, migrate, backup, restore-preflight, upgrade, rollback, and uninstall operations for owned resources. |
 | P0/P5 | IMP-SEC-005-01 | SEC-005 | DEV, VM | Generate SBOMs for every artifact/image and make lock, secret, static, dependency, filesystem, and container vulnerability scans release-blocking. |

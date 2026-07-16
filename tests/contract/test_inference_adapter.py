@@ -10,6 +10,7 @@ import pytest
 
 from morpheus.adapters.fakes import FakeClock
 from morpheus.adapters.inference.openai import InferenceContractError, OpenAIInferenceAdapter
+from morpheus.core.concurrency import RetryPolicy
 from morpheus.core.health import HealthState
 
 pytestmark = pytest.mark.contract
@@ -58,6 +59,31 @@ async def test_RUN_002_health_distinguishes_starting_and_unreachable() -> None:
 
     async with adapter_for(httpx.MockTransport(timeout)) as adapter:
         assert (await adapter.health()).state is HealthState.UNREACHABLE
+
+
+@pytest.mark.asyncio
+async def test_REL_002_retries_only_transient_model_discovery_failures() -> None:
+    calls = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        return (
+            httpx.Response(503, json={"detail": "loading"})
+            if calls == 1
+            else httpx.Response(200, json={"data": [{"id": "model"}]})
+        )
+
+    adapter = OpenAIInferenceAdapter(
+        base_url="http://llm.test/v1",
+        client=httpx.AsyncClient(transport=httpx.MockTransport(handler)),
+        clock=FakeClock(now=datetime(2026, 7, 15, tzinfo=UTC)),
+        timeout_seconds=1,
+        retry_policy=RetryPolicy(initial_delay_seconds=0.001, deadline_seconds=1, jitter_ratio=0),
+    )
+    async with adapter:
+        assert (await adapter.models())[0].aliases == ("model",)
+    assert calls == 2
 
 
 @pytest.mark.asyncio

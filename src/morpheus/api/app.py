@@ -21,7 +21,7 @@ from morpheus.api.runtime import runtime_services_snapshot, runtime_snapshot
 from morpheus.api.session import BrowserSession, SessionCodec, SessionValidationError
 from morpheus.config import MorpheusSettings, load_settings
 from morpheus.core.capabilities import Capability, evaluate_capabilities
-from morpheus.core.concurrency import ConcurrencyLimiter, FixedWindowRateLimiter
+from morpheus.core.concurrency import ConcurrencyLimiter, FixedWindowRateLimiter, RetryPolicy
 from morpheus.core.health import Evidence, HealthState
 from morpheus.ports.protocols import Clock, InferencePort, RuntimeAgentPort
 
@@ -638,6 +638,10 @@ def run() -> None:
         clock=clock,
         timeout_seconds=settings.request_timeout_seconds,
         api_key=settings.upstream_api_key.get_secret_value(),
+        retry_policy=RetryPolicy(
+            max_attempts=settings.retry_max_attempts,
+            deadline_seconds=settings.retry_deadline_seconds,
+        ),
     )
     agent_key = settings.agent_key.get_secret_value().encode()
     runtime_endpoint_configured = bool(settings.runtime_agent_url or settings.runtime_agent_socket)

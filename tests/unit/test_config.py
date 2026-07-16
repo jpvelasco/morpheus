@@ -100,6 +100,12 @@ def test_SEC_003_rejects_rate_limits_outside_safe_bounds(limit: int) -> None:
         MorpheusSettings(max_requests_per_minute=limit)
 
 
+@pytest.mark.parametrize("attempts", [0, 6])
+def test_REL_002_rejects_retry_attempts_outside_safe_bounds(attempts: int) -> None:
+    with pytest.raises(ValidationError):
+        MorpheusSettings(retry_max_attempts=attempts)
+
+
 def test_CFG_004_startup_report_has_feature_decisions() -> None:
     settings = MorpheusSettings(enable_search=True)
     report = settings.startup_report()
