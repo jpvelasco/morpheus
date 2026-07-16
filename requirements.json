@@ -298,10 +298,10 @@
       "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-SEC-005-01"]
     },
     {
-      "id": "SEC-006", "phase": 10, "status": "planned",
+      "id": "SEC-006", "phase": 10, "status": "implemented",
       "owning_tests": ["tests/integration/test_backup_restore.py", "tests/contract/test_comfy_adapter.py", "tests/unit/test_release_evidence.py"], "risk": "critical",
       "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-SEC-006-01"]
+      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
     },
     {
       "id": "SEC-007", "phase": 4, "status": "implemented",

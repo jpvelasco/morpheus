@@ -5,10 +5,11 @@ import json
 import os
 import shutil
 import stat
-import tempfile
 import zipfile
 from pathlib import Path, PurePosixPath
 from typing import Any
+
+from morpheus.core.paths import OwnedPathResolver
 
 
 class ArchiveValidationError(ValueError):
@@ -28,17 +29,24 @@ def _safe_name(name: str) -> PurePosixPath:
 
 class BackupManager:
     def __init__(self, *, owned_root: Path) -> None:
-        self._root = owned_root.resolve()
+        self._paths = OwnedPathResolver(owned_root)
+        self._root = self._paths.root
 
     def create(self, destination: Path) -> Path:
         if not self._root.is_dir():
             raise FileNotFoundError("Morpheus-owned state root does not exist")
+        destination = self._paths.workspace_path("backups", destination)
+        temporary = self._paths.workspace_path(
+            "backups", destination.with_name(f".{destination.name}.tmp")
+        )
         files: dict[str, str] = {}
         contents: dict[str, bytes] = {}
         for source in sorted(self._root.rglob("*")):
             if source.is_symlink():
                 raise ArchiveValidationError("backup source contains a symbolic link")
             if not source.is_file():
+                continue
+            if source in (destination, temporary):
                 continue
             relative = source.relative_to(self._root).as_posix()
             data = source.read_bytes()
@@ -50,7 +58,6 @@ class BackupManager:
             separators=(",", ":"),
         ).encode()
         destination.parent.mkdir(parents=True, exist_ok=True)
-        temporary = destination.with_name(f".{destination.name}.tmp")
         with zipfile.ZipFile(temporary, "w", compression=zipfile.ZIP_DEFLATED) as bundle:
             bundle.writestr("manifest.json", manifest)
             for relative, data in contents.items():
@@ -59,6 +66,7 @@ class BackupManager:
         return destination
 
     def restore(self, archive: Path) -> None:
+        archive = self._paths.workspace_path("backups", archive)
         parent = self._root.parent
         parent.mkdir(parents=True, exist_ok=True)
         with zipfile.ZipFile(archive) as bundle:
@@ -82,8 +90,8 @@ class BackupManager:
                     raise ArchiveValidationError(f"checksum mismatch for {relative}")
                 verified[relative] = data
 
-        staging = Path(tempfile.mkdtemp(prefix=".morpheus-restore-", dir=parent))
-        previous = parent / f".{self._root.name}.previous"
+        staging = self._paths.create_staging_directory("restore")
+        previous = self._paths.staging_path("previous")
         try:
             for relative, data in verified.items():
                 target = staging / _safe_name(relative)

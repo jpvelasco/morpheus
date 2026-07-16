@@ -17,6 +17,7 @@ from types import TracebackType
 from typing import Any, BinaryIO, Self
 from uuid import uuid4
 
+from morpheus.core.paths import OwnedPathResolver
 from morpheus.core.redaction import redact
 
 _RUN_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
@@ -250,7 +251,8 @@ class EvidenceRun:
         guard: CanaryGuard,
         started_at: datetime,
     ) -> None:
-        self.path = path
+        self._paths = OwnedPathResolver(path)
+        self.path = self._paths.root
         self._spec = spec
         self._guard = guard
         self._started_at = _utc_text(started_at)
@@ -269,8 +271,9 @@ class EvidenceRun:
         if not _RUN_ID.fullmatch(run_id):
             raise ValueError("invalid evidence run ID")
         _utc_text(started_at)
-        root.mkdir(parents=True, exist_ok=True)
-        path = root / run_id
+        paths = OwnedPathResolver(root)
+        paths.root.mkdir(parents=True, exist_ok=True)
+        path = paths.resolve_relative(run_id)
         path.mkdir(mode=0o750)
         return cls(path, spec, guard, started_at)
 
@@ -405,7 +408,7 @@ class EvidenceRun:
             or (relative_path in _RESERVED_PATHS and not reserved)
         ):
             raise ValueError(f"invalid evidence path: {relative_path}")
-        return self.path / path
+        return self._paths.resolve_relative(path)
 
     def _prepare_destination(self, destination: Path) -> None:
         if destination.exists() or destination.is_symlink():

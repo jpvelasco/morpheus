@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from morpheus.adapters.persistence.sqlite import SqliteStore
+from morpheus.core.paths import OwnedPathError
 from morpheus.core.telemetry import TelemetryEvent
 
 pytestmark = pytest.mark.integration
@@ -48,3 +49,10 @@ async def test_database_backup_is_logically_equivalent(tmp_path: Path) -> None:
     restored = SqliteStore(destination)
     await restored.initialize()
     assert await restored.schema_version() == await store.schema_version()
+
+
+def test_SEC_006_sqlite_store_rejects_a_database_outside_its_owned_root(tmp_path: Path) -> None:
+    owned = tmp_path / "owned"
+
+    with pytest.raises(OwnedPathError, match="escapes"):
+        SqliteStore(tmp_path / "outside.sqlite3", owned_root=owned)

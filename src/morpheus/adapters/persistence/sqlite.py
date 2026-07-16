@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, TypeVar
 
+from morpheus.core.paths import OwnedPathResolver
 from morpheus.core.telemetry import TelemetryEvent
 
 T = TypeVar("T")
@@ -14,8 +15,9 @@ SCHEMA_VERSION = 1
 
 
 class SqliteStore:
-    def __init__(self, path: Path) -> None:
-        self._path = path
+    def __init__(self, path: Path, *, owned_root: Path | None = None) -> None:
+        self._paths = OwnedPathResolver(owned_root or path.parent)
+        self._path = self._paths.resolve(path)
 
     def _connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self._path, timeout=5)
@@ -117,6 +119,8 @@ class SqliteStore:
         return await self._run(prune)
 
     async def backup(self, destination: Path) -> Path:
+        destination = self._paths.resolve(destination)
+
         def create_backup(connection: sqlite3.Connection) -> Path:
             destination.parent.mkdir(parents=True, exist_ok=True)
             with sqlite3.connect(destination) as target:
