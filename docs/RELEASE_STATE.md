@@ -174,6 +174,18 @@ were on DEV rather than a clean VM and do not identify a built candidate
 artifact set. The linked requirements therefore remain `implemented`, not
 `validated`.
 
+The first frozen pre-soak candidate at `f23b9e6` passed two independent
+byte-for-byte VM rebuilds and closed ten-artifact verification, then the early
+candidate secret scan stopped on nine reviewed false positives: the official
+Python base image's public 40-hex GPG signing fingerprint repeated in OCI and
+rollback archives, plus empty assignments from `.env.example` inside a nested
+archive path. The scanner policy now permits only that exact public-fingerprint
+shape and recognizes the already-reviewed empty template through `/` or archive
+`!` boundaries. The pinned network-disabled Gitleaks replay reports zero
+findings. Because scanner policy is release source, `f23b9e6` is superseded and
+must not be promoted; the corrected source requires a new exact candidate and
+affected evidence.
+
 Release evidence is intentionally ignored from Git. Store it only under the
 configured `artifacts/release-validation/` location or a disposable validation
 workspace; refer to the candidate commit and task ID in its redacted manifest.

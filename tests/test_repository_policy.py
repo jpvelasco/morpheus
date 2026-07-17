@@ -65,6 +65,11 @@ def test_secret_scan_ignores_only_the_reviewed_empty_example_false_positive() ->
     assert config["allowlists"] == [
         {
             "description": "Reviewed secret-free environment template",
-            "paths": [r"(?:^|/)\.env\.example$"],
-        }
+            "paths": [r"(?:^|[/!])\.env\.example$"],
+        },
+        {
+            "description": "Official Python base-image public signing fingerprint",
+            "regexTarget": "match",
+            "regexes": [r"GPG_KEY=[0-9A-F]{40}"],
+        },
     ]
