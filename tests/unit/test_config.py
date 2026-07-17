@@ -25,6 +25,15 @@ def test_CFG_001_configuration_precedence(tmp_path: Path) -> None:
     assert str(settings.llm_base_url) == "http://config-llm:8000/v1"
 
 
+def test_CONT_002_loads_the_configured_telemetry_host_port(tmp_path: Path) -> None:
+    env_file = tmp_path / ".env"
+    env_file.write_text("MORPHEUS_TELEMETRY_PORT=17410\n", encoding="utf-8")
+
+    settings = load_settings(env_file=env_file, environ={}, config_file=None)
+
+    assert settings.telemetry_port == 17410
+
+
 @pytest.mark.parametrize(
     "url",
     [
@@ -155,3 +164,28 @@ def test_CFG_003_runtime_agent_socket_is_optional_and_absolute() -> None:
     assert MorpheusSettings(runtime_agent_socket="").runtime_agent_socket is None
     with pytest.raises(ValidationError, match="absolute path"):
         MorpheusSettings(runtime_agent_socket="agent.sock")
+
+
+def test_REL_003_lifecycle_is_disabled_unless_a_fixed_absolute_deployment_root_is_set(
+    tmp_path: Path,
+) -> None:
+    assert MorpheusSettings().enable_lifecycle is False
+    with pytest.raises(ValidationError, match="deployment root"):
+        MorpheusSettings(enable_lifecycle=True)
+    with pytest.raises(ValidationError, match="absolute path"):
+        MorpheusSettings(lifecycle_deployment_root="deployment")
+
+    settings = MorpheusSettings(
+        enable_lifecycle=True,
+        lifecycle_deployment_root=tmp_path / "deployment",
+    )
+    assert settings.lifecycle_deployment_root == tmp_path / "deployment"
+
+
+@pytest.mark.parametrize(
+    "name",
+    ["--config", "../ai_default", "ai/default", "", "network name"],
+)
+def test_SEC_002_rejects_unsafe_external_network_identifiers(name: str) -> None:
+    with pytest.raises(ValidationError):
+        MorpheusSettings(external_docker_network=name)

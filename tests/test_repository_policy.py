@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -58,3 +59,12 @@ def test_secret_scan_ignores_only_the_reviewed_empty_example_false_positive() ->
         "46478209f9abd0ce2e47b65cb7e92095a3aa66e8:.env.example:generic-api-key:20"
     ]
     assert any("adjacent empty assignments" in line for line in lines if line.startswith("#"))
+
+    config = tomllib.loads((ROOT / ".gitleaks.toml").read_text(encoding="utf-8"))
+    assert config["extend"] == {"useDefault": True}
+    assert config["allowlists"] == [
+        {
+            "description": "Reviewed secret-free environment template",
+            "paths": [r"(?:^|/)\.env\.example$"],
+        }
+    ]

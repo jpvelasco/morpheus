@@ -59,7 +59,7 @@ def main() -> None:
 
     api = f"http://127.0.0.1:{settings.api_port}"
     dashboard = f"http://127.0.0.1:{settings.dashboard_port}"
-    telemetry = "http://127.0.0.1:7410"
+    telemetry = f"http://127.0.0.1:{settings.telemetry_port}"
 
     status, _, body = _request(f"{api}/healthz")
     assert status == 200 and _json(body) == {"status": "ok"}

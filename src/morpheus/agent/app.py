@@ -4,7 +4,7 @@ import os
 import socket
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 import uvicorn
 from fastapi import FastAPI, Header, Request
@@ -13,13 +13,28 @@ from pydantic import ValidationError
 
 from morpheus.agent.auth import AgentAuthenticationError, AgentAuthenticator
 from morpheus.agent.host import SystemHostInspector
-from morpheus.agent.protocol import AgentRequest, AgentResponse
+from morpheus.agent.protocol import (
+    AgentLifecycleRequest,
+    AgentLifecycleResponse,
+    AgentRequest,
+    AgentResponse,
+)
 from morpheus.api.body_limit import BodyLimitMiddleware
 from morpheus.config import MorpheusSettings, load_settings
 from morpheus.core.concurrency import ConcurrencyLimiter, FixedWindowRateLimiter
+from morpheus.core.lifecycle import LifecycleRequest
 
 
-def create_agent_app(*, settings: MorpheusSettings, inspector: SystemHostInspector) -> FastAPI:
+class LifecycleExecutor(Protocol):
+    def execute(self, request: LifecycleRequest) -> Any: ...
+
+
+def create_agent_app(
+    *,
+    settings: MorpheusSettings,
+    inspector: SystemHostInspector,
+    lifecycle: LifecycleExecutor | None = None,
+) -> FastAPI:
     key = settings.agent_key.get_secret_value().encode()
     authenticator = AgentAuthenticator(key)
     app = FastAPI(title="Morpheus Runtime Agent", docs_url=None, redoc_url=None)
@@ -27,13 +42,13 @@ def create_agent_app(*, settings: MorpheusSettings, inspector: SystemHostInspect
     request_limiter = ConcurrencyLimiter(settings.max_concurrent_requests)
     rate_limiter = FixedWindowRateLimiter(settings.max_requests_per_minute)
 
-    @app.post("/v1/inspect")
-    async def inspect(
+    async def authenticated_body(
         request: Request,
-        x_morpheus_timestamp: str = Header(),
-        x_morpheus_nonce: str = Header(),
-        x_morpheus_signature: str = Header(),
-    ) -> Any:
+        *,
+        timestamp: str,
+        nonce: str,
+        signature: str,
+    ) -> bytes | JSONResponse:
         client_key = request.client.host if request.client is not None else "local"
         if not await rate_limiter.allow(client_key):
             return JSONResponse(
@@ -67,9 +82,9 @@ def create_agent_app(*, settings: MorpheusSettings, inspector: SystemHostInspect
             return JSONResponse(status_code=413, content={"error": {"code": "request_too_large"}})
         try:
             authenticator.verify(
-                timestamp=x_morpheus_timestamp,
-                nonce=x_morpheus_nonce,
-                signature=x_morpheus_signature,
+                timestamp=timestamp,
+                nonce=nonce,
+                signature=signature,
                 body=body,
                 now=datetime.now(UTC),
             )
@@ -77,6 +92,24 @@ def create_agent_app(*, settings: MorpheusSettings, inspector: SystemHostInspect
             return JSONResponse(
                 status_code=401, content={"error": {"code": "authentication_failed"}}
             )
+        return body
+
+    @app.post("/v1/inspect")
+    async def inspect(
+        request: Request,
+        x_morpheus_timestamp: str = Header(),
+        x_morpheus_nonce: str = Header(),
+        x_morpheus_signature: str = Header(),
+    ) -> Any:
+        authenticated = await authenticated_body(
+            request,
+            timestamp=x_morpheus_timestamp,
+            nonce=x_morpheus_nonce,
+            signature=x_morpheus_signature,
+        )
+        if isinstance(authenticated, JSONResponse):
+            return authenticated
+        body = authenticated
         try:
             parsed = AgentRequest.model_validate_json(body)
         except ValidationError:
@@ -100,13 +133,83 @@ def create_agent_app(*, settings: MorpheusSettings, inspector: SystemHostInspect
         finally:
             await request_limiter.release()
 
+    @app.post("/v1/lifecycle")
+    async def execute_lifecycle(
+        request: Request,
+        x_morpheus_timestamp: str = Header(),
+        x_morpheus_nonce: str = Header(),
+        x_morpheus_signature: str = Header(),
+    ) -> Any:
+        authenticated = await authenticated_body(
+            request,
+            timestamp=x_morpheus_timestamp,
+            nonce=x_morpheus_nonce,
+            signature=x_morpheus_signature,
+        )
+        if isinstance(authenticated, JSONResponse):
+            return authenticated
+        try:
+            parsed = AgentLifecycleRequest.model_validate_json(authenticated)
+            operation = LifecycleRequest(
+                action=parsed.action,
+                version=parsed.version,
+                backup_id=parsed.backup_id,
+                confirmation=parsed.confirmation,
+                lab_authorized=settings.lifecycle_lab_authorized,
+            )
+        except (ValidationError, ValueError):
+            return JSONResponse(status_code=422, content={"error": {"code": "invalid_request"}})
+        if lifecycle is None:
+            return JSONResponse(
+                status_code=503, content={"error": {"code": "lifecycle_unavailable"}}
+            )
+        if not await request_limiter.try_acquire():
+            return JSONResponse(
+                status_code=429,
+                headers={"Retry-After": "1"},
+                content={"error": {"code": "request_capacity_exhausted"}},
+            )
+        try:
+            try:
+                result = lifecycle.execute(operation)
+            except PermissionError:
+                return JSONResponse(
+                    status_code=403, content={"error": {"code": "authorization_denied"}}
+                )
+            except RuntimeError:
+                return JSONResponse(
+                    status_code=409, content={"error": {"code": "lifecycle_conflict"}}
+                )
+            return AgentLifecycleResponse(
+                request_id=parsed.request_id,
+                action=parsed.action,
+                result=result.as_dict(),
+            )
+        finally:
+            await request_limiter.release()
+
     return app
 
 
 def run() -> None:
     settings = load_settings()
     inspector = SystemHostInspector(project_id=settings.project_id, data_dir=settings.data_dir)
-    app = create_agent_app(settings=settings, inspector=inspector)
+    lifecycle: LifecycleExecutor | None = None
+    if settings.enable_lifecycle:
+        from morpheus.adapters.runtime.lifecycle import DockerComposeLifecycleAdapter
+        from morpheus.ops.lifecycle import LifecycleCoordinator
+
+        assert settings.lifecycle_deployment_root is not None
+        lifecycle = LifecycleCoordinator(
+            adapter=DockerComposeLifecycleAdapter(
+                project_id=settings.project_id,
+                deployment_root=settings.lifecycle_deployment_root,
+                data_root=settings.data_dir,
+                external_network=settings.external_docker_network,
+            ),
+            project_id=settings.project_id,
+        )
+    app = create_agent_app(settings=settings, inspector=inspector, lifecycle=lifecycle)
     if settings.runtime_agent_socket is None:
         uvicorn.run(app, host="127.0.0.1", port=settings.agent_port, access_log=False)
         return

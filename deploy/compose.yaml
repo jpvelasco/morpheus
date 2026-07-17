@@ -12,10 +12,11 @@ services:
     security_opt: [no-new-privileges:true]
     tmpfs: ["/tmp:size=32m,mode=1777"]
     env_file:
-      - path: ../.env
+      - path: ${MORPHEUS_ENV_FILE:-../.env}
         required: false
     environment:
       MORPHEUS_BIND_ADDRESS: "0.0.0.0"
+      MORPHEUS_API_PORT: "7400"
       # Container networking requires a wildcard bind; the host publication remains loopback-only.
       MORPHEUS_ALLOW_LAN: "true"
     ports:
@@ -79,10 +80,11 @@ services:
     security_opt: [no-new-privileges:true]
     tmpfs: ["/tmp:size=32m,mode=1777"]
     env_file:
-      - path: ../.env
+      - path: ${MORPHEUS_ENV_FILE:-../.env}
         required: false
     environment:
       MORPHEUS_BIND_ADDRESS: "0.0.0.0"
+      MORPHEUS_TELEMETRY_PORT: "7410"
       # Container networking requires a wildcard bind; the host publication remains loopback-only.
       MORPHEUS_ALLOW_LAN: "true"
     ports:

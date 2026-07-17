@@ -1,0 +1,25 @@
+{
+  "format": 1,
+  "blocked_severities": ["HIGH", "CRITICAL"],
+  "required_scans": [
+    "gitleaks-history",
+    "gitleaks-worktree",
+    "gitleaks-candidate-artifacts",
+    "repository-filesystem-security",
+    "repository-filesystem-license",
+    "candidate-artifacts-security",
+    "candidate-artifacts-license",
+    "backend-oci-security",
+    "backend-oci-license",
+    "dashboard-oci-security",
+    "dashboard-oci-license"
+  ],
+  "sbom_formats": ["cyclonedx-json", "spdx-json"],
+  "forbidden_licenses": [
+    "BUSL-1.1",
+    "Commons-Clause",
+    "Elastic-License-2.0",
+    "PolyForm-Noncommercial-1.0.0",
+    "SSPL-1.0"
+  ]
+}

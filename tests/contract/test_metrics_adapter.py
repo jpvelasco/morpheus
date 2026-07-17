@@ -30,6 +30,14 @@ def test_RUN_003_missing_metrics_are_reported_without_fabricated_zeroes() -> Non
     assert "requests_waiting" not in result.values
 
 
+def test_RUN_003_accepts_current_vllm_kv_cache_metric_name() -> None:
+    result = parse_vllm_metrics("vllm:kv_cache_usage_perc 0.57\n")
+
+    assert result.values == {"gpu_cache_usage": 0.57}
+    assert "gpu_cache_usage" in result.available_signals
+    assert "gpu_cache_usage" not in result.missing_signals
+
+
 def test_RUN_003_malformed_metrics_raise_stable_contract_error() -> None:
     with pytest.raises(ValueError, match="invalid Prometheus metrics"):
         parse_vllm_metrics("not prometheus text")

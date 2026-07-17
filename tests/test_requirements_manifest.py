@@ -58,7 +58,7 @@ def test_TRACE_001_every_requirement_has_actionable_validation_metadata() -> Non
         assert isinstance(item["evidence_manifests"], list), item["id"]
         assert isinstance(item["implementation_tasks"], list), item["id"]
         for test_path in item["owning_tests"]:
-            assert test_path.startswith(("tests/", "web/tests/")), item["id"]
+            assert test_path.startswith(("tests/", "web/tests/", "web/e2e/")), item["id"]
             assert (ROOT / test_path).is_file(), f"{item['id']}: {test_path}"
 
 

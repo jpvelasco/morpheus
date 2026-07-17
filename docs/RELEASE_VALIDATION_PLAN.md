@@ -2,7 +2,7 @@
 
 Status: In progress
 
-Updated: 2026-07-15
+Updated: 2026-07-16
 
 This document turns the release-level exit criteria into an executable,
 dependency-ordered checklist. A green development gate is necessary but does
@@ -275,7 +275,7 @@ real older baseline exists for future upgrade tests.
 
 ### 7.1 Batwing Live Read-Only Lane
 
-- [ ] **LIVE-001 — Implement hard live guards.** `tests/live` must require
+- [x] **LIVE-001 — Implement hard live guards.** `tests/live` must require
   `MORPHEUS_LIVE_TESTS=1`, reject mutation by default, use allowlisted hosts and
   routes, set strict timeouts, and never fall back from fixtures implicitly.
 - [ ] **LIVE-002 — Capture protected pre-state.** Record redacted external
@@ -356,6 +356,12 @@ test is outside this lane and requires a separate authorization.
   session handling, CSRF enforcement, framing, request IDs, and the absence of
   credentials from traces, screenshots, URLs, and console output.
 
+The DEV runner and route-mocked cross-browser suite are implemented and green
+on the current development line. They are implementation evidence only. These
+items remain unchecked until the exact candidate runs against its disposable
+API boundary and the retained screenshots receive release review; BROW-006 in
+particular still requires real response-header, cookie, CSRF, and CORS evidence.
+
 P3 exit gate: guarded live read-only checks preserve Batwing's external state;
 every CPU optional profile passes in the VM; browser and accessibility gates are
 green; GPU work remains explicitly blocked or separately approved.
@@ -393,6 +399,12 @@ green; GPU work remains explicitly blocked or separately approved.
   authorized.** Any real completion or sustained load against Batwing vLLM is
   outside HOST-RO and requires explicit workload, limits, abort criteria, timing,
   pre-state, and post-state approval.
+
+The current development line implements the fixed pinned-k6 workload, closed
+direct/proxy comparison, labeled-container resource sampler, and exact 24-hour
+profile. A short disposable DEV rehearsal is green, but every item above stays
+unchecked until its declared duration and environment are run against the exact
+candidate. No load was sent to the protected external inference service.
 
 P4 exit gate: fault recovery is deterministic, budgets pass, and the 24-hour VM
 soak shows no unbounded resource, task, connection, log, or database growth.

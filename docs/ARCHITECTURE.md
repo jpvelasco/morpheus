@@ -92,7 +92,7 @@ src/morpheus/
   adapters/
     inference/          OpenAI and vLLM HTTP adapters
     metrics/            Prometheus and NVIDIA metric adapters
-    runtime/            Agent client and Morpheus resource adapter
+    runtime/            Agent client, lifecycle, and labeled resource observers
     persistence/        SQLite repositories and migrations
     services/           Search, voice, workflow, research adapters
   api/                  Versioned FastAPI transport
@@ -107,6 +107,12 @@ web/
     features/           Dashboard feature areas
     pages/              Route-level views
   tests/                Unit and component tests
+  e2e/                  Cross-browser accessibility and responsive workflows
+
+validation/
+  browser/              Pinned internal-only Playwright gate
+  load/                 Fixed k6, resource, qualification, and soak profiles
+  security/             Offline scans, SBOMs, and closed evidence verification
 
 deploy/
   compose.yaml          Core Morpheus services
@@ -190,8 +196,10 @@ The agent rejects:
 - any target matching an external protected-resource inventory;
 - destructive requests without a valid operation token and audit context.
 
-Initial releases expose read-only operations only. Lifecycle methods are added
-one at a time after their authorization and rollback tests exist.
+The runtime agent is read-only unless the fixed lifecycle deployment root is
+explicitly enabled. Lifecycle methods use a separate signed endpoint and accept
+only bounded release or backup identifiers; they never accept resource names,
+commands, shell input, or Compose paths.
 
 ### 5.4 Dashboard
 

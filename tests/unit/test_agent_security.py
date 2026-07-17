@@ -5,7 +5,8 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from morpheus.agent.auth import AgentAuthenticationError, AgentAuthenticator, sign_request
-from morpheus.agent.protocol import AgentOperation, AgentRequest
+from morpheus.agent.protocol import AgentLifecycleRequest, AgentOperation, AgentRequest
+from morpheus.core.lifecycle import LifecycleAction
 
 NOW = datetime(2026, 7, 15, 12, 0, tzinfo=UTC)
 KEY = b"agent-test-key-with-enough-entropy"
@@ -64,3 +65,28 @@ def test_INV_003_agent_protocol_has_no_arbitrary_command_field() -> None:
     assert set(AgentRequest.model_fields) == {"request_id", "operation"}
     assert "shell" not in {operation.value for operation in AgentOperation}
     assert "exec" not in {operation.value for operation in AgentOperation}
+
+
+def test_SEC_002_lifecycle_protocol_has_only_fixed_identifiers_and_actions() -> None:
+    assert set(AgentLifecycleRequest.model_fields) == {
+        "request_id",
+        "action",
+        "version",
+        "backup_id",
+        "confirmation",
+    }
+    assert {action.value for action in LifecycleAction} == {
+        "backup",
+        "install",
+        "migrate",
+        "restore-preflight",
+        "rollback",
+        "start",
+        "stop",
+        "uninstall",
+        "upgrade",
+        "validate",
+    }
+    assert not {"command", "path", "resource", "shell", "target"} & set(
+        AgentLifecycleRequest.model_fields
+    )

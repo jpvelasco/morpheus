@@ -22,6 +22,7 @@ def test_CONT_002_core_probe_is_loopback_only_and_covers_behavior() -> None:
     ):
         assert route in source
     assert '"stream": True' in source
+    assert "settings.telemetry_port" in source
     assert 'sys.stdout.write("core_smoke=passed\\n")' in source
 
 

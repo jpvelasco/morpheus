@@ -135,6 +135,75 @@ def test_fault_fixtures_cover_slow_malformed_unavailable_and_partial_stream() ->
     assert "[DONE]" not in partial.text
 
 
+def test_chat_fault_modes_are_deterministic() -> None:
+    request = {
+        "model": "morpheus-fixture-model",
+        "messages": [{"role": "user", "content": "validation canary"}],
+    }
+    with running_fixture() as base_url:
+        unavailable = httpx.post(
+            f"{base_url}/v1/chat/completions",
+            headers=AUTH,
+            json={**request, "morpheus_fixture_mode": "unavailable"},
+        )
+        started = time.monotonic()
+        slow = httpx.post(
+            f"{base_url}/v1/chat/completions",
+            headers=AUTH,
+            json={
+                **request,
+                "morpheus_fixture_mode": "slow",
+                "morpheus_fixture_delay_ms": 50,
+            },
+        )
+        elapsed = time.monotonic() - started
+        empty = httpx.post(
+            f"{base_url}/v1/chat/completions",
+            headers=AUTH,
+            json={
+                **request,
+                "stream": True,
+                "morpheus_fixture_mode": "empty_stream",
+            },
+        )
+        partial = httpx.post(
+            f"{base_url}/v1/chat/completions",
+            headers=AUTH,
+            json={
+                **request,
+                "stream": True,
+                "morpheus_fixture_mode": "partial_stream",
+            },
+        )
+        started = time.monotonic()
+        with httpx.stream(
+            "POST",
+            f"{base_url}/v1/chat/completions",
+            headers=AUTH,
+            json={
+                **request,
+                "stream": True,
+                "morpheus_fixture_mode": "slow_stream",
+                "morpheus_fixture_delay_ms": 250,
+            },
+        ) as slow_stream:
+            first_chunk = next(slow_stream.iter_raw())
+            first_chunk_elapsed = time.monotonic() - started
+
+    assert unavailable.status_code == 503
+    assert unavailable.json()["error"]["code"] == "fixture_unavailable"
+    assert slow.status_code == 200
+    assert elapsed >= 0.04
+    assert empty.status_code == 200
+    assert empty.content == b""
+    assert partial.status_code == 200
+    assert "fixture-partial" in partial.text
+    assert "[DONE]" not in partial.text
+    assert slow_stream.status_code == 200
+    assert b"fixture-partial" in first_chunk
+    assert first_chunk_elapsed < 0.2
+
+
 def test_fixture_compose_is_hardened_internal_and_loopback_only() -> None:
     compose = yaml.safe_load(
         (ROOT / "validation" / "fixtures" / "compose.yaml").read_text(encoding="utf-8")

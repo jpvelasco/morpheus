@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "workload_id": "morpheus-chat-mixed-v1",
+  "model": "morpheus-fixture-model",
+  "hardware_allocation": "cpu-only deterministic OpenAI fixture; no GPU allocation",
+  "fixture_delay_ms": 250,
+  "request_mix": {
+    "nonstream": 0.7,
+    "stream": 0.3
+  },
+  "payload_shape": {
+    "prompt": "Return the fixed Morpheus load-fixture response without retaining this synthetic request.",
+    "max_tokens": 16
+  },
+  "sampling": {
+    "resource_interval_seconds": 30,
+    "logical_state_interval_seconds": 300
+  },
+  "abort_limits": {
+    "max_failed_rate": 0,
+    "min_checks_rate": 1,
+    "max_added_median_waiting_ms": 25,
+    "max_throughput_loss_percent": 2,
+    "max_memory_growth_bytes": 67108864,
+    "max_pid_growth": 8
+  },
+  "profiles": {
+    "dev": {
+      "vus": 2,
+      "warmup_duration": "1s",
+      "measurement_duration": "5s",
+      "graceful_stop": "5s",
+      "max_p99_ms": 2000
+    },
+    "qualification": {
+      "vus": 8,
+      "warmup_duration": "30s",
+      "measurement_duration": "10m",
+      "graceful_stop": "30s",
+      "max_p99_ms": 2000
+    },
+    "soak": {
+      "vus": 2,
+      "warmup_duration": "2m",
+      "measurement_duration": "24h",
+      "graceful_stop": "1m",
+      "max_p99_ms": 2000
+    }
+  }
+}

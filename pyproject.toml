@@ -11,6 +11,7 @@ requires-python = ">=3.12,<3.15"
 license = { text = "Proprietary - no license granted" }
 authors = [{ name = "JP Velasco", email = "jp.velasco@outlook.com" }]
 dependencies = [
+  "anyio==4.14.2",
   "fastapi==0.139.0",
   "httpx==0.28.1",
   "pydantic-settings==2.10.1",
@@ -40,6 +41,7 @@ dev = [
 
 [project.scripts]
 morpheus = "morpheus.cli.main:app"
+morpheus-lifecycle = "morpheus.cli.lifecycle:app"
 morpheus-api = "morpheus.api.app:run"
 morpheus-agent = "morpheus.agent.app:run"
 morpheus-telemetry = "morpheus.telemetry.app:run"

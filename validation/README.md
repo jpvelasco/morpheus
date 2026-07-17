@@ -73,6 +73,51 @@ each value only into the child environment as
 rejects opaque files or nested ZIP members that contain a raw value. Only
 `sha256:` canary identifiers are recorded in the manifest.
 
+## Live Read-Only vLLM Validation
+
+The live lane has no target fallback. Declare the exact current vLLM routes
+and allowlist their host explicitly before running it:
+
+```console
+export MORPHEUS_LIVE_ALLOWED_HOSTS=127.0.0.1
+export MORPHEUS_LIVE_VLLM_URL=http://127.0.0.1:8000/v1
+export MORPHEUS_LIVE_VLLM_METRICS_URL=http://127.0.0.1:8000/metrics
+export MORPHEUS_LIVE_TIMEOUT_SECONDS=5
+make test-live-readonly
+```
+
+If the endpoint requires a key, supply it only through
+`MORPHEUS_LIVE_VLLM_API_KEY`; it is never included in the structured report.
+The lane accepts only exact `GET /v1/models` and `GET /metrics` requests,
+disables redirects and transport retries, and rejects mutation or completion
+flags. Wrap release runs with `morpheus-evidence`, `--environment HOST-RO`, and
+an explicit authorization reference. The emitted report contains no endpoint,
+host, credential, request content, response content, or metric values.
+
+## Disposable Telemetry Compatibility
+
+`smoke/telemetry.py` compares direct and proxied non-streaming and streaming
+bytes, usage, authentication, normalized upstream failures, timeouts, client
+cancellation, capacity recovery, and direct bypass. The OpenAI fixture network
+must remain `internal: true`; do not publish the fixture merely to run the
+direct leg. Execute the probe inside the disposable telemetry container, where
+the proxy is reached on container loopback and the direct endpoint comes from
+the already validated `MORPHEUS_LLM_BASE_URL`:
+
+```console
+docker exec -i DISPOSABLE_TELEMETRY_CONTAINER \
+  python - --container-mode < validation/smoke/telemetry.py
+```
+
+`smoke/telemetry_state.py` has `inspect-backup`, `seed-expired`, and
+`verify-restart` actions. Stream it over stdin as well so the read-only
+container filesystem remains unchanged. It validates the metadata-only schema,
+required outcomes, raw database and backup privacy canaries, logical backup
+equivalence, recent-state persistence, and startup removal of the explicitly
+expired fixture record. These probes are only for a uniquely named disposable
+project and Morpheus-owned volume; never run them against an externally owned
+service or data path.
+
 ## Containerized Release Tools
 
 [`tools/images.lock.json`](tools/images.lock.json) is the source of truth for
@@ -87,6 +132,131 @@ These tools are intentionally containerized. A validation host or guest needs
 Docker Engine with Buildx and enough image/payload storage; it does not need
 host installations of Node, browsers, Gitleaks, Trivy, Syft, or k6. Pull and run
 the lock's digest-only `reference`, never a tag copied from documentation.
+
+## Browser Development Gate
+
+Run the internal-only browser rehearsal with:
+
+```console
+BROWSER_ARTIFACT_ROOT="$PWD/artifacts/browser-dev" make browser-gate
+```
+
+The runner verifies the local Playwright image identity against the tool lock,
+uses a non-root read-only container with networking disabled, builds and serves
+the production dashboard inside that container, and runs deterministic
+Chromium, Firefox, WebKit, and mobile Chromium projects. Route interception
+supplies synthetic control-API responses; it never contacts the host control
+API, inference runtime, or Open WebUI. Failure traces, screenshots, and video
+remain under the selected ignored artifact root. A closed post-run scan rejects
+plain or zipped evidence containing the synthetic credential canary.
+
+This DEV gate does not replace BROW-006 against the exact disposable candidate.
+Candidate validation must additionally exercise real CSP, CORS, cookie, CSRF,
+framing, and request-ID behavior through the candidate's dashboard/API boundary.
+
+## Load, Resource, and Soak Profiles
+
+[`load/workload.json`](load/workload.json) is the versioned workload contract.
+It fixes the CPU-only fixture, direct and telemetry paths, stream mix, payload
+shape, synthetic inference delay, VUs, warm-up, measurement duration, sampling,
+graceful stop, and abort thresholds. `dev` is a source rehearsal,
+`qualification` is the ten-minute comparison profile, and `soak` is exactly 24
+hours after a two-minute warm-up. The k6 client cannot accept an arbitrary URL;
+it selects only the fixture or telemetry service on a Docker network that the
+runner verifies is internal and labeled for the exact disposable project.
+Each k6 container carries the exact project and one-run labels. The runner's
+exit trap verifies those labels before stopping an interrupted container, so a
+failed or canceled workload cannot continue in the background.
+
+Run the short isolated source rehearsal with:
+
+```console
+LOAD_ARTIFACT_ROOT="$PWD/artifacts/load-dev" make load-dev
+```
+
+The rehearsal refuses existing project resources, builds a four-service
+fixture/API/dashboard/telemetry stack with no host ports, runs direct and
+proxied traffic using separate mode-600 synthetic key files, compares median
+wait and request throughput, and samples labeled API/dashboard memory, PIDs,
+and Docker CPU normalized by the daemon's logical CPU count. Its exit trap
+removes only the exact disposable project's containers, images, volume,
+network, and temporary key files.
+
+DEV output is not release evidence. Qualification and soak must use the exact
+candidate in the clean VM and retain start/end logical state, periodic resource
+series, bounded log/database growth, health, fault, and external-integrity
+checks under the evidence runner. Never point these profiles at the external
+vLLM; LIVE-PERF-001 requires a separate explicit state-changing authorization.
+
+After all shorter exact-candidate lanes are green and the evidence runner has
+started the candidate stack, invoke the soak wrapper with explicit paths and
+the exact-duration confirmation:
+
+```console
+export CANDIDATE_MANIFEST=/absolute/path/to/candidate-manifest.json
+export LOAD_PROJECT_ID=morpheus-release-lab
+export LOAD_NETWORK=morpheus-release-lab_internal
+export LOAD_API_KEY_FILE=/absolute/path/to/mode-600-synthetic-proxy-key
+export LOAD_ARTIFACT_ROOT="$PWD/artifacts/release-validation/SOAK-002"
+export SOAK_CONFIRM_DURATION=24h
+validation/load/soak.sh
+```
+
+The wrapper never starts, stops, or rebuilds containers. It verifies the
+candidate artifact set, requires the running labeled API/dashboard images to
+match that candidate's commit and version, samples the full two-minute warm-up
+plus 24-hour measurement interval, rejects absolute memory-budget and declared
+memory/PID-growth violations, and runs only the proxied periodic workload. If
+either load generation or resource monitoring exits early, the supervisor
+terminates its peer and fails the soak instead of waiting out or leaking the
+remaining process. The
+surrounding evidence task remains responsible for declared fault injection,
+logical database/log growth, health history, start/end state, and protected
+external-integrity snapshots.
+
+## Release Supply-Chain Gate
+
+SEC-005 uses a four-step workflow so public database download is separated
+from the offline candidate scan and the human license decision. First populate
+an ignored, checksummed Trivy cache while network access is allowed:
+
+```console
+export TRIVY_CACHE_OUTPUT="$PWD/artifacts/security-release/trivy-cache"
+validation/security/populate-cache.sh
+```
+
+Then point the scanner at one already verified candidate. The scan phase
+refuses output outside `artifacts/`, verifies the candidate and scanner image
+digests, rechecks the cache inventory, stages only tracked/non-ignored worktree
+files, runs the secret and Trivy gates with networking disabled, and generates
+CycloneDX JSON and SPDX JSON for every declared candidate artifact:
+
+```console
+export CANDIDATE_MANIFEST=/absolute/path/to/candidate-manifest.json
+export SECURITY_OUTPUT_ROOT="$PWD/artifacts/security-release/reports"
+export TRIVY_CACHE_DIR="$TRIVY_CACHE_OUTPUT"
+validation/security/run.sh scan
+```
+
+Review every generated license report, copy
+`license-review.template.json` to a mode-600 ignored file, replace the pending
+fields, and record any exception with an owner, rationale, and future expiry.
+No automatic license classification substitutes for this review. Finalization
+binds the approval to the exact report digests and rejects secrets, forbidden
+licenses, unresolved high/critical findings, stale or altered inputs, missing
+scan scopes, or incomplete SBOM coverage:
+
+```console
+export LICENSE_REVIEW_FILE=/absolute/path/to/completed-license-review.json
+validation/security/run.sh finalize
+make release-gate
+```
+
+A DEV scan is useful for finding implementation defects, but it does not
+constitute candidate evidence. Candidate evidence must come from the exact
+clean VM-built candidate and be wrapped by the evidence runner; scanner reports,
+SBOMs, license review, database metadata, and the verified supply-chain
+manifest remain ignored under `artifacts/`.
 
 ## Candidate Artifact Set
 

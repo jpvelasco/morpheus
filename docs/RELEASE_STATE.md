@@ -10,13 +10,14 @@ private request data, host addresses, or unredacted evidence.
 - **Validated baseline candidate:** `ae3a98d74b055672c37ae608805e21804d4e609b`
   (`security: bound API request work`). Its build evidence remains valid only
   for that source revision.
-- **Current handoff commit:** `e0cd976f6bf8479ab60de9a8b798daa03b86847b`
-  (`feat: harden restore preflight and rollback`; 2026-07-15). The worktree
-  was clean when this ledger was refreshed.
-- **Current release development line:** post-baseline source changes will be
-  frozen into a new candidate only after the pre-soak implementation queue is
-  complete.
-- **Implementation inventory:** 41 implemented, 14 planned, 3 deferred; see
+- **Last committed handoff:** `60209ee` (`docs: make release handoff
+  self-contained`; 2026-07-15). The source revision containing this ledger is
+  the approved candidate source line; its generated candidate manifest, not a
+  copied short hash, is authoritative for the exact commit identity.
+- **Current release development line:** the pre-soak implementation queue is
+  complete and approved for an immutable candidate build. Any later source
+  change creates a different candidate and invalidates affected evidence.
+- **Implementation inventory:** 44 implemented, 11 planned, 3 deferred; see
   [`requirements.json`](../requirements.json) and the
   [implementation gap review](IMPLEMENTATION_GAP_REVIEW.md).
 - **Release posture:** not yet release-ready. A passing candidate does not
@@ -34,16 +35,11 @@ An agent starting from the repository should read this file first, then
 remaining requirements, priority, environment boundaries, evidence policy,
 and next task; no chat transcript is required to select the next source task.
 
-The next source task is **IMP-SEC-005-01**. Implement the documented pinned
-tooling so every release artifact and OCI image gets an SBOM and the lock,
-secret, static, dependency, filesystem, and container scans are release
-blocking. Keep evidence redacted and ignored; do not put credentials, host
-addresses, or request data in Git.
-
-After SEC-005, implement **IMP-REL-003-01** as described in the P0 table in
-the gap review. Then create a new candidate from the exact resulting commit;
-the older baseline evidence must not be relabelled as evidence for that new
-candidate.
+The P0 pre-soak source queue is complete. Build the candidate only from the
+clean source revision containing this ledger, record its full identity in the
+candidate manifest, run its early supply-chain gate, and begin clean-VM
+container and lifecycle validation. The older baseline evidence must not be
+relabelled as evidence for that new candidate.
 
 Normal validation must never restart, reconfigure, or otherwise mutate the
 external inference or Open WebUI services. Use disposable stacks/VMs for all
@@ -59,14 +55,124 @@ host-maintenance work begins.
 | Dashboard quality gate | Pass | Pinned offline Node image: formatting, type check, 31 tests, and production build passed. |
 | Reproducible candidate build | Pass | Two independent disposable VM builds used blocked outbound networking and produced five byte-identical artifacts: Python sdist/wheel, agent bundle, backend OCI image, and dashboard OCI image. |
 
-## Current-Line Checkpoint (Not a Frozen Release Candidate)
+## Approved Candidate-Source Checkpoint
 
 At handoff commit `e0cd976`, the Python quality gate passed with 345 tests and
 90.52% coverage; formatting, lint, type checking, Bandit, pip-audit, and the
 offline package build also passed. This confirms source health at that point,
-but it is not release evidence: SEC-005 and REL-003 remain, no candidate has
-been frozen, and all candidate-specific startup/lifecycle/browser/load/soak
+but it is not release evidence: the SEC-005 and REL-003 source gaps were still
+open at that checkpoint, no new candidate has been frozen, and all
+candidate-specific startup/lifecycle/browser/load/soak
 evidence must be produced again after the freeze.
+
+On 2026-07-16, the current worktree implemented the guarded `tests/live` vLLM
+lane and added compatibility for the current KV-cache metric name. A HOST-RO
+development-line rehearsal then passed model discovery, health, and all six
+expected metrics signals with protected container identity unchanged.
+
+The same worktree completed a disposable core-container startup rehearsal
+against the internal-only fixture. API, dashboard, and telemetry health,
+authentication, model discovery, non-streaming, and streaming all passed. The
+actual run exposed and fixed private env-file isolation, host/container port
+separation, and premature streaming cancellation. Cleanup removed the named
+containers, network, volume, and temporary secret file; the protected external
+runtime identity remained unchanged. The final non-live gate passed with 362
+tests and 90.13 percent coverage. The next telemetry compatibility increment
+then normalized upstream HTTP errors, timeouts, and empty streams before
+response headers for both streaming and non-streaming requests. The latest
+full gate passes 367 tests at 90.16 percent coverage; the disposable
+restart/retention/backup/cancellation matrix then completed successfully.
+
+The OPT-TEL-001 DEV rehearsal compared direct and proxied streaming and
+non-streaming bytes, usage fields, authentication, upstream HTTP failures,
+empty streams, timeouts, cancellation, capacity recovery, and direct bypass on
+an internal-only fixture network. The live run exposed and fixed two additional
+gaps: configured telemetry retention was never invoked by the running service,
+and Starlette disconnect cancellation could interrupt persistence and limiter
+cleanup. Startup and per-record pruning now enforce the retention window, and
+stream cleanup is cancellation-shielded with guaranteed slot release. A real
+restart pruned an explicitly expired record while preserving 15 recent records
+identical to the SQLite backup; post-restart traffic increased the final
+privacy-clean backup to 24 records with all five expected outcomes. Core and
+telemetry smoke passed after restart, content canaries were absent from raw
+database files, backup, and all disposable container logs, and hardening plus
+loopback bindings matched policy. Cleanup removed every named container,
+network, volume, project image, and temporary secret file. The protected vLLM
+identity, image, start time, restart count, and healthy state were unchanged.
+After these fixes, the complete non-live gate passed 373 tests at 90.19 percent
+coverage with strict formatting, linting, typing, Bandit, pip-audit, and the
+offline sdist/wheel build green.
+
+IMP-SEC-005-01 then added the locked two-stage supply-chain gate. It inventories
+the Trivy database, stages only tracked and non-ignored worktree inputs, runs
+redacted Git/worktree/candidate secret scans, blocks unresolved high/critical
+filesystem and OCI findings without ignoring unfixed vulnerabilities, produces
+CycloneDX JSON and SPDX JSON for every candidate artifact, and binds a human
+license approval to the exact report digests. A closed verifier rejects stale,
+missing, altered, unsafe, or incomplete evidence. The DEV rehearsal passed the
+real pinned Gitleaks history and worktree scans and an offline Trivy scan with
+zero high/critical vulnerabilities, misconfigurations, or secrets; its license
+inventory contained Apache-2.0, BSD-2-Clause, BSD-3-Clause, BlueOak-1.0.0,
+CC-BY-4.0, ISC, MIT, MIT-0, MPL-2.0, and Python-2.0. This is implementation
+evidence only; the exact candidate must still produce SUPPLY-001 through
+SUPPLY-004 evidence after the next freeze.
+
+IMP-REL-003-01 then added a disabled-by-default signed runtime-agent endpoint
+and separate `morpheus-lifecycle` CLI for fixed install, validate, start, stop,
+migrate, backup, restore-preflight, upgrade, rollback, and uninstall actions.
+The concrete adapter accepts only versioned manifests below one configured
+deployment root, uses no-build/no-pull Compose commands, checks existing
+project resources for the exact ownership label, compares selected protected
+external identity fields before and after every action, writes atomic owned
+state, backs up before upgrade, recovers failed replacement, restores state on
+rollback, preserves data on default uninstall, and gates purge behind lab
+configuration plus exact project confirmation. Adversarial tests cover forged
+labels, corrupt state, unsafe manifests, unmarked data, failed first install,
+and failed running upgrade. The complete gate now passes 495 tests at 91.16
+percent coverage; format, lint, strict typing, Bandit, pip-audit, and offline
+sdist/wheel builds are green. This remains DEV implementation evidence until
+the exact candidate passes the clean-VM lifecycle and integrity matrix.
+
+The current worktree also added the digest-pinned, network-disabled Playwright
+gate for the production dashboard build. A TDD browser case reproduced an
+overlapping-refresh race in which an older response replaced newer evidence;
+the dashboard now keeps one active abortable refresh and cancels superseded,
+sign-out, and unmount work. The final DEV rehearsal passes 36 tests across
+Chromium, Firefox, WebKit, and mobile Chromium, including axe serious/critical
+checks, keyboard focus, reduced motion, responsive bounds, failure retention,
+state rendering, session storage, and retained-evidence canary scanning. The
+pinned frontend gate passes 31 unit tests with 96.77 percent statement, 90.06
+percent branch, and 90 percent function coverage plus strict lint, typecheck,
+and production build. The complete non-live repository gate now passes 533
+tests at 90.56 percent coverage with every security and build check green.
+Exact-candidate CSP, CORS, CSRF, framing, request-ID, and reviewed screenshot
+evidence remains pending and no BROW task is marked
+release-validated by this DEV rehearsal.
+
+IMP-PERF-002-01 then added pure load-overhead and resource-budget decisions,
+strict k6 and Docker-stats parsers, whole-host CPU normalization, and a
+read-only adapter that discovers only exact ownership-labeled containers. The
+fixed pinned-k6 workload declares stream mix, synthetic latency, VUs, warm-up,
+duration, sampling, thresholds, and DEV, ten-minute qualification, and 24-hour
+profiles. Its disposable DEV rehearsal initially failed at 44.10 ms added
+median wait and 6.57 percent throughput loss, exposing synchronous SQLite
+persistence on the successful response path. Persistence now runs as shielded
+response-background cleanup while retaining the bounded concurrency slot. The
+latest rehearsal passed with zero failures, 1.85 ms added median wait, 1.10
+percent throughput loss, 84–85 MiB combined idle API/dashboard memory, and
+0.50–0.51 percent whole-host CPU across three samples. The load runner now
+labels and verifies its exact one-run container before interrupt cleanup, and
+the soak supervisor fails and terminates its peer when either load or resource
+monitoring exits early. Cleanup removed every labeled container, image,
+network, volume, runner identity file, and temporary key file; selected
+protected vLLM and Open WebUI identity fields were unchanged. This is DEV
+implementation evidence, not the required candidate VM, target-host, two-hour,
+or 24-hour validation.
+
+These ignored rehearsal manifests are not candidate evidence because the runs
+were on DEV rather than a clean VM and do not identify a built candidate
+artifact set. The linked requirements therefore remain `implemented`, not
+`validated`.
 
 Release evidence is intentionally ignored from Git. Store it only under the
 configured `artifacts/release-validation/` location or a disposable validation
@@ -87,19 +193,19 @@ workspace; refer to the candidate commit and task ID in its redacted manifest.
 
 ## Active Milestone
 
-**IMP-SEC-005-01 — supply chain.** Generate SBOMs for every artifact/image and
-make lock, secret, static, dependency, filesystem, and container vulnerability
-scans release-blocking.
+**Candidate build and P1/P2 validation.** Build the immutable artifact set from
+the clean approved source revision, then run the exact candidate's early
+supply-chain, clean-container, clean-install, lifecycle, rollback, uninstall,
+and protected external-integrity lanes in disposable environments.
 
 ## Pre-Soak Queue
 
-1. Remaining P0 implementation: SEC-005 and REL-003.
-2. Rebuild and validate the exact frozen candidate: current-container startup,
+1. Rebuild and validate the exact frozen candidate: current-container startup,
    hardening, loopback exposure, security/SBOM evidence, installation, runtime
    agent, and external-runtime integrity.
-3. Lifecycle, browser/accessibility, optional CPU-service, fault, load, and
+2. Lifecycle, browser/accessibility, optional CPU-service, fault, load, and
    resource validation.
-4. Two-hour qualification soak; freeze the release candidate; then run the
+3. Two-hour qualification soak; freeze the release candidate; then run the
    required 24-hour soak.
 
 Do not add source changes after the candidate is frozen for soak. Any such
