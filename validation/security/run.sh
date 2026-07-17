@@ -78,9 +78,11 @@ mkdir -p -- "${output}/reports/scans" "${output}/reports/sbom"
 cp -- "${metadata}" "${output}/reports/trivy-db-metadata.json"
 scan_cache=$(mktemp -d /tmp/morpheus-security-trivy.XXXXXX)
 worktree=$(mktemp -d /tmp/morpheus-security-worktree.XXXXXX)
+oci_extract_root=$(mktemp -d /tmp/morpheus-security-oci.XXXXXX)
 cleanup() {
   rm -rf -- "${scan_cache}"
   rm -rf -- "${worktree}"
+  rm -rf -- "${oci_extract_root}"
 }
 trap cleanup EXIT
 cp -a -- "${cache}/." "${scan_cache}/"
@@ -179,15 +181,28 @@ trivy_license_fs /worktree repository-filesystem-license \
 trivy_security_fs /candidate candidate-artifacts-security
 trivy_license_fs /candidate candidate-artifacts-license
 
+# Trivy accepts Docker-save tars or an extracted OCI layout directory, not an
+# OCI-layout tar via --input. Expand each declared layout archive once.
 for image_id in backend-oci dashboard-oci; do
   image_path=$(jq -er --arg id "${image_id}" '.artifacts[] | select(.id == $id) | .path' \
     "${candidate_manifest}")
-  trivy_run "${vulnerability_ref}" image "${trivy_common[@]}" \
-    --input="/candidate/${image_path}" --scanners=vuln,misconfig,secret \
+  layout_dir="${oci_extract_root}/${image_id}"
+  mkdir -p -- "${layout_dir}"
+  tar --extract --file="${candidate_root}/${image_path}" --directory="${layout_dir}"
+  test -f "${layout_dir}/index.json"
+  test -f "${layout_dir}/oci-layout"
+  docker run "${container_common[@]}" \
+    -v "${layout_dir}:/oci:ro" \
+    -v "${output}:/output:rw" -v "${scan_cache}:/cache:rw" \
+    "${vulnerability_ref}" image "${trivy_common[@]}" \
+    --input=/oci --scanners=vuln,misconfig,secret \
     --severity=HIGH,CRITICAL --exit-code=1 \
     --output="/output/reports/scans/${image_id}-security.json"
-  trivy_run "${license_ref}" image "${trivy_common[@]}" \
-    --input="/candidate/${image_path}" --scanners=license --license-full --exit-code=0 \
+  docker run "${container_common[@]}" \
+    -v "${layout_dir}:/oci:ro" \
+    -v "${output}:/output:rw" -v "${scan_cache}:/cache:rw" \
+    "${license_ref}" image "${trivy_common[@]}" \
+    --input=/oci --scanners=license --license-full --exit-code=0 \
     --output="/output/reports/scans/${image_id}-license.json"
 done
 
@@ -200,11 +215,16 @@ while IFS=$'\t' read -r artifact_id artifact_path media_type; do
   if [[ "${media_type}" == application/vnd.oci.image.layout.v1.tar ]]; then
     source="oci-archive:/candidate/${artifact_path}"
   fi
+  # Image layouts unpack into /tmp; the default 64MiB tmpfs is too small for
+  # OCI SBOM generation and leaves empty report files on failure.
   docker run "${container_common[@]}" \
+    --tmpfs /tmp:size=1024m,mode=1777 \
     -v "${candidate_root}:/candidate:ro" -v "${output}:/output:rw" \
     "${sbom_ref}" scan "${source}" --quiet \
     -o "cyclonedx-json=/output/reports/sbom/${artifact_id}.cdx.json" \
     -o "spdx-json=/output/reports/sbom/${artifact_id}.spdx.json"
+  test -s "${output}/reports/sbom/${artifact_id}.cdx.json"
+  test -s "${output}/reports/sbom/${artifact_id}.spdx.json"
 done < <(jq -r '.artifacts[] | [.id, .path, .media_type] | @tsv' "${candidate_manifest}")
 
 uv run --offline python "${finalizer}" review-template "${python_args[@]}"
