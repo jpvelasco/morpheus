@@ -3,4 +3,9 @@ useDefault = true
 
 [[allowlists]]
 description = "Reviewed secret-free environment template"
-paths = ['''(?:^|/)\.env\.example$''']
+paths = ['''(?:^|[/!])\.env\.example$''']
+
+[[allowlists]]
+description = "Official Python base-image public signing fingerprint"
+regexTarget = "match"
+regexes = ['''GPG_KEY=[0-9A-F]{40}''']
