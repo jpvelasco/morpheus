@@ -9,7 +9,8 @@ reconfiguring the working inference runtime.
 ## Status
 
 Morpheus is an unreleased development implementation. The repository contains
-the typed Python control plane, read-only runtime agent and CLI, operational
+the typed Python control plane, runtime agent (read-only by default), read-only CLI,
+separate authenticated lifecycle commands, operational
 dashboard, telemetry proxy, optional service adapters, deployment definitions,
 and non-live automated validation. It is not eligible for stable use until the
 release-level exit criteria are satisfied, including explicitly authorized live
@@ -32,6 +33,7 @@ at runtime. ODS is research input only.
 - [Architecture](docs/ARCHITECTURE.md)
 - [TDD implementation plan](docs/IMPLEMENTATION_PLAN.md)
 - [Release validation plan](docs/RELEASE_VALIDATION_PLAN.md)
+- [Lifecycle operations](docs/LIFECYCLE.md)
 - [Existing asset inventory](docs/inventory.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
@@ -70,6 +72,19 @@ docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp/home \
 That runs formatting, strict type checking, tests with coverage, and a
 production build. Neither gate contacts or mutates the external inference or
 Open WebUI services.
+
+The browser rehearsal uses the digest-pinned Playwright image with networking
+disabled and retains its report and reviewed screenshots below ignored
+`artifacts/`:
+
+```bash
+make browser-gate
+```
+
+It exercises the production dashboard build across Chromium, Firefox, WebKit,
+and a mobile Chromium viewport, runs the accessibility gate, and rejects
+retained evidence containing the synthetic credential canary. Candidate-level
+browser security still runs against the disposable candidate stack.
 
 ## Repository Rules
 

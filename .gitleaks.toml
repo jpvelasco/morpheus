@@ -1,0 +1,6 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Reviewed secret-free environment template"
+paths = ['''(?:^|/)\.env\.example$''']

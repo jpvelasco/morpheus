@@ -478,6 +478,7 @@ name = "morpheus-control-plane"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "anyio" },
     { name = "fastapi" },
     { name = "httpx" },
     { name = "prometheus-client" },
@@ -507,6 +508,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "anyio", specifier = "==4.14.2" },
     { name = "bandit", marker = "extra == 'dev'", specifier = "==1.8.6" },
     { name = "build", marker = "extra == 'dev'", specifier = "==1.2.2.post1" },
     { name = "fastapi", specifier = "==0.139.0" },

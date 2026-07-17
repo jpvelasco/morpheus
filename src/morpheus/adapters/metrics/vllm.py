@@ -11,6 +11,7 @@ EXPECTED_SIGNALS = {
     "vllm:num_requests_running": "requests_running",
     "vllm:num_requests_waiting": "requests_waiting",
     "vllm:gpu_cache_usage_perc": "gpu_cache_usage",
+    "vllm:kv_cache_usage_perc": "gpu_cache_usage",
     "vllm:prompt_tokens_total": "prompt_tokens_total",
     "vllm:generation_tokens_total": "generation_tokens_total",
     "vllm:request_success_total": "request_success_total",

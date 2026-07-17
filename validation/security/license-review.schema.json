@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "source_commit",
+    "decision",
+    "reviewer",
+    "reviewed_at",
+    "report_sha256s",
+    "exceptions"
+  ],
+  "properties": {
+    "format": {"const": 1},
+    "source_commit": {"type": "string", "pattern": "^[0-9a-f]{40,64}$"},
+    "decision": {"const": "approved"},
+    "reviewer": {"type": "string", "minLength": 1},
+    "reviewed_at": {"type": "string", "format": "date-time"},
+    "report_sha256s": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+    },
+    "exceptions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["license", "owner", "rationale", "expires_at"],
+        "properties": {
+          "license": {"type": "string", "minLength": 1},
+          "owner": {"type": "string", "minLength": 1},
+          "rationale": {"type": "string", "minLength": 1},
+          "expires_at": {"type": "string", "format": "date-time"}
+        }
+      }
+    }
+  }
+}

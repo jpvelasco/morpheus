@@ -32,6 +32,7 @@ class MorpheusSettings(BaseModel):
     api_port: int = Field(default=7400, ge=1, le=65535)
     dashboard_port: int = Field(default=7401, ge=1, le=65535)
     agent_port: int = Field(default=7402, ge=1, le=65535)
+    telemetry_port: int = Field(default=7410, ge=1, le=65535)
     runtime_agent_url: str | None = None
     runtime_agent_socket: Path | None = None
     release_version: str = ""
@@ -39,7 +40,9 @@ class MorpheusSettings(BaseModel):
     data_dir: Path = Path("./data")
     llm_base_url: str = "http://history-coder:8000/v1"
     llm_model: str = "qwen36-27b-nvfp4"
-    external_docker_network: str = "ai_default"
+    external_docker_network: str = Field(
+        default="ai_default", pattern=r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$"
+    )
     api_key: SecretStr = SecretStr("")
     upstream_api_key: SecretStr = SecretStr("")
     agent_key: SecretStr = SecretStr("")
@@ -59,6 +62,9 @@ class MorpheusSettings(BaseModel):
     request_timeout_seconds: float = Field(default=10.0, gt=0, le=120)
     max_request_bytes: int = Field(default=2_097_152, ge=1024, le=64 * 1024 * 1024)
     telemetry_retention_days: int = Field(default=30, ge=1, le=365)
+    enable_lifecycle: bool = False
+    lifecycle_deployment_root: Path | None = None
+    lifecycle_lab_authorized: bool = False
 
     @field_validator("bind_address")
     @classmethod
@@ -107,6 +113,16 @@ class MorpheusSettings(BaseModel):
             raise ValueError("runtime_agent_socket must be an absolute path")
         return path
 
+    @field_validator("lifecycle_deployment_root", mode="before")
+    @classmethod
+    def validate_lifecycle_deployment_root(cls, value: Any) -> Path | None:
+        if value is None or value == "":
+            return None
+        path = Path(value)
+        if not path.is_absolute():
+            raise ValueError("lifecycle_deployment_root must be an absolute path")
+        return path.resolve(strict=False)
+
     @field_validator("data_dir", mode="before")
     @classmethod
     def validate_data_dir(cls, value: Any) -> Path:
@@ -130,10 +146,12 @@ class MorpheusSettings(BaseModel):
         address = ipaddress.ip_address(self.bind_address)
         if not address.is_loopback and not self.allow_lan:
             raise ValueError("non-loopback binding requires allow_lan=true")
-        if len({self.api_port, self.dashboard_port, self.agent_port}) != 3:
-            raise ValueError("api, dashboard, and agent ports must be distinct")
+        if len({self.api_port, self.dashboard_port, self.agent_port, self.telemetry_port}) != 4:
+            raise ValueError("api, dashboard, agent, and telemetry ports must be distinct")
         if self.runtime_agent_url and self.runtime_agent_socket:
             raise ValueError("configure only one runtime agent endpoint")
+        if self.enable_lifecycle and self.lifecycle_deployment_root is None:
+            raise ValueError("lifecycle requires a fixed deployment root")
         return self
 
     def features(self) -> dict[str, bool]:

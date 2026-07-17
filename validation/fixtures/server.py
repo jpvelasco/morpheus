@@ -154,7 +154,44 @@ class FixtureHandler(BaseHTTPRequestHandler):
                 HTTPStatus.BAD_REQUEST, "fixture_model_unknown", "Fixture model is unknown"
             )
             return
+
+        fixture_mode = request.get("morpheus_fixture_mode")
+        if fixture_mode == "unavailable":
+            self._send_error(
+                HTTPStatus.SERVICE_UNAVAILABLE,
+                "fixture_unavailable",
+                "Fixture dependency is unavailable",
+            )
+            return
+        delay_ms = 250
+        if fixture_mode in {"slow", "slow_stream"}:
+            delay_ms = request.get("morpheus_fixture_delay_ms", 250)
+            if not isinstance(delay_ms, int) or isinstance(delay_ms, bool):
+                self._send_error(
+                    HTTPStatus.BAD_REQUEST,
+                    "invalid_delay",
+                    "morpheus_fixture_delay_ms must be an integer",
+                )
+                return
+            delay_ms = max(0, min(delay_ms, 2_000))
+        if fixture_mode == "slow":
+            time.sleep(delay_ms / 1_000)
         if request.get("stream") is True:
+            if fixture_mode == "empty_stream":
+                self._send_stream([])
+                return
+            if fixture_mode == "partial_stream":
+                self._send_stream([self._stream_chunk({"content": "fixture-partial"})])
+                return
+            if fixture_mode == "slow_stream":
+                self._send_stream(
+                    [
+                        self._stream_chunk({"content": "fixture-partial"}),
+                        b"data: [DONE]\n\n",
+                    ],
+                    delay_after_first_ms=delay_ms,
+                )
+                return
             self._send_stream(
                 [
                     self._stream_chunk({"role": "assistant", "content": ""}),
@@ -194,15 +231,21 @@ class FixtureHandler(BaseHTTPRequestHandler):
         encoded = json.dumps(payload, separators=(",", ":"), sort_keys=True)
         return f"data: {encoded}\n\n".encode()
 
-    def _send_stream(self, events: list[bytes]) -> None:
+    def _send_stream(self, events: list[bytes], *, delay_after_first_ms: int = 0) -> None:
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", "text/event-stream")
         self.send_header("Cache-Control", "no-store")
         self.send_header("Connection", "close")
         self.end_headers()
-        for event in events:
-            self.wfile.write(event)
-            self.wfile.flush()
+        try:
+            for index, event in enumerate(events):
+                self.wfile.write(event)
+                self.wfile.flush()
+                if index == 0 and delay_after_first_ms:
+                    time.sleep(delay_after_first_ms / 1_000)
+        except OSError:
+            # A deliberate client disconnect is part of the cancellation fixture.
+            pass
         self.close_connection = True
 
 

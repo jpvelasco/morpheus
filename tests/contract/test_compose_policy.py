@@ -63,6 +63,21 @@ def test_telemetry_overrides_the_backend_image_health_port() -> None:
     assert "127.0.0.1:7400/healthz" not in healthcheck
 
 
+def test_CONT_002_core_services_accept_an_explicit_private_environment_file() -> None:
+    compose = yaml.safe_load((ROOT / "deploy/compose.yaml").read_text(encoding="utf-8"))
+    expected = [{"path": "${MORPHEUS_ENV_FILE:-../.env}", "required": False}]
+
+    assert compose["services"]["api"]["env_file"] == expected
+    assert compose["services"]["telemetry"]["env_file"] == expected
+
+
+def test_CONT_002_api_keeps_its_container_port_when_the_host_port_changes() -> None:
+    compose = yaml.safe_load((ROOT / "deploy/compose.yaml").read_text(encoding="utf-8"))
+
+    assert compose["services"]["api"]["environment"]["MORPHEUS_API_PORT"] == "7400"
+    assert compose["services"]["telemetry"]["environment"]["MORPHEUS_TELEMETRY_PORT"] == "7410"
+
+
 def test_runtime_agent_overlay_mounts_only_the_authenticated_unix_socket_directory() -> None:
     compose = yaml.safe_load((ROOT / "deploy/compose.agent.yaml").read_text(encoding="utf-8"))
     api = compose["services"]["api"]

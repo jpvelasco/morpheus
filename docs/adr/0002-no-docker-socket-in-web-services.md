@@ -18,8 +18,9 @@ and lifecycle operations use a separate loopback runtime agent with mutual
 authentication, an explicit operation allowlist, fixed paths, ownership labels,
 and protected external-resource checks.
 
-The initial agent is read-only. Stateful operations are added individually only
-after authorization, idempotence, rollback, and external-integrity tests exist.
+The agent remains read-only by default. The lifecycle surface is separately
+enabled and contains only the fixed operations whose authorization,
+idempotence, rollback, and external-integrity contracts are tested.
 
 ## Consequences
 

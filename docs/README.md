@@ -12,6 +12,8 @@
   prerequisites, executable validation tasks, evidence, and release gates.
 - [Release state](RELEASE_STATE.md): durable current-candidate ledger, completed
   milestones, active work, and resume constraints.
+- [Lifecycle operations](LIFECYCLE.md): fixed release layout, authenticated
+  commands, repeat semantics, recovery, uninstall, and lab-only purge.
 - [Inventory](inventory.md): existing local assets and candidate inputs.
 
 ## Decision Records

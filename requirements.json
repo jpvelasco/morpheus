@@ -65,13 +65,13 @@
     },
     {
       "id": "UI-001", "phase": 3, "status": "implemented",
-      "owning_tests": ["web/tests/App.test.tsx", "tests/contract/test_dashboard_app.py", "tests/e2e/test_operator_surfaces.py"], "risk": "medium",
+      "owning_tests": ["web/tests/App.test.tsx", "web/e2e/dashboard.spec.ts", "tests/contract/test_dashboard_app.py", "tests/e2e/test_operator_surfaces.py"], "risk": "medium",
       "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
     },
     {
       "id": "UI-002", "phase": 3, "status": "implemented",
-      "owning_tests": ["web/tests/App.test.tsx", "tests/contract/test_control_api.py"], "risk": "medium",
+      "owning_tests": ["web/tests/App.test.tsx", "web/e2e/dashboard.spec.ts", "tests/contract/test_control_api.py"], "risk": "medium",
       "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
     },
@@ -83,13 +83,13 @@
     },
     {
       "id": "UI-004", "phase": 3, "status": "implemented",
-      "owning_tests": ["web/tests/App.test.tsx", "tests/contract/test_control_api.py"], "risk": "high",
+      "owning_tests": ["web/tests/App.test.tsx", "web/e2e/dashboard.spec.ts", "tests/contract/test_control_api.py"], "risk": "high",
       "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
     },
     {
       "id": "UI-005", "phase": 3, "status": "implemented",
-      "owning_tests": ["web/tests/App.test.tsx"], "risk": "medium",
+      "owning_tests": ["web/tests/App.test.tsx", "web/e2e/dashboard.spec.ts"], "risk": "medium",
       "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
     },
@@ -287,15 +287,15 @@
     },
     {
       "id": "SEC-004", "phase": 3, "status": "implemented",
-      "owning_tests": ["tests/unit/test_browser_sessions.py", "tests/contract/test_control_api.py", "web/tests/App.test.tsx", "web/tests/api.test.ts"], "risk": "critical",
+      "owning_tests": ["tests/unit/test_browser_sessions.py", "tests/contract/test_control_api.py", "web/tests/App.test.tsx", "web/tests/api.test.ts", "web/e2e/dashboard.spec.ts", "tests/contract/test_browser_gate.py", "tests/unit/test_browser_evidence.py"], "risk": "critical",
       "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
     },
     {
-      "id": "SEC-005", "phase": 10, "status": "planned",
-      "owning_tests": ["tests/contract/test_optional_compose.py", "tests/contract/test_compose_policy.py", "tests/contract/test_validation_fixtures.py"], "risk": "critical",
+      "id": "SEC-005", "phase": 10, "status": "implemented",
+      "owning_tests": ["tests/unit/test_supply_chain.py", "tests/contract/test_supply_chain_gate.py", "tests/contract/test_release_tooling.py", "tests/test_repository_policy.py"], "risk": "critical",
       "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-SEC-005-01"]
+      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
     },
     {
       "id": "SEC-006", "phase": 10, "status": "implemented",
@@ -322,10 +322,10 @@
       "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
     },
     {
-      "id": "REL-003", "phase": 9, "status": "planned",
-      "owning_tests": ["tests/integration/test_backup_restore.py"], "risk": "critical",
+      "id": "REL-003", "phase": 9, "status": "implemented",
+      "owning_tests": ["tests/unit/test_lifecycle.py", "tests/unit/test_lifecycle_cli.py", "tests/contract/test_lifecycle_adapter.py", "tests/contract/test_runtime_agent_app.py", "tests/contract/test_runtime_agent_client.py", "tests/integration/test_backup_restore.py"], "risk": "critical",
       "required_environments": ["VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-REL-003-01"]
+      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
     },
     {
       "id": "REL-004", "phase": 1, "status": "implemented",
@@ -335,19 +335,19 @@
     },
     {
       "id": "PERF-001", "phase": 6, "status": "implemented",
-      "owning_tests": ["tests/contract/test_compose_policy.py"], "risk": "high",
+      "owning_tests": ["tests/contract/test_compose_policy.py", "tests/unit/test_performance.py", "tests/contract/test_load_gate.py"], "risk": "high",
       "required_environments": ["HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": true,
       "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
     },
     {
-      "id": "PERF-002", "phase": 10, "status": "planned",
-      "owning_tests": ["tests/contract/test_compose_policy.py"], "risk": "high",
+      "id": "PERF-002", "phase": 10, "status": "implemented",
+      "owning_tests": ["tests/contract/test_compose_policy.py", "tests/unit/test_performance.py", "tests/contract/test_resource_adapter.py", "tests/contract/test_load_gate.py"], "risk": "high",
       "required_environments": ["VM", "HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": true,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-PERF-002-01"]
+      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
     },
     {
       "id": "PERF-003", "phase": 3, "status": "implemented",
-      "owning_tests": ["web/tests/App.test.tsx"], "risk": "medium",
+      "owning_tests": ["web/tests/App.test.tsx", "web/e2e/dashboard.spec.ts"], "risk": "medium",
       "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
     }

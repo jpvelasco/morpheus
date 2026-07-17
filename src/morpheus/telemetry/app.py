@@ -5,11 +5,15 @@ import json
 import secrets
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import UTC, timedelta
 from typing import Any, Protocol
 
+import anyio
+import httpx
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response, StreamingResponse
+from starlette.background import BackgroundTask
 
 from morpheus.adapters.inference.openai import OpenAIInferenceAdapter
 from morpheus.adapters.persistence.sqlite import SqliteStore
@@ -26,6 +30,8 @@ class TelemetryStore(Protocol):
     async def initialize(self) -> None: ...
 
     async def record_telemetry(self, event: TelemetryEvent) -> None: ...
+
+    async def prune_telemetry(self, *, before: str) -> int: ...
 
 
 def _error(status: int, code: str, message: str) -> JSONResponse:
@@ -52,6 +58,62 @@ def _parse_request(body: bytes) -> tuple[dict[str, Any], JSONResponse | None]:
     return payload, None
 
 
+async def _prefetch_stream(upstream: AsyncIterator[bytes]) -> AsyncIterator[bytes]:
+    try:
+        first = await anext(upstream)
+    except StopAsyncIteration as error:
+        raise ValueError("upstream returned an empty stream") from error
+
+    async def restored() -> AsyncIterator[bytes]:
+        yield first
+        async for chunk in upstream:
+            yield chunk
+
+    return restored()
+
+
+def _upstream_failure(error: BaseException) -> tuple[int, str, str]:
+    if isinstance(error, httpx.TimeoutException):
+        return 504, "upstream_timeout", "Upstream timed out"
+    if isinstance(error, httpx.HTTPStatusError):
+        return 502, "upstream_http_error", "Upstream returned an error"
+    if isinstance(error, httpx.NetworkError):
+        return 502, "upstream_unreachable", "Upstream is unreachable"
+    return 502, "upstream_contract_error", "Upstream returned an incompatible response"
+
+
+def _retention_cutoff(*, settings: MorpheusSettings, clock: Clock) -> str:
+    observed_at = clock.utc_now().astimezone(UTC)
+    return (observed_at - timedelta(days=settings.telemetry_retention_days)).isoformat()
+
+
+async def _record_and_prune(
+    *,
+    store: TelemetryStore,
+    event: TelemetryEvent,
+    settings: MorpheusSettings,
+    clock: Clock,
+) -> None:
+    await store.record_telemetry(event)
+    await store.prune_telemetry(before=_retention_cutoff(settings=settings, clock=clock))
+
+
+async def _finalize_stream(
+    *,
+    store: TelemetryStore,
+    event: TelemetryEvent,
+    settings: MorpheusSettings,
+    clock: Clock,
+    request_limiter: ConcurrencyLimiter,
+) -> None:
+    # Starlette cancels the response task on disconnect; cleanup must outlive that scope.
+    with anyio.CancelScope(shield=True):
+        try:
+            await _record_and_prune(store=store, event=event, settings=settings, clock=clock)
+        finally:
+            await request_limiter.release()
+
+
 def create_proxy_app(
     *,
     settings: MorpheusSettings,
@@ -66,6 +128,7 @@ def create_proxy_app(
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
         del application
         await store.initialize()
+        await store.prune_telemetry(before=_retention_cutoff(settings=settings, clock=clock))
         yield
 
     app = FastAPI(
@@ -122,14 +185,29 @@ def create_proxy_app(
             )
             upstream = inference.forward_chat(body)
             if payload.get("stream") is True:
+                try:
+                    upstream = await _prefetch_stream(upstream)
+                except (httpx.HTTPError, ValueError) as error:
+                    status, code, message = _upstream_failure(error)
+                    outcome = "upstream_protocol_error" if isinstance(error, ValueError) else code
+                    event.complete(clock.monotonic(), outcome=outcome)
+                    await _record_and_prune(
+                        store=store, event=event, settings=settings, clock=clock
+                    )
+                    return _error(status, code, message)
 
                 async def streamed() -> Any:
                     try:
                         async for chunk in observe_stream(upstream, event=event, clock=clock):
                             yield chunk
                     finally:
-                        await store.record_telemetry(event)
-                        await request_limiter.release()
+                        await _finalize_stream(
+                            store=store,
+                            event=event,
+                            settings=settings,
+                            clock=clock,
+                            request_limiter=request_limiter,
+                        )
 
                 release_slot = False
                 return StreamingResponse(
@@ -145,13 +223,30 @@ def create_proxy_app(
                     clock=clock,
                     max_bytes=16 * 1024 * 1024,
                 )
+            except httpx.HTTPError as error:
+                status, code, message = _upstream_failure(error)
+                event.complete(clock.monotonic(), outcome=code)
+                await _record_and_prune(store=store, event=event, settings=settings, clock=clock)
+                return _error(status, code, message)
             except ValueError:
+                event.complete(clock.monotonic(), outcome="upstream_protocol_error")
+                await _record_and_prune(store=store, event=event, settings=settings, clock=clock)
                 return _error(
                     502, "upstream_contract_error", "Upstream returned an incompatible response"
                 )
-            finally:
-                await store.record_telemetry(event)
-            return Response(content=response_body, media_type="application/json")
+            release_slot = False
+            return Response(
+                content=response_body,
+                media_type="application/json",
+                background=BackgroundTask(
+                    _finalize_stream,
+                    store=store,
+                    event=event,
+                    settings=settings,
+                    clock=clock,
+                    request_limiter=request_limiter,
+                ),
+            )
         finally:
             if release_slot:
                 await request_limiter.release()
@@ -174,4 +269,4 @@ def run() -> None:
         ),
     )
     app = create_proxy_app(settings=settings, inference=inference, store=store, clock=clock)
-    uvicorn.run(app, host=settings.bind_address, port=7410, access_log=False)
+    uvicorn.run(app, host=settings.bind_address, port=settings.telemetry_port, access_log=False)

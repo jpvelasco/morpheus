@@ -1,6 +1,6 @@
 PYTHON := uv run --python 3.12
 
-.PHONY: bootstrap format format-check lint typecheck test-unit test-contract test-integration test-acceptance test-e2e test-coverage test-live-readonly security build gate
+.PHONY: bootstrap format format-check lint typecheck test-unit test-contract test-integration test-acceptance test-e2e test-coverage test-live-readonly browser-gate load-dev security security-candidate-scan security-release build gate release-gate
 
 bootstrap:
 	uv sync --python 3.12 --extra dev --frozen
@@ -37,13 +37,27 @@ test-coverage:
 	$(PYTHON) pytest tests/contract tests/integration tests/e2e tests/unit tests/test_*.py tests/acceptance --cov --cov-branch --cov-report=term-missing
 
 test-live-readonly:
-	MORPHEUS_LIVE_TESTS=1 MORPHEUS_LIVE_MUTATION=0 $(PYTHON) pytest tests/live -m live
+	MORPHEUS_LIVE_TESTS=1 MORPHEUS_LIVE_MUTATION=0 $(PYTHON) pytest -s tests/live -m live
+
+browser-gate:
+	validation/browser/run.sh
+
+load-dev:
+	validation/load/dev_rehearsal.sh
 
 security:
 	$(PYTHON) bandit -c pyproject.toml -r src
 	$(PYTHON) pip-audit
 
+security-candidate-scan:
+	validation/security/run.sh scan
+
+security-release:
+	validation/security/run.sh finalize
+
 build:
 	uv build --offline
 
 gate: format-check lint typecheck test-unit test-contract test-integration test-acceptance test-e2e test-coverage security build
+
+release-gate: gate browser-gate security-release

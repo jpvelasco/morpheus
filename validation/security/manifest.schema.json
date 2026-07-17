@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "report": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "size"],
+      "properties": {
+        "path": {"type": "string", "pattern": "^reports/"},
+        "sha256": {"$ref": "#/$defs/digest"},
+        "size": {"type": "integer", "minimum": 0}
+      }
+    },
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reference", "version"],
+      "properties": {
+        "reference": {"type": "string", "pattern": "@sha256:[0-9a-f]{64}$"},
+        "version": {"type": "string", "minLength": 1}
+      }
+    }
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "source_commit",
+    "candidate_manifest_sha256",
+    "tool_lock_sha256",
+    "policy_sha256",
+    "vulnerability_database",
+    "tools",
+    "scans",
+    "sboms",
+    "license_review",
+    "result"
+  ],
+  "properties": {
+    "format": {"const": 1},
+    "source_commit": {"type": "string", "pattern": "^[0-9a-f]{40,64}$"},
+    "candidate_manifest_sha256": {"$ref": "#/$defs/digest"},
+    "tool_lock_sha256": {"$ref": "#/$defs/digest"},
+    "policy_sha256": {"$ref": "#/$defs/digest"},
+    "vulnerability_database": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["updated_at", "next_update", "downloaded_at"],
+      "properties": {
+        "updated_at": {"type": "string", "format": "date-time"},
+        "next_update": {"type": "string", "format": "date-time"},
+        "downloaded_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "tools": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["secret-scan", "vulnerability-scan", "sbom", "license-scan"],
+      "properties": {
+        "secret-scan": {"$ref": "#/$defs/tool"},
+        "vulnerability-scan": {"$ref": "#/$defs/tool"},
+        "sbom": {"$ref": "#/$defs/tool"},
+        "license-scan": {"$ref": "#/$defs/tool"}
+      }
+    },
+    "scans": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"$ref": "#/$defs/report"}
+    },
+    "sboms": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["artifact_id", "format", "path", "sha256", "size"],
+        "properties": {
+          "artifact_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"},
+          "format": {"enum": ["cyclonedx-json", "spdx-json"]},
+          "path": {"type": "string", "pattern": "^reports/"},
+          "sha256": {"$ref": "#/$defs/digest"},
+          "size": {"type": "integer", "minimum": 0}
+        }
+      }
+    },
+    "license_review": {"$ref": "#/$defs/report"},
+    "result": {"const": "pass"}
+  }
+}

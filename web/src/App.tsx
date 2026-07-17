@@ -14,7 +14,7 @@ import {
   ShieldCheck,
   Volume2,
 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 
 import { createSession, destroySession, fetchOverview, type CapabilityState, type HealthState, type Overview } from './api'
 import './styles.css'
@@ -178,11 +178,15 @@ function Dashboard({ onLogout, onSessionExpired }: { onLogout: () => Promise<voi
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState<'overview' | 'diagnostics'>('overview')
+  const activeRequest = useRef<AbortController | null>(null)
 
-  const refresh = useCallback(async (signal?: AbortSignal) => {
-    setLoading((current) => current || overview === null)
+  const refresh = useCallback(async () => {
+    const controller = new AbortController()
+    activeRequest.current?.abort()
+    activeRequest.current = controller
+    setLoading(true)
     try {
-      const next = await fetchOverview(signal)
+      const next = await fetchOverview(controller.signal)
       setOverview(next)
       setError(null)
     } catch (reason) {
@@ -191,18 +195,23 @@ function Dashboard({ onLogout, onSessionExpired }: { onLogout: () => Promise<voi
       if (message === 'Authentication failed') onSessionExpired()
       setError(message)
     } finally {
-      setLoading(false)
+      if (activeRequest.current === controller) {
+        activeRequest.current = null
+        setLoading(false)
+      }
     }
-  }, [onSessionExpired, overview])
+  }, [onSessionExpired])
 
   useEffect(() => {
-    const controller = new AbortController()
-    void refresh(controller.signal)
+    void refresh()
+    return () => { activeRequest.current?.abort() }
+  }, [refresh])
+
+  useEffect(() => {
     const interval = window.setInterval(() => {
-      if (!document.hidden) void refresh(controller.signal)
+      if (!document.hidden) void refresh()
     }, error ? 45_000 : 15_000)
     return () => {
-      controller.abort()
       window.clearInterval(interval)
     }
   }, [error, refresh])
@@ -216,7 +225,7 @@ function Dashboard({ onLogout, onSessionExpired }: { onLogout: () => Promise<voi
         <div className="header-actions">
           <span className="last-updated">Updated {observed}</span>
           <button className="icon-command" type="button" onClick={() => { void refresh() }} aria-label="Refresh overview" title="Refresh overview"><RefreshCw size={17} /></button>
-          <button className="icon-command" type="button" onClick={() => { void onLogout() }} aria-label="Sign out" title="Sign out"><LogOut size={17} /></button>
+          <button className="icon-command" type="button" onClick={() => { activeRequest.current?.abort(); void onLogout() }} aria-label="Sign out" title="Sign out"><LogOut size={17} /></button>
         </div>
       </header>
       <nav className="view-tabs" aria-label="Dashboard views">
