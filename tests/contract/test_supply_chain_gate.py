@@ -72,6 +72,10 @@ def test_SEC_005_runner_is_offline_hardened_pinned_and_release_blocking() -> Non
     assert "cyclonedx-json=" in source
     assert "spdx-json=" in source
     assert "artifacts/" in source
+    # OCI layout archives must be extracted before Trivy --input (not Docker-save).
+    assert "oci_extract_root" in source
+    assert "oci-layout" in source
+    assert "index.json" in source
     assert "security-candidate-scan:" in makefile
     assert "security-release:" in makefile
     assert "release-gate: gate browser-gate security-release" in makefile

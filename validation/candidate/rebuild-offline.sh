@@ -98,7 +98,8 @@ cp -a "${cache_root}/npm-cache" "${work}/npm-cache"
 mkdir -p "${work}/agent"
 cp -a "${cache_root}/agent-wheelhouse" "${work}/agent/wheelhouse"
 cp -a "${cache_root}/runtime-requirements.txt" "${work}/agent/runtime-requirements.txt"
-cp -a "${root}/deploy/agent/install.sh" "${work}/agent/install.sh"
+# Force executable mode so umask at git checkout cannot change the agent tarball.
+install -m 0755 "${root}/deploy/agent/install.sh" "${work}/agent/install.sh"
 agent_output="${output}/payload/agent/morpheus-agent-${version}-${short_commit}.tar.gz"
 tar --create --directory="${work}" --sort=name \
     --mtime="@${source_date_epoch}" --owner=0 --group=0 --numeric-owner \

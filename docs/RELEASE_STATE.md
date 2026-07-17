@@ -10,18 +10,24 @@ private request data, host addresses, or unredacted evidence.
 - **Validated baseline candidate:** `ae3a98d74b055672c37ae608805e21804d4e609b`
   (`security: bound API request work`). Its build evidence remains valid only
   for that source revision.
+- **Active pre-soak candidate source:** `aa7174aff3194ffeb1ca455d53005f242abe6d82`
+  (`security: scope candidate secret allowlists`). Its generated candidate
+  manifest, not a copied short hash, is authoritative for the exact commit
+  identity of built artifacts.
 - **Last committed handoff:** `60209ee` (`docs: make release handoff
-  self-contained`; 2026-07-15). The source revision containing this ledger is
-  the approved candidate source line; its generated candidate manifest, not a
-  copied short hash, is authoritative for the exact commit identity.
-- **Current release development line:** the pre-soak implementation queue is
-  complete and approved for an immutable candidate build. Any later source
-  change creates a different candidate and invalidates affected evidence.
+  self-contained`; 2026-07-15). Later freeze commits supersede that handoff for
+  candidate identity while preserving its documentation role.
+- **Current release development line:** pre-soak source is frozen at `aa7174a`
+  for artifact production. Scanner-harness and rebuild-determinism tooling may
+  still land after that freeze without relabelling the already-built OCI and
+  Python artifacts; any change that alters product source requires a new
+  candidate.
 - **Implementation inventory:** 44 implemented, 11 planned, 3 deferred; see
   [`requirements.json`](../requirements.json) and the
   [implementation gap review](IMPLEMENTATION_GAP_REVIEW.md).
 - **Release posture:** not yet release-ready. A passing candidate does not
-  replace lifecycle, browser, load, fault, supply-chain, or soak evidence.
+  replace lifecycle, browser, load, fault, supply-chain finalize, or soak
+  evidence.
 - **GPU posture:** GPU/image-generation work is deliberately excluded from the
   pre-soak core-release lane. It requires a later, separately authorized
   host-maintenance release candidate.
@@ -181,10 +187,26 @@ Python base image's public 40-hex GPG signing fingerprint repeated in OCI and
 rollback archives, plus empty assignments from `.env.example` inside a nested
 archive path. The scanner policy now permits only that exact public-fingerprint
 shape and recognizes the already-reviewed empty template through `/` or archive
-`!` boundaries. The pinned network-disabled Gitleaks replay reports zero
-findings. Because scanner policy is release source, `f23b9e6` is superseded and
-must not be promoted; the corrected source requires a new exact candidate and
-affected evidence.
+`!` boundaries. Because scanner policy is release source, `f23b9e6` is
+superseded and must not be promoted.
+
+The superseding candidate at `aa7174a` completed two independent disposable VM
+rebuilds with guest and container egress blocked. Five primary artifacts
+compared byte-for-byte; the full ten-artifact set verified under
+`verify_candidate` with candidate-manifest digest
+`fee82dfc8b892a82298b4308e7e558ad3e9d635ed61d2cce0bdb937a3191a5f7`. The early
+network-disabled supply-chain scan then reported zero Gitleaks findings across
+history, worktree, and candidate archives; zero high/critical Trivy findings on
+repository, candidate filesystem, and both OCI images; and non-empty CycloneDX
+plus SPDX SBOMs for every declared artifact. Human license review
+(SUPPLY-004 finalize) remains open against the generated review template.
+
+During that gate, two scanner-harness defects were fixed without changing the
+frozen product artifacts: Trivy image scans now extract OCI-layout archives
+before `--input`, and Syft SBOM generation uses a 1 GiB tmpfs so large OCI
+unpacks cannot leave empty report files. The offline rebuild path also forces
+`install.sh` mode `0755` so clone umask cannot diverge the agent tarball on a
+future freeze.
 
 Release evidence is intentionally ignored from Git. Store it only under the
 configured `artifacts/release-validation/` location or a disposable validation
@@ -205,18 +227,20 @@ workspace; refer to the candidate commit and task ID in its redacted manifest.
 
 ## Active Milestone
 
-**Candidate build and P1/P2 validation.** Build the immutable artifact set from
-the clean approved source revision, then run the exact candidate's early
-supply-chain, clean-container, clean-install, lifecycle, rollback, uninstall,
-and protected external-integrity lanes in disposable environments.
+**Exact-candidate P1/P2 validation on `aa7174a`.** The immutable artifact set
+and early secret/vuln/SBOM inventory are complete. Complete human license
+finalize, then run clean-container, clean-install, lifecycle, rollback,
+uninstall, and protected external-integrity lanes in disposable environments.
 
 ## Pre-Soak Queue
 
-1. Rebuild and validate the exact frozen candidate: current-container startup,
-   hardening, loopback exposure, security/SBOM evidence, installation, runtime
-   agent, and external-runtime integrity.
+1. Finalize SUPPLY-004 human license review for candidate
+   `aa7174a` / manifest digest
+   `fee82dfc8b892a82298b4308e7e558ad3e9d635ed61d2cce0bdb937a3191a5f7`, then
+   validate current-container startup, hardening, loopback exposure,
+   installation, runtime agent, and external-runtime integrity.
 2. Lifecycle, browser/accessibility, optional CPU-service, fault, load, and
-   resource validation.
+   resource validation against the exact candidate.
 3. Two-hour qualification soak; freeze the release candidate; then run the
    required 24-hour soak.
 

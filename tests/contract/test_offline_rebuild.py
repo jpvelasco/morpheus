@@ -192,6 +192,12 @@ def test_ART_001_oci_producers_name_the_fetch_and_offline_steps() -> None:
         ]
 
 
+def test_ART_001_agent_bundle_forces_deterministic_install_mode() -> None:
+    rebuild = REBUILD.read_text(encoding="utf-8")
+    assert 'install -m 0755 "${root}/deploy/agent/install.sh"' in rebuild
+    assert 'cp -a "${root}/deploy/agent/install.sh"' not in rebuild
+
+
 def test_CLEAN_002_no_script_contains_shell_network_fetch_shortcuts() -> None:
     scripts = "\n".join(
         path.read_text(encoding="utf-8") for path in (OFFLINE_GUARD, POPULATE, REBUILD)
