@@ -53,7 +53,9 @@ for command in docker openssl python3; do
 done
 
 mkdir -p -- "${runtime_root}"/{agent,data,run,logs}
-chmod 700 "${runtime_root}" "${runtime_root}/data" "${runtime_root}/run" "${runtime_root}/logs"
+chmod 700 "${runtime_root}" "${runtime_root}/data" "${runtime_root}/logs"
+# Group-executable so the API container (group_add host GID) can open the agent socket.
+chmod 750 "${runtime_root}/run"
 
 env_file=${runtime_root}/morpheus.env
 agent_env=${runtime_root}/agent.env
