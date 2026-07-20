@@ -203,8 +203,20 @@ candidate (reviewer JP Velasco; no exceptions; no forbidden licenses) and
 `validation/security/run.sh finalize` produced a passing supply-chain
 manifest.
 
-During that gate, two scanner-harness defects were fixed without changing the
-frozen product artifacts: Trivy image scans now extract OCI-layout archives
+Candidate container smoke for CONT-002/CONT-003 then passed on a disposable
+fixture network using the loaded `morpheus/backend:0.1.0-aa7174aff319` and
+`morpheus/dashboard:0.1.0-aa7174aff319` images with Compose `--no-build`. API,
+dashboard, and telemetry became healthy; the core probe verified auth, model
+discovery, dashboard framing headers, and non-streaming/streaming completions.
+Hardening checks confirmed non-root users, read-only roots, `cap_drop ALL`,
+`no-new-privileges`, tmpfs, memory limits, loopback-only publications, and no
+Docker socket. Selected `history-coder` and Open WebUI identity fields were
+unchanged before and after; the disposable project containers, volume, and
+network were removed. Evidence:
+`artifacts/release-validation/cont002-aa7-cand-evidence/`.
+
+During the supply-chain gate, two scanner-harness defects were fixed without
+changing the frozen product artifacts: Trivy image scans now extract OCI-layout archives
 before `--input`, and Syft SBOM generation uses a 1 GiB tmpfs so large OCI
 unpacks cannot leave empty report files. The offline rebuild path also forces
 `install.sh` mode `0755` so clone umask cannot diverge the agent tarball on a
@@ -229,19 +241,18 @@ workspace; refer to the candidate commit and task ID in its redacted manifest.
 
 ## Active Milestone
 
-**Exact-candidate P1/P2 validation on `aa7174a`.** The immutable artifact set
-and closed supply-chain evidence (including human license approval) are
-complete. Run clean-container, clean-install, lifecycle, rollback, uninstall,
-and protected external-integrity lanes in disposable environments.
+**Exact-candidate P2 lifecycle validation on `aa7174a`.** Immutable artifacts,
+supply-chain close, and candidate container smoke are complete. Next: clean
+install / start / stop / backup / rollback / uninstall with the lifecycle agent
+in a disposable lab (or VM), still without mutating external inference.
 
 ## Pre-Soak Queue
 
-1. Validate current-container startup, hardening, loopback exposure,
-   installation, runtime agent, and external-runtime integrity for candidate
-   `aa7174a` / manifest digest
+1. Run lifecycle install→start→backup→stop→uninstall (and later upgrade/rollback
+   once a second baseline exists) for candidate `aa7174a` / manifest digest
    `fee82dfc8b892a82298b4308e7e558ad3e9d635ed61d2cce0bdb937a3191a5f7`.
-2. Lifecycle, browser/accessibility, optional CPU-service, fault, load, and
-   resource validation against the exact candidate.
+2. Browser/accessibility, optional CPU-service, fault, load, and resource
+   validation against the exact candidate.
 3. Two-hour qualification soak; freeze the release candidate; then run the
    required 24-hour soak.
 
