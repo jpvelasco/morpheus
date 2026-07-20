@@ -197,9 +197,11 @@ compared byte-for-byte; the full ten-artifact set verified under
 `fee82dfc8b892a82298b4308e7e558ad3e9d635ed61d2cce0bdb937a3191a5f7`. The early
 network-disabled supply-chain scan then reported zero Gitleaks findings across
 history, worktree, and candidate archives; zero high/critical Trivy findings on
-repository, candidate filesystem, and both OCI images; and non-empty CycloneDX
-plus SPDX SBOMs for every declared artifact. Human license review
-(SUPPLY-004 finalize) remains open against the generated review template.
+repository, candidate filesystem, and both OCI images; and CycloneDX plus SPDX
+SBOMs for every declared artifact. Human license review was approved for that
+candidate (reviewer JP Velasco; no exceptions; no forbidden licenses) and
+`validation/security/run.sh finalize` produced a passing supply-chain
+manifest.
 
 During that gate, two scanner-harness defects were fixed without changing the
 frozen product artifacts: Trivy image scans now extract OCI-layout archives
@@ -228,17 +230,16 @@ workspace; refer to the candidate commit and task ID in its redacted manifest.
 ## Active Milestone
 
 **Exact-candidate P1/P2 validation on `aa7174a`.** The immutable artifact set
-and early secret/vuln/SBOM inventory are complete. Complete human license
-finalize, then run clean-container, clean-install, lifecycle, rollback,
-uninstall, and protected external-integrity lanes in disposable environments.
+and closed supply-chain evidence (including human license approval) are
+complete. Run clean-container, clean-install, lifecycle, rollback, uninstall,
+and protected external-integrity lanes in disposable environments.
 
 ## Pre-Soak Queue
 
-1. Finalize SUPPLY-004 human license review for candidate
+1. Validate current-container startup, hardening, loopback exposure,
+   installation, runtime agent, and external-runtime integrity for candidate
    `aa7174a` / manifest digest
-   `fee82dfc8b892a82298b4308e7e558ad3e9d635ed61d2cce0bdb937a3191a5f7`, then
-   validate current-container startup, hardening, loopback exposure,
-   installation, runtime agent, and external-runtime integrity.
+   `fee82dfc8b892a82298b4308e7e558ad3e9d635ed61d2cce0bdb937a3191a5f7`.
 2. Lifecycle, browser/accessibility, optional CPU-service, fault, load, and
    resource validation against the exact candidate.
 3. Two-hour qualification soak; freeze the release candidate; then run the

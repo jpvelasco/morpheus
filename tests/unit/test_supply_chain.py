@@ -470,6 +470,12 @@ def test_trivy_contract_accepts_nonblocking_findings_and_permissive_license() ->
         identifier="repository-filesystem-license",
         policy=policy,
     )
+    # Clean filesystem/image scans may omit Results entirely.
+    _validate_trivy(
+        {"SchemaVersion": 2},
+        identifier="candidate-artifacts-security",
+        policy=policy,
+    )
 
 
 def test_report_reference_rejects_unsafe_corrupt_and_non_json_inputs(tmp_path: Path) -> None:
@@ -523,6 +529,22 @@ def test_sbom_contract_rejects_malformed_documents(
             root=tmp_path,
             used_paths=set(),
         )
+
+
+def test_sbom_contract_accepts_cyclonedx_without_components_key(tmp_path: Path) -> None:
+    # Syft emits metadata-only CycloneDX for empty package inventories.
+    reference = _report(
+        tmp_path,
+        "reports/empty-cdx.json",
+        {"bomFormat": "CycloneDX", "specVersion": "1.6"},
+    )
+    _validate_sboms(
+        [{"artifact_id": "artifact", "format": "cyclonedx-json", **reference}],
+        artifact_ids={"artifact"},
+        formats={"cyclonedx-json"},
+        root=tmp_path,
+        used_paths=set(),
+    )
 
 
 def test_sbom_inventory_rejects_bad_shape_target_and_incomplete_coverage(tmp_path: Path) -> None:

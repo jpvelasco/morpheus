@@ -257,13 +257,13 @@ def _validate_scans(
 
 
 def _validate_trivy(payload: dict[str, Any], *, identifier: str, policy: dict[str, Any]) -> None:
-    if not isinstance(payload.get("SchemaVersion"), int) or not isinstance(
-        payload.get("Results"), list
-    ):
+    # Clean Trivy scans often omit Results entirely; treat missing as no findings.
+    results = payload.get("Results", [])
+    if not isinstance(payload.get("SchemaVersion"), int) or not isinstance(results, list):
         raise SupplyChainValidationError("Trivy report contract is invalid")
     blocked = set(policy["blocked_severities"])
     forbidden = {license_name.casefold() for license_name in policy["forbidden_licenses"]}
-    for result in payload["Results"]:
+    for result in results:
         if not isinstance(result, dict):
             raise SupplyChainValidationError("Trivy result must be an object")
         if identifier.endswith("-security"):
@@ -318,11 +318,11 @@ def _validate_sboms(
         if not isinstance(payload, dict):
             raise SupplyChainValidationError("SBOM must be a JSON object")
         if sbom_format == "cyclonedx-json":
-            components = payload.get("components")
+            # Syft omits components entirely when an artifact has no package inventory.
+            components = payload.get("components", [])
             if (
                 payload.get("bomFormat") != "CycloneDX"
                 or not isinstance(payload.get("specVersion"), str)
-                or "components" not in payload
                 or (components is not None and not isinstance(components, list))
             ):
                 raise SupplyChainValidationError("CycloneDX SBOM contract is invalid")
