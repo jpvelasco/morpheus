@@ -1,0 +1,12 @@
+# ubuntu-1 operator overlay: consume frozen candidate images (no build).
+# Used with deploy/compose.yaml + validation/candidate/compose.yaml.
+services:
+  api:
+    image: "${MORPHEUS_BACKEND_IMAGE:?set MORPHEUS_BACKEND_IMAGE to the loaded candidate tag}"
+    pull_policy: never
+  dashboard:
+    image: "${MORPHEUS_DASHBOARD_IMAGE:?set MORPHEUS_DASHBOARD_IMAGE to the loaded candidate tag}"
+    pull_policy: never
+  telemetry:
+    image: "${MORPHEUS_BACKEND_IMAGE:?set MORPHEUS_BACKEND_IMAGE to the loaded candidate tag}"
+    pull_policy: never

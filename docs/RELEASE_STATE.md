@@ -252,24 +252,26 @@ workspace; refer to the candidate commit and task ID in its redacted manifest.
 
 ## Active Milestone
 
-**Exact-candidate remaining P2/P3 lanes on `aa7174a`.** Immutable artifacts,
-supply-chain close, candidate container smoke, and a disposable lifecycle lab
-(install/start/backup/stop/uninstall with external integrity) are complete.
-Next optional depth: upgrade/rollback with a second baseline, browser matrix,
-load, and soak — still without mutating external inference unless authorized.
+**ubuntu-1 operator stop-line.** Product work stops at a host install of the
+frozen candidate as a read-only operator surface next to existing inference.
+Use `deploy/ubuntu-1/install.sh` and `docs/runbooks/ubuntu-operator.md`.
+Optional capability suite, browser matrix, load/soak, and upgrade/rollback
+remain deferred unless a concrete ubuntu-1 need reopens them.
 
 ## Pre-Soak Queue
 
-1. Optional: preserve a second deployable baseline and exercise upgrade/rollback
-   (LIFE-005/006) for candidate `aa7174a` / manifest digest
-   `fee82dfc8b892a82298b4308e7e558ad3e9d635ed61d2cce0bdb937a3191a5f7`.
-2. Browser/accessibility, optional CPU-service, fault, load, and resource
-   validation against the exact candidate.
-3. Two-hour qualification soak; freeze the release candidate; then run the
-   required 24-hour soak.
+1. **Operator install on ubuntu-1:** run `deploy/ubuntu-1/install.sh` with
+   candidate `aa7174a` / manifest digest
+   `fee82dfc8b892a82298b4308e7e558ad3e9d635ed61d2cce0bdb937a3191a5f7`, confirm
+   dashboard + `morpheus status|models|doctor` against live vLLM without
+   mutating external services.
+2. Use Morpheus as the first daily check for inference health; keep Docker for
+   external stack operations only.
+3. Do not schedule further feature work unless daily use surfaces a gap.
 
-Do not add source changes after the candidate is frozen for soak. Any such
-change creates a new candidate and requires affected validation to be repeated.
+Do not expand optional sidecars or formal soak gates as part of this stop-line.
+Any later source change creates a different candidate if release artifacts are
+rebuilt.
 
 ## Operating Constraints
 

@@ -8,13 +8,20 @@ reconfiguring the working inference runtime.
 
 ## Status
 
-Morpheus is an unreleased development implementation. The repository contains
-the typed Python control plane, runtime agent (read-only by default), read-only CLI,
-separate authenticated lifecycle commands, operational
-dashboard, telemetry proxy, optional service adapters, deployment definitions,
-and non-live automated validation. It is not eligible for stable use until the
-release-level exit criteria are satisfied, including explicitly authorized live
-compatibility, recovery, soak, accessibility, and clean-machine evidence.
+Morpheus is an **operator control plane** for a host that already runs
+OpenAI-compatible inference (on ubuntu-1: `history-coder` + Open WebUI). It is
+intentionally **not** a full appliance installer and does not manage models or
+the external GPU stack.
+
+For day-to-day operator use on ubuntu-1, install the frozen candidate with the
+ubuntu-1 path and stop feature work there:
+
+- [ubuntu-1 operator runbook](docs/runbooks/ubuntu-operator.md)
+- Installer: `deploy/ubuntu-1/install.sh`
+
+Optional sidecars (search, voice, workflows, research, image generation) and
+full formal release soak evidence remain out of the ubuntu-1 operator stop-line
+unless reopened later.
 
 The current external runtime is treated as an integration dependency:
 
@@ -29,6 +36,7 @@ at runtime. ODS is research input only.
 
 ## Documentation
 
+- [ubuntu-1 operator runbook](docs/runbooks/ubuntu-operator.md)
 - [Product specification](docs/PRODUCT_SPECIFICATION.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [TDD implementation plan](docs/IMPLEMENTATION_PLAN.md)
