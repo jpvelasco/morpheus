@@ -65,6 +65,17 @@ morpheus doctor
 Expect inference readiness against the live vLLM endpoint configured as
 `MORPHEUS_LLM_BASE_URL` (default `http://qwopus-coder:8000/v1` on `ai_default`).
 
+GPU, storage, and host diagnostics need the **runtime agent socket**. The
+install script sets `run/` to mode `0750` so the API container can open the
+socket. If the dashboard shows those as unavailable:
+
+```bash
+chmod 750 /home/batjp/morpheus-runtime/run
+# refresh the dashboard
+```
+
+Confirm the agent is running: `kill -0 "$(cat /home/batjp/morpheus-runtime/run/agent.pid)"`.
+
 ## Daily use
 
 | Goal | Command / UI |
