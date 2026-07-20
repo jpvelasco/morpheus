@@ -19,6 +19,8 @@ services:
       MORPHEUS_API_PORT: "7400"
       # Container networking requires a wildcard bind; the host publication remains loopback-only.
       MORPHEUS_ALLOW_LAN: "true"
+      # Always the volume path inside the container; never a host checkout path.
+      MORPHEUS_DATA_DIR: /var/lib/morpheus
     ports:
       - "127.0.0.1:${MORPHEUS_API_PORT:-7400}:7400"
     networks: [morpheus_internal, ai_default]
@@ -87,6 +89,7 @@ services:
       MORPHEUS_TELEMETRY_PORT: "7410"
       # Container networking requires a wildcard bind; the host publication remains loopback-only.
       MORPHEUS_ALLOW_LAN: "true"
+      MORPHEUS_DATA_DIR: /var/lib/morpheus
     ports:
       - "127.0.0.1:${MORPHEUS_TELEMETRY_PORT:-7410}:7410"
     networks: [morpheus_internal, ai_default]

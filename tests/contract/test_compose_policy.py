@@ -38,6 +38,8 @@ def test_python_services_acknowledge_the_container_bind_address() -> None:
         environment = compose["services"][name]["environment"]
         assert environment["MORPHEUS_BIND_ADDRESS"] == "0.0.0.0"  # noqa: S104
         assert environment["MORPHEUS_ALLOW_LAN"] == "true"
+        # Host lab paths must never leak into containers via env_file alone.
+        assert environment["MORPHEUS_DATA_DIR"] == "/var/lib/morpheus"
 
 
 def test_tmpfs_entries_are_single_absolute_mount_specifications() -> None:

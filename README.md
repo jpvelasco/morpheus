@@ -8,13 +8,20 @@ reconfiguring the working inference runtime.
 
 ## Status
 
-Morpheus is an unreleased development implementation. The repository contains
-the typed Python control plane, runtime agent (read-only by default), read-only CLI,
-separate authenticated lifecycle commands, operational
-dashboard, telemetry proxy, optional service adapters, deployment definitions,
-and non-live automated validation. It is not eligible for stable use until the
-release-level exit criteria are satisfied, including explicitly authorized live
-compatibility, recovery, soak, accessibility, and clean-machine evidence.
+Morpheus is an **operator control plane** for a host that already runs
+OpenAI-compatible inference (on Batwing: `qwopus-coder` + Open WebUI). It is
+intentionally **not** a full appliance installer and does not manage models or
+the external GPU stack.
+
+For day-to-day operator use on Batwing, install the frozen candidate with the
+Batwing path and stop feature work there:
+
+- [Batwing operator runbook](docs/runbooks/BATWING_OPERATOR.md)
+- Installer: `deploy/batwing/install.sh`
+
+Optional sidecars (search, voice, workflows, research, image generation) and
+full formal release soak evidence remain out of the Batwing operator stop-line
+unless reopened later.
 
 The current external runtime is treated as an integration dependency:
 
@@ -29,6 +36,7 @@ at runtime. ODS is research input only.
 
 ## Documentation
 
+- [Batwing operator runbook](docs/runbooks/BATWING_OPERATOR.md)
 - [Product specification](docs/PRODUCT_SPECIFICATION.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [TDD implementation plan](docs/IMPLEMENTATION_PLAN.md)
