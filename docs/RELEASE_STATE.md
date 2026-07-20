@@ -215,6 +215,17 @@ unchanged before and after; the disposable project containers, volume, and
 network were removed. Evidence:
 `artifacts/release-validation/cont002-aa7-cand-evidence/`.
 
+A disposable lifecycle lab then drove the authenticated runtime agent and
+`morpheus-lifecycle` against the same candidate images: validate, install,
+idempotent reinstall, start, core smoke (API/dashboard/telemetry), named
+backup, restore-preflight, stop, and default uninstall that preserved
+Morpheus-owned data markers while removing project containers. Every step
+reported `protected_external_runtime: unchanged`; selected `qwopus-coder` and
+Open WebUI identity fields matched before/after. Evidence:
+`artifacts/release-validation/life003-aa7-lab/`. External-network integrity
+hashing no longer includes live endpoint membership so expected Morpheus
+attachments do not false-fail the gate.
+
 During the supply-chain gate, two scanner-harness defects were fixed without
 changing the frozen product artifacts: Trivy image scans now extract OCI-layout archives
 before `--input`, and Syft SBOM generation uses a 1 GiB tmpfs so large OCI
@@ -241,15 +252,16 @@ workspace; refer to the candidate commit and task ID in its redacted manifest.
 
 ## Active Milestone
 
-**Exact-candidate P2 lifecycle validation on `aa7174a`.** Immutable artifacts,
-supply-chain close, and candidate container smoke are complete. Next: clean
-install / start / stop / backup / rollback / uninstall with the lifecycle agent
-in a disposable lab (or VM), still without mutating external inference.
+**Exact-candidate remaining P2/P3 lanes on `aa7174a`.** Immutable artifacts,
+supply-chain close, candidate container smoke, and a disposable lifecycle lab
+(install/start/backup/stop/uninstall with external integrity) are complete.
+Next optional depth: upgrade/rollback with a second baseline, browser matrix,
+load, and soak — still without mutating external inference unless authorized.
 
 ## Pre-Soak Queue
 
-1. Run lifecycle install→start→backup→stop→uninstall (and later upgrade/rollback
-   once a second baseline exists) for candidate `aa7174a` / manifest digest
+1. Optional: preserve a second deployable baseline and exercise upgrade/rollback
+   (LIFE-005/006) for candidate `aa7174a` / manifest digest
    `fee82dfc8b892a82298b4308e7e558ad3e9d635ed61d2cce0bdb937a3191a5f7`.
 2. Browser/accessibility, optional CPU-service, fault, load, and resource
    validation against the exact candidate.

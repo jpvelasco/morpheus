@@ -130,9 +130,11 @@ class DockerComposeLifecycleAdapter:
                     check=False,
                 ).strip()
             )
+        # Omit live endpoint membership: Morpheus joining the external network is
+        # expected and must not look like protected-runtime mutation.
         network_template = (
-            '{"id":{{json .Id}},"driver":{{json .Driver}},'
-            '"ipam":{{json .IPAM.Config}},"containers":{{json .Containers}}}'
+            '{"id":{{json .Id}},"name":{{json .Name}},"driver":{{json .Driver}},'
+            '"ipam":{{json .IPAM.Config}}}'
         )
         selected.append(
             self._runner.run(
