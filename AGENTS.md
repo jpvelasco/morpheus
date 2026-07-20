@@ -1,5 +1,46 @@
 # AGENTS.md
 
+## Where We Left Off (2026-07-20)
+
+**Product stop-line: ubuntu-1 operator status plane only.** Do not expand
+optional capabilities (search, voice, telemetry UI, workflows, research, image
+generation, ODS-like suite) unless the user explicitly reopens that scope.
+
+Morpheus is installed on this host as a **read-only operator surface** next to
+existing inference. It answers: is inference up, which model, GPU/disk via the
+agent, and basic diagnostics. It is **not** chat, model management, or vLLM
+control.
+
+### Live install (ubuntu-1)
+
+| Item | Value |
+|---|---|
+| Runtime root | `/home/operator/morpheus-runtime` |
+| Dashboard | `http://127.0.0.1:7401/` (loopback only; use SSH tunnel off-box) |
+| API | `http://127.0.0.1:7400/` |
+| Env / API key | `/home/operator/morpheus-runtime/morpheus.env` (mode 0600) |
+| Host agent | `/home/operator/morpheus-runtime/agent/current`, socket under `run/` |
+| Install path | `deploy/ubuntu-1/install.sh` + `docs/runbooks/ubuntu-operator.md` |
+| Candidate | `aa7174aff3194ffeb1ca455d53005f242abe6d82` (artifacts under `artifacts/candidate-aa7174a/`) |
+
+Agent socket directory must be mode `0750` so the API container (host GID) can
+reach `agent.sock`. If GPU/storage show unavailable: `chmod 750 …/run` and
+confirm the agent PID is alive.
+
+Daily CLI (after sourcing env or using agent venv):
+
+```bash
+/home/operator/morpheus-runtime/agent/current/bin/morpheus status
+/home/operator/morpheus-runtime/agent/current/bin/morpheus models
+/home/operator/morpheus-runtime/agent/current/bin/morpheus doctor
+```
+
+### Resume ledger
+
+Read `docs/RELEASE_STATE.md` for candidate evidence and milestone status. The
+active milestone is the ubuntu-1 operator stop-line, not full formal release
+soak or capability rollout.
+
 ## Project Boundary
 
 Morpheus is an independent project. Do not import, vendor, symlink, or depend
@@ -14,7 +55,8 @@ explicit state-changing instruction in the current request.
 ## Engineering Rules
 
 - Follow `docs/PRODUCT_SPECIFICATION.md`, `docs/ARCHITECTURE.md`, and
-  `docs/IMPLEMENTATION_PLAN.md`.
+  `docs/IMPLEMENTATION_PLAN.md` when product work is authorized.
+- Prefer `docs/runbooks/ubuntu-operator.md` for host operator install/use.
 - Use TDD: failing requirement test, minimal implementation, refactor.
 - Keep core domain logic pure and dependency-free.
 - Put external behavior behind typed adapter protocols.
@@ -29,3 +71,7 @@ explicit state-changing instruction in the current request.
 Run the smallest relevant test lane while iterating, then the complete required
 gate for the affected phase. Live-system tests are opt-in and read-only unless
 the user explicitly authorizes mutation.
+
+Do not treat remaining formal release checklist items (24h soak, full browser
+matrix, dual-VM rebuilds, optional sidecars) as open mandatory work unless the
+user asks.
