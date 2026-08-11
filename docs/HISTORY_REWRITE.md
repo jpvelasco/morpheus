@@ -7,13 +7,13 @@ author and committer names, timestamps, and messages were preserved; abbreviated
 Git commit references inside commit messages were translated automatically.
 
 Because commit metadata participates in Git object identity, every affected
-commit received a new SHA. A verified recovery bundle, the complete old-to-new
-commit map, and before/after metadata ledgers are stored outside this repository
-under:
-
-```text
-/home/operator/Documents/source/backups/morpheus-pre-noreply-rewrite-20260810/
-```
+commit received a new SHA. Before publication, a verified recovery bundle, the
+complete old-to-new commit map, and before/after metadata ledgers were used to
+validate the migration. After rewritten `main` was independently verified on
+the private GitHub origin, that external legacy recovery material was
+intentionally deleted on 2026-08-10. The published repository therefore retains
+no pre-rewrite Git objects; only the operational legacy artifact identifiers
+documented below remain.
 
 ## Deployed legacy candidate
 
