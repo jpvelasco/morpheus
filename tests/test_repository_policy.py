@@ -56,7 +56,7 @@ def test_secret_scan_ignores_only_the_reviewed_empty_example_false_positive() ->
     lines = (ROOT / ".gitleaksignore").read_text(encoding="utf-8").splitlines()
     fingerprints = [line for line in lines if line and not line.startswith("#")]
     assert fingerprints == [
-        "46478209f9abd0ce2e47b65cb7e92095a3aa66e8:.env.example:generic-api-key:20"
+        "786d14ea2e55a3d79a92f7a24169937eb7c2a02f:.env.example:generic-api-key:20"
     ]
     assert any("adjacent empty assignments" in line for line in lines if line.startswith("#"))
 
