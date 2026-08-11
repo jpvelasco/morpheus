@@ -7,21 +7,21 @@ private request data, host addresses, or unredacted evidence.
 
 ## Current Position
 
-- **Validated baseline candidate:** `ae3a98d74b055672c37ae608805e21804d4e609b`
-  (`security: bound API request work`). Its build evidence remains valid only
-  for that source revision.
-- **Active pre-soak candidate source:** `aa7174aff3194ffeb1ca455d53005f242abe6d82`
-  (`security: scope candidate secret allowlists`). Its generated candidate
-  manifest, not a copied short hash, is authoritative for the exact commit
-  identity of built artifacts.
-- **Last committed handoff:** `60209ee` (`docs: make release handoff
+- **Validated baseline source equivalent:** `aa094172764a4de3e5dc91324306b14857706c4e`
+  (`security: bound API request work`). Its pre-publication build evidence
+  retains legacy source ID `ae3a98d74b055672c37ae608805e21804d4e609b`.
+- **Active pre-soak source equivalent:** `fa5fe3ca2e393d6d20c1afa89dff2452650bf180`
+  (`security: scope candidate secret allowlists`). Existing candidate manifests,
+  images, and artifacts retain the pre-publication build ID
+  `aa7174aff3194ffeb1ca455d53005f242abe6d82`; their manifest remains
+  authoritative for that already-built artifact set.
+- **Last committed handoff:** `47a36cd` (`docs: make release handoff
   self-contained`; 2026-07-15). Later freeze commits supersede that handoff for
   candidate identity while preserving its documentation role.
-- **Current release development line:** pre-soak source is frozen at `aa7174a`
-  for artifact production. Scanner-harness and rebuild-determinism tooling may
-  still land after that freeze without relabelling the already-built OCI and
-  Python artifacts; any change that alters product source requires a new
-  candidate.
+- **Current release development line:** the rewritten pre-soak source is frozen
+  at `fa5fe3c`. Scanner-harness and rebuild-determinism tooling may still land
+  after that freeze without relabelling the already-built OCI and Python
+  artifacts; any change that alters product source requires a new candidate.
 - **Implementation inventory:** 44 implemented, 11 planned, 3 deferred; see
   [`requirements.json`](../requirements.json) and the
   [implementation gap review](IMPLEMENTATION_GAP_REVIEW.md).
@@ -63,7 +63,7 @@ host-maintenance work begins.
 
 ## Approved Candidate-Source Checkpoint
 
-At handoff commit `e0cd976`, the Python quality gate passed with 345 tests and
+At handoff commit `3d1feaa`, the Python quality gate passed with 345 tests and
 90.52% coverage; formatting, lint, type checking, Bandit, pip-audit, and the
 offline package build also passed. This confirms source health at that point,
 but it is not release evidence: the SEC-005 and REL-003 source gaps were still
@@ -180,18 +180,19 @@ were on DEV rather than a clean VM and do not identify a built candidate
 artifact set. The linked requirements therefore remain `implemented`, not
 `validated`.
 
-The first frozen pre-soak candidate at `f23b9e6` passed two independent
+The first frozen pre-soak source at `5688aed` passed two independent
 byte-for-byte VM rebuilds and closed ten-artifact verification, then the early
 candidate secret scan stopped on nine reviewed false positives: the official
 Python base image's public 40-hex GPG signing fingerprint repeated in OCI and
 rollback archives, plus empty assignments from `.env.example` inside a nested
 archive path. The scanner policy now permits only that exact public-fingerprint
 shape and recognizes the already-reviewed empty template through `/` or archive
-`!` boundaries. Because scanner policy is release source, `f23b9e6` is
+`!` boundaries. Because scanner policy is release source, `5688aed` is
 superseded and must not be promoted.
 
-The superseding candidate at `aa7174a` completed two independent disposable VM
-rebuilds with guest and container egress blocked. Five primary artifacts
+The superseding source at `fa5fe3c` (legacy built-artifact ID `aa7174a`)
+completed two independent disposable VM rebuilds with guest and container
+egress blocked. Five primary artifacts
 compared byte-for-byte; the full ten-artifact set verified under
 `verify_candidate` with candidate-manifest digest
 `fee82dfc8b892a82298b4308e7e558ad3e9d635ed61d2cce0bdb937a3191a5f7`. The early
@@ -241,14 +242,14 @@ workspace; refer to the candidate commit and task ID in its redacted manifest.
 
 | Commit | Milestone |
 |---|---|
-| `ae3a98d` | Request body limits, content/schema checks, timeouts, rate limits, and bounded concurrency across exposed APIs. |
-| `ffe5f0d` | Signed browser-session decision record and validation-plan correction. |
-| `4d20d86` | Browser API-key removal; signed, expiring cookie sessions with CSRF-protected logout. |
-| `ed29681` | RUN-005 now derives optional-capability state from live, Morpheus-owned runtime-agent container health evidence. |
-| `ff02687` | SEC-002 now authorizes only explicit read-only resource actions on owned, non-protected identities. |
-| `a740dee` | SEC-006 now resolves configured data, persistence, archives, generated output, evidence, and restore staging through owned-path boundaries. |
-| `4c6342c` | REL-002 now applies bounded retry/backoff/deadline recovery to idempotent inference discovery. |
-| `e0cd976` | OPS-002 now preflights schema/free space and performs durable rollback-capable restore swaps. |
+| `aa09417` | Request body limits, content/schema checks, timeouts, rate limits, and bounded concurrency across exposed APIs. |
+| `cdb3eba` | Signed browser-session decision record and validation-plan correction. |
+| `3c4ba66` | Browser API-key removal; signed, expiring cookie sessions with CSRF-protected logout. |
+| `1cb3e5c` | RUN-005 now derives optional-capability state from live, Morpheus-owned runtime-agent container health evidence. |
+| `7c84ebc` | SEC-002 now authorizes only explicit read-only resource actions on owned, non-protected identities. |
+| `c108108` | SEC-006 now resolves configured data, persistence, archives, generated output, evidence, and restore staging through owned-path boundaries. |
+| `14d93da` | REL-002 now applies bounded retry/backoff/deadline recovery to idempotent inference discovery. |
+| `3d1feaa` | OPS-002 now preflights schema/free space and performs durable rollback-capable restore swaps. |
 
 ## Active Milestone
 
@@ -261,7 +262,7 @@ remain deferred unless a concrete Batwing need reopens them.
 ## Pre-Soak Queue
 
 1. **Operator install on Batwing:** run `deploy/batwing/install.sh` with
-   candidate `aa7174a` / manifest digest
+   rewritten source `fa5fe3c` / legacy artifact ID `aa7174a` / manifest digest
    `fee82dfc8b892a82298b4308e7e558ad3e9d635ed61d2cce0bdb937a3191a5f7`, confirm
    dashboard + `morpheus status|models|doctor` against live vLLM without
    mutating external services.

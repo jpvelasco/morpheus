@@ -21,7 +21,7 @@ control.
 | Env / API key | `/home/batjp/morpheus-runtime/morpheus.env` (mode 0600) |
 | Host agent | `/home/batjp/morpheus-runtime/agent/current`, socket under `run/` |
 | Install path | `deploy/batwing/install.sh` + `docs/runbooks/BATWING_OPERATOR.md` |
-| Candidate | `aa7174aff3194ffeb1ca455d53005f242abe6d82` (artifacts under `artifacts/candidate-aa7174a/`) |
+| Candidate | rewritten source `fa5fe3ca2e393d6d20c1afa89dff2452650bf180`; deployed artifacts retain legacy build ID `aa7174aff3194ffeb1ca455d53005f242abe6d82` under `artifacts/candidate-aa7174a/` |
 
 Agent socket directory must be mode `0750` so the API container (host GID) can
 reach `agent.sock`. If GPU/storage show unavailable: `chmod 750 …/run` and
