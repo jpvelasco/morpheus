@@ -71,16 +71,24 @@ Use this as the default home for each class of work.
 - `src/morpheus/api/`
 - `src/morpheus/cli/`
 
-The existing benchmark suite remains intentionally separate at
-`/home/operator/Documents/history-tool-tests`. Morpheus may consume its published
-results later, but benchmarking is not part of the current implementation scope.
+The existing benchmark harness remains independently maintained at
+`/home/operator/Documents/history-tool-tests`. Under the v0.2 plan, Morpheus imports
+its published JSONL and reports through a versioned, checksummed mapping without
+modifying the source files or pretending missing historical provenance exists.
+New managed campaigns use Morpheus's canonical benchmark schema and can continue
+to invoke validated history workload implementations behind an adapter.
 
 ## Recommendation
 
-Start by codifying the existing working server setup before adding any new dependencies.
-The highest-value first step is a small Morpheus module that can:
+The v0.1 recommendation was to codify the existing working server before adding
+dependencies. That work produced the deployed read-only status plane. The v0.2
+next step is the dual-mode contract foundation followed by a module that can:
 
 1. describe the current runtime config,
 2. inspect the running service,
 3. measure throughput,
 4. snapshot logs into `artifacts/`.
+
+The broader v0.2 workflow then adds normalized host discovery, catalog-backed
+model/engine recommendations, durable benchmark history, managed deployment
+plans, and operations views.

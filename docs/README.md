@@ -7,7 +7,15 @@
 - [Architecture](ARCHITECTURE.md): ownership boundaries, components, data
   flows, security model, and deployment shape.
 - [Implementation plan](IMPLEMENTATION_PLAN.md): test-driven build sequence,
-  quality gates, and phase exit criteria.
+  quality gates, v0.1 history, and v0.2 focused-appliance phases.
+- [Dual-mode appliance decision](adr/0005-dual-mode-focused-inference-appliance.md):
+  observed versus managed inference ownership and focused scope.
+- [Evidence-ranked selection decision](adr/0006-evidence-ranked-model-engine-selection.md):
+  compatibility filtering, workload ranking, provenance, and operator authority.
+- [Tauri desktop and independent backend decision](adr/0007-tauri-desktop-and-independent-backend.md):
+  shared React desktop/browser UI, backend service lifecycle, and version handshake.
+- [Tiered cross-platform runtime decision](adr/0008-tiered-cross-platform-runtime-support.md):
+  stable three-OS targets, native engine baseline, and evidence-bounded tiers.
 - [Release validation plan](RELEASE_VALIDATION_PLAN.md): prioritized host and VM
   prerequisites, executable validation tasks, evidence, and release gates.
 - [Release state](RELEASE_STATE.md): durable current-candidate ledger, completed

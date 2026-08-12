@@ -22,7 +22,14 @@ private request data, host addresses, or unredacted evidence.
   at `fa5fe3c`. Scanner-harness and rebuild-determinism tooling may still land
   after that freeze without relabelling the already-built OCI and Python
   artifacts; any change that alters product source requires a new candidate.
-- **Implementation inventory:** 44 implemented, 11 planned, 3 deferred; see
+- **Active product direction:** v0.2 reopens Morpheus as a focused developer
+  inference appliance with stable native paths on Ubuntu, Windows, and Apple
+  Silicon macOS. ubuntu-1 and ubuntu-2 remain named Linux qualification
+  machines. The accepted plan adds evidence-ranked selection, managed inference,
+  benchmark history, a Tauri desktop plus independent backend, operations, and
+  bounded AI-assisted diagnosis. No v0.2 runtime implementation or target
+  mutation has started.
+- **Implementation inventory:** 44 implemented, 41 planned, 12 deferred; see
   [`requirements.json`](../requirements.json) and the
   [implementation gap review](IMPLEMENTATION_GAP_REVIEW.md).
 - **Release posture:** not yet release-ready. A passing candidate does not
@@ -253,31 +260,34 @@ workspace; refer to the candidate commit and task ID in its redacted manifest.
 
 ## Active Milestone
 
-**ubuntu-1 operator stop-line.** Product work stops at a host install of the
-frozen candidate as a read-only operator surface next to existing inference.
-Use `deploy/ubuntu-1/install.sh` and `docs/runbooks/ubuntu-operator.md`.
-Optional capability suite, browser matrix, load/soak, and upgrade/rollback
-remain deferred unless a concrete ubuntu-1 need reopens them.
+**v0.2 plan established; implementation begins with Phase 11 only after explicit
+authorization.** The next source milestone is the dual-mode contract and
+ownership foundation described in `docs/IMPLEMENTATION_PLAN.md`. It must preserve
+the deployed ubuntu-1 v0.1 read-only behavior and requires no model download, GPU
+workload, or runtime mutation.
 
-## Pre-Soak Queue
+## v0.2 Queue
 
-1. **Operator install on ubuntu-1:** run `deploy/ubuntu-1/install.sh` with
-   rewritten source `fa5fe3c` / legacy artifact ID `aa7174a` / manifest digest
-   `fee82dfc8b892a82298b4308e7e558ad3e9d635ed61d2cce0bdb937a3191a5f7`, confirm
-   dashboard + `morpheus status|models|doctor` against live vLLM without
-   mutating external services.
-2. Use Morpheus as the first daily check for inference health; keep Docker for
-   external stack operations only.
-3. Do not schedule further feature work unless daily use surfaces a gap.
+1. **Phase 11 — contracts and ownership:** introduce typed observed, managed,
+   and adoption-candidate identities plus immutable planning and lifecycle state
+   machines, using fakes and disposable tests only.
+2. **Phase 12 — portable discovery and catalogs:** capture privacy-reviewed
+   ubuntu-1, ubuntu-2, Windows, and Apple Silicon macOS profiles through
+   read-only lanes; define native platform ports and versioned catalogs.
+3. **Phase 13 — benchmark foundation:** normalize and import the existing
+   history result history before creating new model-management workflows.
 
-Do not expand optional sidecars or formal soak gates as part of this stop-line.
-Any later source change creates a different candidate if release artifacts are
-rebuilt.
+The optional search, voice, workflow, research, RAG, and image-generation suite
+is not on this critical path. Any product-source change after the existing v0.1
+freeze creates a distinct v0.2 candidate; existing artifacts retain their
+recorded identity.
 
 ## Operating Constraints
 
 - Never restart, reconfigure, or mutate external inference/Open WebUI services
   during normal validation.
+- Treat ubuntu-1's current coder as `external_observed` until a later request
+  explicitly authorizes a tested adoption or replacement workflow.
 - Use only disposable candidate stacks and validation VMs for mutation.
 - Do not enable persistent user-service linger as a workaround for agent tests.
 - Keep GPU allocation and image-generation transitions out of the core-release

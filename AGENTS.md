@@ -1,15 +1,25 @@
 # AGENTS.md
 
-## Where We Left Off (2026-07-20)
+## Where We Left Off (2026-08-11)
 
-**Product stop-line: ubuntu-1 operator status plane only.** Do not expand
-optional capabilities (search, voice, telemetry UI, workflows, research, image
-generation, ODS-like suite) unless the user explicitly reopens that scope.
+**Product direction reopened for v0.2 planning.** Morpheus is now planned as a
+focused developer-inference appliance with stable native paths on Ubuntu,
+Windows, and Apple Silicon macOS. ubuntu-1 and ubuntu-2 remain named Linux
+qualification machines. The plan adds evidence-ranked model/engine selection,
+managed runtime, benchmark history, Tauri desktop plus independent backend,
+operations, and bounded AI-assisted diagnosis. Read
+`docs/IMPLEMENTATION_PLAN.md` Phase 11 onward and ADR-0005 through ADR-0008.
 
-Morpheus is installed on this host as a **read-only operator surface** next to
+This plan update does not authorize v0.2 runtime implementation or live target
+mutation. The next source milestone is Phase 11 contracts and ownership only
+when explicitly requested. Search, voice, workflows, research, RAG, image
+generation, and other ODS-like breadth are outside the focused v0.2 critical
+path unless separately reopened.
+
+The deployed v0.1 Morpheus remains a **read-only operator surface** next to
 existing inference. It answers: is inference up, which model, GPU/disk via the
 agent, and basic diagnostics. It is **not** chat, model management, or vLLM
-control.
+control. Planning language must not be mistaken for deployed behavior.
 
 ### Live install (ubuntu-1)
 
@@ -38,8 +48,8 @@ Daily CLI (after sourcing env or using agent venv):
 ### Resume ledger
 
 Read `docs/RELEASE_STATE.md` for candidate evidence and milestone status. The
-active milestone is the ubuntu-1 operator stop-line, not full formal release
-soak or capability rollout.
+v0.1 ubuntu-1 install remains the operational baseline; the active product queue
+starts with the unimplemented v0.2 Phase 11 contract milestone.
 
 ## Project Boundary
 
@@ -51,6 +61,11 @@ The active `history-coder` vLLM service, existing Open WebUI container, their
 Compose project, model caches, and persistent data are externally owned. Never
 restart, recreate, stop, reconfigure, or write to them unless the user gives an
 explicit state-changing instruction in the current request.
+
+In v0.2 terms, that stack is `external_observed`. Future managed inference must
+use separate Morpheus-owned roots, labels, manifests, and endpoints. Do not
+adopt the existing stack merely because it is discoverable or appears in a
+recommendation.
 
 ## Engineering Rules
 

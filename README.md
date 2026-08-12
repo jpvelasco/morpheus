@@ -1,10 +1,15 @@
 # Morpheus
 
-Morpheus is an independent control plane and optional service layer for an
-existing OpenAI-compatible local inference server. It is designed to add
-health visibility, operational tooling, search, voice, telemetry, workflows,
-research, and carefully coordinated media services without replacing or
-reconfiguring the working inference runtime.
+Morpheus is a focused local developer-inference appliance. The v0.2 plan covers
+host discovery, evidence-ranked model and engine selection, managed installation
+and serving, durable benchmark comparisons, and a modern operations workspace
+for metrics, logs, analytics, settings, diagnosis, and recovery. The stable
+target is a Tauri desktop plus independent backend on Ubuntu, Windows, and Apple
+Silicon macOS, with browser and SSH-tunneled access retained.
+
+The deployed v0.1 foundation remains an independent read-only control plane for
+an existing OpenAI-compatible runtime. v0.2 adds a separately owned managed mode
+without weakening that external-runtime boundary.
 
 ## Status
 
@@ -13,15 +18,20 @@ OpenAI-compatible inference (on ubuntu-1: `history-coder` + Open WebUI). It is
 intentionally **not** a full appliance installer and does not manage models or
 the external GPU stack.
 
+That paragraph describes the currently deployed v0.1 behavior. The approved
+v0.2 product plan will add a managed-appliance path for ubuntu-1 and ubuntu-2
+and qualified Windows and Apple Silicon macOS hosts, but no v0.2 runtime
+implementation or live migration has started.
+
 For day-to-day operator use on ubuntu-1, install the frozen candidate with the
 ubuntu-1 path and stop feature work there:
 
 - [ubuntu-1 operator runbook](docs/runbooks/ubuntu-operator.md)
 - Installer: `deploy/ubuntu-1/install.sh`
 
-Optional sidecars (search, voice, workflows, research, image generation) and
-full formal release soak evidence remain out of the ubuntu-1 operator stop-line
-unless reopened later.
+Optional sidecars (search, voice, workflows, research, RAG, image generation)
+are outside the focused v0.2 critical path. Morpheus is not attempting to match
+ODS feature breadth.
 
 The current external runtime is treated as an integration dependency:
 
@@ -40,6 +50,10 @@ at runtime. ODS is research input only.
 - [Product specification](docs/PRODUCT_SPECIFICATION.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [TDD implementation plan](docs/IMPLEMENTATION_PLAN.md)
+- [Dual-mode appliance decision](docs/adr/0005-dual-mode-focused-inference-appliance.md)
+- [Evidence-ranked selection decision](docs/adr/0006-evidence-ranked-model-engine-selection.md)
+- [Tauri desktop and independent backend decision](docs/adr/0007-tauri-desktop-and-independent-backend.md)
+- [Tiered cross-platform runtime decision](docs/adr/0008-tiered-cross-platform-runtime-support.md)
 - [Release validation plan](docs/RELEASE_VALIDATION_PLAN.md)
 - [Lifecycle operations](docs/LIFECYCLE.md)
 - [Existing asset inventory](docs/inventory.md)
@@ -51,6 +65,7 @@ at runtime. ODS is research input only.
 ```text
 src/morpheus/          Python domain, adapters, API, agent, and CLI
 web/                   TypeScript dashboard
+desktop/               Planned Tauri desktop shell and native packaging
 deploy/                Morpheus-owned Compose and service configuration
 tests/                 Unit, contract, integration, acceptance, and live tests
 docs/                  Specifications, architecture, ADRs, and runbooks
