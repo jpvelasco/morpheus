@@ -1,13 +1,20 @@
 # Morpheus Release Validation Plan
 
-Status: In progress
+Status: v0.1 validation baseline; v0.2 three-OS target matrix planned
 
-Updated: 2026-07-16
+Updated: 2026-08-11
 
 This document turns the release-level exit criteria into an executable,
 dependency-ordered checklist. A green development gate is necessary but does
 not make Morpheus eligible for stable use. Every task below must produce
 reviewable evidence or an explicit, approved deferral.
+
+The checklist below remains the historical v0.1 release lane. The reopened v0.2
+product requirements are phased in `IMPLEMENTATION_PLAN.md` Sections 20 through
+29 and culminate in Ubuntu, Windows, and Apple Silicon macOS qualification under
+Phase 18. Batwing and Batmobile remain named Linux evidence targets.
+No unchecked v0.1 optional-service item is implicitly promoted into the v0.2
+critical path, and this document does not yet constitute v0.2 release evidence.
 
 ## 1. Non-Negotiable Boundaries
 
@@ -44,6 +51,11 @@ Execution environments:
 | VM | Disposable `morpheus-validation` guest | Any declared lab mutation |
 | HOST-RO | Batwing against external services | Read-only observations only |
 | HOST-MAINT | Batwing maintenance window | Only the explicitly authorized operation |
+
+Phase 18 adds target-native Windows and macOS lab/host lanes using the same
+read-only versus explicitly authorized maintenance distinction. Their physical
+machines, signing identities, and immutable baselines must be recorded before
+those lanes can produce stable support evidence.
 
 Every evidence-producing run uses an identifier such as
 `20260715T180000Z-<commit>` and writes only to the ignored directory

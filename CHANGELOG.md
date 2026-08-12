@@ -9,6 +9,16 @@ first implementation artifact is released.
 
 ### Added
 
+- v0.2 focused developer-inference appliance specification and phased plan for
+  Ubuntu, Windows, and Apple Silicon macOS, retaining Batwing and Batmobile as
+  named Linux qualification machines.
+- Tauri 2 desktop and separately versioned per-user backend service plan.
+- Tiered runtime plan with native llama.cpp across stable targets and an
+  additional vLLM tier on qualified Linux NVIDIA hosts.
+- Dual observed/managed runtime ownership architecture.
+- Planned host discovery, evidence-ranked selection, managed model/engine
+  lifecycle, benchmark history, focused operations UI, AI-assisted diagnosis,
+  and secure access requirements.
 - Independent project and Git repository foundation.
 - Product specification with requirement and release exit criteria.
 - Ports-and-adapters architecture and security boundaries.
