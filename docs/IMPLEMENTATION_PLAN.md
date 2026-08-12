@@ -1,8 +1,8 @@
 # Morpheus TDD Implementation Plan
 
-Status: Proposed
+Status: Proposed v0.2; v0.1 foundation remains deployed
 
-Plan version: 0.1
+Plan version: 0.2
 
 Requirements source: [PRODUCT_SPECIFICATION.md](PRODUCT_SPECIFICATION.md)
 
@@ -18,6 +18,13 @@ then validated through an explicitly authorized live lane.
 The active inference and Open WebUI services are protected fixtures, not a
 development sandbox. Live tests are read-only until a later requirement
 explicitly authorizes a state transition.
+
+The v0.2 critical path begins at Phase 11 below. Phases 0 through 10 remain the
+historical v0.1 implementation and release plan. Unfinished search, voice,
+research, RAG, workflow, and image-generation work from those phases is not
+automatically promoted into the v0.2 queue. The focused appliance first delivers
+host discovery, model/engine selection, managed inference, durable benchmarks,
+operations, and diagnosis.
 
 ## 2. Test-Driven Development Loop
 
@@ -77,6 +84,8 @@ Contract tests lock:
 - SearXNG JSON search;
 - OpenAI-compatible STT and TTS;
 - telemetry streaming and error semantics;
+- machine-profile and desktop/backend compatibility-handshake schemas;
+- managed-engine capability, launch-plan, health, metrics, and log contracts;
 - n8n template schema and Perplexica configuration;
 - Compose ownership labels, networks, volumes, ports, health checks, and image
   digests.
@@ -129,6 +138,15 @@ Playwright covers supported desktop and mobile viewports, keyboard workflows,
 accessibility scans, slow responses, partial failures, session expiry, and
 visual layout. Screenshot baselines are reviewed artifacts, not substitutes for
 semantic assertions.
+
+### 3.7 Desktop and Native OS Tests
+
+The shared React feature suite remains authoritative for UI behavior. Native
+Tauri tests add install/bootstrap, minimal capability grants, backend version
+handshake, close/reopen, update/rollback, and local versus SSH-tunneled profile
+workflows. Target-native integration tests cover paths, ACLs or modes,
+process-tree cancellation, per-user service registration, reboot, sleep/resume,
+locked files, and removal on Ubuntu, Windows, and macOS.
 
 ## 4. Standard Quality Gate
 
@@ -512,6 +530,8 @@ the release-level exit criteria.
 | Contract | every change | fixtures/fakes | no | temp only |
 | Integration | affected changes | disposable | no by default | disposable only |
 | Browser | UI/API changes | disposable | no | disposable only |
+| Desktop | UI/backend changes | local fake backend | no | temp only |
+| Native packaging | release changes | none | no | isolated install root |
 | Container policy | deploy changes | rendered config | no | none |
 | Security | every change/nightly | disposable | no | disposable only |
 | Live read-only | manual/scheduled | production endpoint | observe | none |
@@ -519,6 +539,10 @@ the release-level exit criteria.
 | Soak | release candidate | isolated candidate | optional | isolated only |
 
 Required checks are path-aware but never omitted for a release candidate.
+Static, unit, contract, desktop, and packaging lanes run on native Ubuntu,
+Windows, and macOS workers. Hardware qualification remains separate from CI and
+records the exact OS, architecture, accelerator, driver/API, engine, model
+artifact, and package identities.
 
 ## 17. Requirement Traceability and Evidence
 
@@ -549,6 +573,9 @@ Release reports are generated from this manifest and immutable CI artifacts.
 | Proxy incompatibility | Tool/stream breakage | Direct parity corpus and bypass route |
 | Optional-service coupling | Broad outage | Separate health, networks, and lifecycle |
 | Database/archive corruption | Lost operational state | Atomic migration/restore and checksums |
+| Platform behavior hidden by Python portability | Data loss or orphaned processes | Native path, service, process-tree, and recovery tests |
+| Desktop/backend version drift | Broken management or unsafe actions | Compatibility handshake, signed update plan, rollback |
+| Unsupported engine parity claim | Failed or misleading installation | Evidence-bounded tier matrix and physical qualification |
 | Scope growth | Never-stable project | Phase gates, explicit non-goals, ADRs |
 
 ## 19. Change Control
@@ -564,3 +591,365 @@ format, external-resource policy, or release exit criterion requires:
 
 The plan may evolve, but an exit criterion is not removed merely because an
 implementation has difficulty satisfying it.
+
+## 20. v0.2 Delivery Strategy
+
+The v0.2 plan preserves the running Batwing v0.1 status plane while building a
+managed-runtime path in disposable environments. Product work follows this
+order:
+
+```text
+contract and ownership
+  -> portable host/OS foundation and catalogs
+  -> benchmark data foundation
+  -> deterministic recommendation
+  -> cross-platform backend, packaging, and managed engines
+  -> Tauri desktop operations workspace
+  -> bounded AI diagnosis, browser, and SSH access
+  -> Ubuntu, Windows, and Apple Silicon macOS qualification
+```
+
+No phase requires adoption of the current Batwing coder. Observe mode remains
+the recovery and comparison path until the managed candidate has independently
+passed its target gates and the operator separately authorizes promotion or
+adoption.
+
+The primary workload is serious developer inference. Default scoring emphasizes
+coding correctness, tool calls, structured output, agentic reliability,
+long-context coherence, interactive TTFT, sustained decode, stability, and safe
+resource headroom. Every default is versioned and operator-adjustable.
+
+Stable v0.2 is one product contract with native target adapters, not one
+identical runtime stack. Native `llama.cpp` is the common engine baseline. vLLM
+is an additional stable Linux NVIDIA tier; Ollama is optional, while Windows
+vLLM through WSL2 and Apple vLLM-Metal/MLX begin as experimental. Batwing and
+Batmobile remain named Linux targets but do not satisfy Windows or macOS release
+evidence.
+
+## 21. Phase 11: v0.2 Contracts and Dual Ownership
+
+Requirements: RUNM-001 and the v0.1 ownership, security, lifecycle, and external
+integrity requirements.
+
+### Objectives
+
+- introduce typed observed, managed, and adoption-candidate identities;
+- define immutable machine, catalog, workload, recommendation, deployment-plan,
+  campaign, comparison, and diagnosis contracts;
+- separate staging, benchmark, promotion, rollback, and adoption state machines;
+- define audit and confirmation boundaries for every managed operation;
+- preserve current API/CLI/dashboard behavior as observe mode.
+
+### First tests
+
+- acceptance tests proving every existing Batwing operation remains read-only;
+- property tests proving resource names and endpoints cannot transfer ownership;
+- invalid state-transition tests across install, campaign, promotion, rollback,
+  and adoption;
+- schema compatibility tests for versioned persisted and API records;
+- adversarial agent requests attempting arbitrary paths, flags, URLs, commands,
+  or external targets.
+
+### Exit criteria
+
+- v0.1 observe-mode tests remain green without compatibility aliases that weaken
+  ownership;
+- every state-changing contract identifies one exact managed plan and owned root;
+- adoption is impossible through ordinary install, settings, or lifecycle APIs;
+- the complete Phase 11 gate runs without GPU access or model downloads.
+
+## 22. Phase 12: Portable Host Discovery and Catalogs
+
+Requirements: HOST-001, HOST-002, SEL-001, PLAT-001, and PLAT-002.
+
+### Objectives
+
+- implement normalized machine profiles and platform-specific collectors;
+- record stable identity separately from volatile utilization observations;
+- collect CPU, memory, accelerator, topology, storage, OS, driver/API, container,
+  and engine-prerequisite evidence through allowlisted read-only operations;
+- define signed/checksummed model and engine catalog schemas, provenance,
+  freshness, license, formats, features, and compatibility expressions;
+- define typed hardware-telemetry, process-supervisor, service-manager,
+  filesystem/owned-path, and secret-store ports;
+- implement portable system collection plus Linux/NVIDIA, Windows/DXGI/vendor,
+  and Apple Metal collectors with explicit unavailable and permission states;
+- capture initial privacy-reviewed Batwing, Batmobile, Windows 11 x86-64, and
+  Apple Silicon macOS profiles.
+
+### First tests
+
+- fixtures for NVIDIA, non-NVIDIA, CPU-only, multi-device, partial permission,
+  stale driver, low storage, and unknown platform cases;
+- stable-profile fingerprint tests with volatile fields changing;
+- catalog parser tests for unknown fields, unsafe URLs, duplicate identities,
+  digest/revision drift, invalid constraints, and expired evidence;
+- host-agent allowlist and support-claim tests;
+- Windows drive, UNC, junction/reparse-point and ACL cases; POSIX symlink/mode
+  cases; process-tree termination and service capability fixtures.
+
+### Exit criteria
+
+- discovery on all four named qualification machines is read-only, repeatable,
+  exportable, and contains no secret values;
+- catalog versions reproduce old inputs and never mutate installed plans;
+- unsupported hardware and inaccessible telemetry are reported honestly;
+- no compatibility result installs software or probes with a completion request.
+
+## 23. Phase 13: Benchmark Data Foundation and Qwopus Import
+
+Requirements: BENCH-001 through BENCH-005.
+
+### Objectives
+
+- define the canonical developer benchmark suite and versioned run contracts;
+- persist raw samples, provenance, summaries, comparison classification,
+  dispersion, errors, and regression decisions;
+- import existing `qwopus-tool-tests` JSONL and reports without altering their
+  source files or inventing missing provenance;
+- correlate machine, model, engine, configuration, software, and benchmark
+  revisions;
+- add safe campaign authorization, resource limits, stop conditions, and cleanup.
+
+### First tests
+
+- golden imports for speed, coding, tools, long-context, context-bump, MTP, and
+  supporting-software before/after histories;
+- schema-migration and content-addressed artifact tests;
+- direct-comparability, normalized-estimate, and incomparable decision tables;
+- cache contamination, incomplete runs, outliers, cancellation, timeout, and
+  resource-abort cases;
+- backup, restore, export, and cross-host review tests.
+
+### Exit criteria
+
+- all existing Qwopus campaigns are discoverable with original checksums and
+  explicit limitations;
+- one new fixture campaign produces raw, summary, and comparison records through
+  public application boundaries;
+- a single percentage cannot be shown without sample count, statistic, baseline,
+  configuration, and comparability;
+- campaign interruption leaves no live workload and remains resumable or safely
+  terminal according to its contract.
+
+## 24. Phase 14: Constraint Solver and Explainable Recommendation
+
+Requirements: SEL-002 through SEL-005.
+
+### Objectives
+
+- reject incompatible model, quantization, engine, context, concurrency, and
+  configuration tuples using hard constraints;
+- add versioned developer workload profiles and operator-defined weights;
+- estimate accelerator/RAM/storage use with declared margins and confidence;
+- rank viable plans using comparable evidence and explicit uncertainty;
+- expose exclusion reasons, tradeoffs, catalog freshness, and recommendation
+  reproducibility through API, CLI, and initial UI views.
+
+### First tests
+
+- deterministic Ubuntu/NVIDIA, Windows/NVIDIA, Apple Silicon, CPU-only, and
+  Batwing/Batmobile ranking fixtures;
+- tables for required tool/structured-output/long-context features, memory and
+  storage pressure, unsupported engines, trust/license policy, and stale catalogs;
+- monotonicity tests for harder resource limits and changed workload weights;
+- explanation tests proving every score and exclusion maps to input evidence;
+- calibration tests comparing estimates with imported measured campaigns.
+
+### Exit criteria
+
+- identical versioned inputs produce byte-equivalent recommendation records;
+- no rejected tuple can re-enter through ranking weights;
+- recommendations show confidence and never imply measured target performance
+  when only estimates or another machine's results exist;
+- changing weights previews a new recommendation without changing installed or
+  active state.
+
+## 25. Phase 15: Managed Models, Engines, and Serving
+
+Requirements: RUNM-002 through RUNM-006, PLAT-003, and GATE-001 through GATE-003
+where the stable managed endpoint uses the existing gateway contracts.
+
+### Objectives
+
+- implement native-process, Docker Compose, process-supervision, and per-user
+  OS service adapters without making Docker the portable lifecycle boundary;
+- freeze and validate native `llama.cpp`/`llama-server` as the common stable
+  engine path and vLLM as an additional Linux NVIDIA tier;
+- classify Ollama as optional and WSL2 vLLM plus Apple vLLM-Metal/MLX as
+  experimental until their complete evidence lanes pass;
+- implement immutable, verified, resumable model and engine acquisition;
+- render bounded typed engine configurations from deployment plans;
+- stage candidates, validate OpenAI-compatible developer features, benchmark,
+  promote, observe, upgrade, roll back, and remove managed runtimes;
+- preserve direct bypass and last-known-good recovery;
+- design but do not automatically execute adoption of Batwing's current coder;
+- build a separately versioned frozen backend for each target and register it as
+  a per-user systemd service, Windows background application, or macOS LaunchAgent;
+  keep elevated always-on service mode deferred;
+- package Linux as checksummed/signed `.deb` plus AppImage, Windows as a signed
+  MSI, and macOS as a signed and notarized DMG; build each backend and desktop
+  artifact on a native target runner and publish an SBOM.
+
+### First tests
+
+- engine capability and configuration corpora across supported versions;
+- download checksum/signature, disk reservation, partial resume, license/trust,
+  cache quota, and cleanup cases;
+- state-machine interruption at every acquisition and promotion edge;
+- streaming, tools, structured output, reasoning policy, cancellation, usage,
+  model identity, metrics, logs, and health parity;
+- exclusive-device and foreign-process safety cases;
+- install/restart/upgrade/rollback/uninstall in disposable target-like labs;
+- native process-tree cancellation, locked-file, sleep/resume, reboot,
+  interrupted-update, low-disk, service-registration, and credential-protection
+  cases on every target OS.
+
+### Exit criteria
+
+- the backend exposes an authenticated compatibility handshake containing API
+  and backend versions, platform, adapters, operations, and compatibility state;
+- each advertised engine tier passes its complete OS/architecture/accelerator
+  target evidence lane;
+- staged candidates cannot receive active traffic before promotion;
+- failed promotion restores the exact previous plan and behavioral health;
+- removal cannot escape owned caches, artifacts, configuration, state, or labels;
+- current external inference remains unchanged throughout ordinary development
+  and qualification.
+
+## 26. Phase 16: Focused Operations Workspace
+
+Requirements: OUI-001 through OUI-006, DESK-001, DESK-002, UI-001 through UI-005,
+TEL-001 through TEL-005, RUN-003, RUN-004, and PERF-003.
+
+### Objectives
+
+- evolve the current React shell into the focused navigation model and package
+  it in a Tauri 2 desktop shell for Windows, Linux, and macOS;
+- keep the React workspace and versioned API shared with the loopback browser
+  surface; grant the Tauri webview no general shell or filesystem capability;
+- implement local backend discovery, authenticated compatibility handshake, and
+  confirmed signed install/repair/update flows without tying the service to the
+  desktop window lifecycle;
+- wire live vLLM/engine metrics and bounded historical rollups;
+- implement redacted log/event ingestion, search, filtering, correlation, and
+  retention;
+- expose model/engine plans, benchmark history, comparisons, analytics, settings,
+  lifecycle progress, and recovery;
+- generate settings forms from typed schemas with plan preview and rollback;
+- retain accessibility, responsive behavior, honest partial states, and strict
+  browser authorization.
+
+### First tests
+
+- component/API/browser states for every workspace and empty/slow/stale/error
+  condition;
+- chart unit, gap, timezone, aggregation, and accessibility tests;
+- log-redaction, bounded-query, injection, correlation, and retention tests;
+- settings source/default/secret/diff/preflight/restart/rollback tests;
+- lifecycle refresh, cancellation, reconnect, duplicate submit, and session
+  expiry during long operations;
+- visual evidence for Batwing desktop and tunneled Batmobile/mobile viewports;
+- target-native desktop install, close/reopen, backend restart, reboot,
+  version-mismatch, update rollback, and browser-fallback workflows.
+
+### Exit criteria
+
+- operators can answer what is installed, why it was selected, how it is
+  performing, what changed, and how to recover without reading raw Docker state;
+- request metrics and benchmark history are real application data, not static
+  cards or ignored artifacts;
+- no UI action bypasses ownership, typed plans, confirmation, or agent policy;
+- Windows, Linux, and macOS desktop artifacts pass signing/checksum, capability,
+  accessibility, security, polling/event, render, and backend-compatibility
+  gates; equivalent browser workflows remain green.
+
+## 27. Phase 17: AI-Assisted Diagnosis and Secure Access
+
+Requirements: AID-001 through AID-004, ACCESS-001, ACCESS-002, and DESK-003.
+
+### Objectives
+
+- create bounded redacted diagnostic evidence packages;
+- implement disabled, local-model, and external-API provider adapters;
+- require explicit data-destination, retention, timeout, and cost policy;
+- return structured grounded findings with citations, confidence, and missing
+  evidence;
+- keep every suggestion advisory and route proposed checks or changes through
+  typed Morpheus policy;
+- qualify SSH-tunnel access and an optional TLS-authenticated network profile;
+- allow the desktop to attach to local or operator-tunneled remote backends with
+  identical API, authorization, progress, cancellation, and recovery semantics.
+
+### First tests
+
+- privacy canaries and adversarial prompt/log injection corpora;
+- provider timeout, refusal, malformed output, hallucinated evidence, unsafe
+  action, and cost/size-limit cases;
+- deterministic grounding and uncertainty evaluation fixtures;
+- proof that diagnostic output cannot call the runtime agent or lifecycle port;
+- SSH teardown, session revocation, TLS, origin, cookie, CSRF, proxy-header,
+  brute-force, and exposure tests.
+
+### Exit criteria
+
+- ordinary diagnostics remain complete when AI diagnosis is disabled or broken;
+- every material AI claim cites available evidence or is labeled unsupported;
+- no prompt, response, secret, raw credential, or unapproved log content reaches
+  any provider;
+- local/SSH remains the default and optional network access is independently
+  secured and documented.
+
+## 28. Phase 18: Three-OS Physical Qualification
+
+Requirements: HOST-003, PLAT-004, ACCESS-003, all v0.2 requirements assigned to
+the selected release, and the applicable original security, reliability,
+performance, backup, and release requirements.
+
+### Objectives
+
+- run clean target installs on Batwing and Batmobile, one Windows 11 x86-64
+  NVIDIA host, and one Apple Silicon macOS host;
+- qualify discovery, recommendation, acquisition, engine startup, API features,
+  benchmark campaigns, operations UI, logs, analytics, settings, diagnosis,
+  backup, restore, upgrade, rollback, uninstall, and access;
+- compare predicted and measured resource/performance envelopes;
+- complete fault, resource, short-soak, and full-soak validation;
+- build artifacts on native runners and publish signed/checksummed backend and
+  desktop packages, catalogs, target profiles, runbooks, SBOMs, evidence maps,
+  and explicit support statements;
+- classify AMD Windows, Intel Mac, WSL2 vLLM, vLLM-Metal/MLX, and additional
+  Linux distributions as experimental until equivalent physical evidence exists.
+
+### Exit criteria
+
+- Ubuntu 26.04 x86-64, Windows 11 x86-64, and macOS 14+ on Apple Silicon each
+  have one documented native `llama.cpp` developer-inference path with tested
+  last-known-good recovery; Linux NVIDIA additionally qualifies vLLM;
+- Batwing and Batmobile retain their separate named-machine evidence;
+- recommendation claims match actual target evidence and expose material
+  differences between the machines;
+- all observed external resources remain unchanged unless a distinct adoption
+  authorization and report exists;
+- an independent operator follows the complete install-to-recovery workflow;
+- the release report distinguishes supported, experimental, deferred, and
+  unsupported model/engine/platform combinations without optimistic inference;
+- no stable v0.2 release is declared until every three-OS stable lane passes.
+
+## 29. v0.2 Priority Boundary
+
+The following remain outside the focused v0.2 critical path even where v0.1
+source primitives exist:
+
+- SearXNG/Open WebUI search rollout;
+- voice integration and GPU voice profiles;
+- n8n template expansion and Perplexica research;
+- independent RAG;
+- ComfyUI and inference-to-image transitions;
+- a broad multi-provider or fleet-wide control plane;
+- chat, training, fine-tuning, and quantization production workflows.
+
+Reopening one of these areas requires a concrete need, interaction analysis with
+managed inference, updated requirements and priority, and explicit review. It
+must not delay the first complete Ubuntu, Windows, and Apple Silicon macOS
+developer-inference release by default.

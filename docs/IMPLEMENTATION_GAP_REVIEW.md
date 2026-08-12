@@ -1,7 +1,8 @@
 # Morpheus Implementation Gap Review
 
-Snapshot: 2026-07-15
-Candidate version: 0.1.0
+Original v0.1 snapshot: 2026-07-15
+v0.2 scope reopening: 2026-08-11
+Planning version: 0.2.0
 Source of truth: [`requirements.json`](../requirements.json)
 
 ## Status Semantics
@@ -14,11 +15,17 @@ Source of truth: [`requirements.json`](../requirements.json)
 - `deferred` means the product decision intentionally excludes the capability
   until its documented trigger is met.
 
-The review compared all 58 requirements in the product specification against
-the Python services, dashboard, Compose definitions, configuration, operator
-documentation, and current tests. After IMP-PERF-002-01, the result is 44
-implemented, 11 planned, 3 deferred, and 0 validated. Existing tests therefore establish useful code
-coverage without overstating production-release completion.
+The original review compared 58 v0.1 requirements against the Python services,
+dashboard, Compose definitions, configuration, operator documentation, and
+tests. It found 44 implemented, 11 planned, 3 deferred, and 0 validated.
+
+The reopened v0.2 specification contains 97 requirements: 44 existing
+requirements remain implemented, 41 are planned, 12 are deferred, and 0 are
+formally validated. The new planned requirements define host discovery,
+model/engine selection, managed inference, benchmark history, the focused
+operations workspace, Tauri desktop, cross-platform backend, AI-assisted
+diagnosis, and secure target access. Existing tests therefore establish a useful
+v0.1 foundation without claiming that the v0.2 appliance exists.
 
 ## Complete Disposition
 
@@ -27,33 +34,33 @@ coverage without overstating production-release completion.
   TEL-001 through TEL-005; FLOW-001, FLOW-002; GATE-002, GATE-003; OPS-001
   through OPS-003; SEC-001 through SEC-007; REL-001 through REL-004; PERF-001
   through PERF-003.
-- Planned: UI-003; SRCH-002; VOICE-003, VOICE-004; RSCH-001, RSCH-002;
-  GATE-001; IMG-001 through IMG-004.
-- Deferred: RAG-001 through RAG-003 under ADR-0004. Reopen only after a
-  measured retrieval gap, privacy constraints, relevance judgments, and a
-  reindex plan exist.
+- Planned: UI-003; GATE-001; HOST-001 through HOST-003; SEL-001 through
+  SEL-005; RUNM-001 through RUNM-006; BENCH-001 through BENCH-005; OUI-001
+  through OUI-006; PLAT-001 through PLAT-004; DESK-001 through DESK-003;
+  AID-001 through AID-004; ACCESS-001 through ACCESS-003.
+- Deferred: SRCH-002; VOICE-003, VOICE-004; RSCH-001, RSCH-002; RAG-001
+  through RAG-003; IMG-001 through IMG-004. These are outside the focused v0.2
+  critical path. Existing implemented optional-service primitives are retained,
+  but feature-suite expansion is not an active product priority.
 - Validated: none. A requirement advances only when its linked ignored evidence
   manifest is present, says `pass`, and names that requirement.
 
-## Prioritized Implementation Backlog
+## v0.2 Prioritized Implementation Backlog
 
-The order below is dependency-based. Foundation and safety gaps precede the
-validation lane that needs them; optional capabilities remain later; GPU work
-remains isolated to an explicitly authorized maintenance window.
+The order below is dependency-based and follows the v0.2 implementation plan.
+The running v0.1 Batwing status plane remains observe-only throughout ordinary
+development.
 
-| Priority | Task | Requirement | Environment | Completion criterion |
-|---|---|---|---|---|
-| P3 | IMP-UI-003-01 | UI-003 | VM | Add controls only for Morpheus-owned services, with configured/running/healthy/usable states, confirmation, authorization, and no external targets. |
-| P3 | IMP-SRCH-002-01 | SRCH-002 | VM, HOST-RO | Document the exact Open WebUI search URL/format and verify connectivity from a disposable peer without editing Open WebUI state. |
-| P3 | IMP-VOICE-003-01 | VOICE-003 | VM, HOST-RO | Publish current Open WebUI STT/TTS URLs, model/voice names and request formats, then add upload/playback compatibility tests. |
-| P3 | IMP-VOICE-004-01 | VOICE-004 | VM, HOST-MAINT | Define an opt-in GPU voice profile and make startup consult fresh headroom, temperature, ownership, and foreign-process evidence before allocation. |
-| P3 | IMP-RSCH-001-01 | RSCH-001 | VM | Replace hard-coded research endpoint/model inputs with validated configuration and complete the pinned Perplexica/SearXNG/model deployment contract. |
-| P3 | IMP-RSCH-002-01 | RSCH-002 | VM, HOST-RO | Preserve the configured served-model identity and no-thinking behavior through research requests, with a direct-vs-research contract test. |
-| P3 | IMP-GATE-001-01 | GATE-001 | VM | Build the optional authenticated gateway endpoint and validate streaming, tools, structured output, usage, errors, and cancellation parity. |
-| P4/HOST-MAINT | IMP-IMG-001-01 | IMG-001 | VM, HOST-MAINT | Add a pinned ComfyUI deployment with Morpheus-owned model/input/output/workflow paths and a deterministic API smoke workflow. |
-| P4/HOST-MAINT | IMP-IMG-002-01 | IMG-002 | HOST-MAINT | Connect the GPU policy to real startup so stale, hot, low-memory, foreign-process, or ownership failures stop before allocation. |
-| P4/HOST-MAINT | IMP-IMG-003-01 | IMG-003 | HOST-MAINT | Implement a separate operator-run transition workflow with explicit authorization, exact confirmation, durable checkpoints, and no normal control-plane path to external inference mutation. |
-| P4/HOST-MAINT | IMP-IMG-004-01 | IMG-004 | HOST-MAINT | Capture pre-state image/model revision/arguments/endpoint identity and require identical restored state plus health and completion evidence before success. |
+| Order | Phase | Requirements | Outcome |
+|---:|---:|---|---|
+| 1 | 11 | RUNM-001 | Dual observed/managed ownership and immutable v0.2 contracts without changing deployed behavior. |
+| 2 | 12 | HOST-001, HOST-002, SEL-001, PLAT-001, PLAT-002 | Read-only normalized host profiles, native OS capability contracts, and versioned catalogs. |
+| 3 | 13 | BENCH-001 through BENCH-005 | Durable benchmark provenance, Qwopus import, safe campaigns, comparisons, and regression records. |
+| 4 | 14 | SEL-002 through SEL-005 | Deterministic compatibility filtering and explainable developer-workload ranking. |
+| 5 | 15 | RUNM-002 through RUNM-006, PLAT-003, GATE-001 | Target-native backend packaging and verified model/engine installation, serving, rollback, and recovery. |
+| 6 | 16 | UI-003, OUI-001 through OUI-006, DESK-001, DESK-002 | Tauri and browser operations UI with backend compatibility/bootstrap. |
+| 7 | 17 | AID-001 through AID-004, ACCESS-001, ACCESS-002, DESK-003 | Bounded diagnosis and local/SSH-tunneled desktop/browser access. |
+| 8 | 18 | HOST-003, PLAT-004, ACCESS-003 | Ubuntu, Windows, and Apple Silicon macOS physical qualification and explicit tier claims. |
 
 Completed after the snapshot: **IMP-SEC-005-01** added the digest-pinned,
 offline candidate scan and two-format per-artifact SBOM gate, closed evidence
@@ -88,3 +95,8 @@ as soon as their own prerequisites are met. In particular, clean build/install,
 core container startup, read-only runtime discovery, evidence privacy, and
 external-resource integrity can proceed before optional research, gateway,
 voice-GPU, or image-generation implementation.
+
+For v0.2, Phase 11 contracts are the next source milestone. Existing v0.1
+optional-service validation is not a prerequisite. Target-host mutation remains
+blocked until the managed-runtime contracts, disposable lifecycle lanes, exact
+resource bounds, rollback, and separate HOST-MAINT authorization are present.
