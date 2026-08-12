@@ -33,7 +33,7 @@ def test_manifest_covers_every_product_requirement_once() -> None:
 
 def test_manifest_references_known_delivery_phases() -> None:
     manifest = json.loads((ROOT / "requirements.json").read_text(encoding="utf-8"))
-    assert all(0 <= item["phase"] <= 10 for item in manifest["requirements"])
+    assert all(0 <= item["phase"] <= 18 for item in manifest["requirements"])
     assert all(
         item["status"] in {"planned", "implemented", "validated", "deferred"}
         for item in manifest["requirements"]
@@ -71,10 +71,15 @@ def test_TRACE_001_status_claims_require_implementation_and_green_evidence() -> 
             assert item["first_satisfying_version"] is None, item["id"]
         elif item["status"] == "deferred":
             assert item["first_satisfying_version"] is None, item["id"]
+            assert item["implementation_tasks"] == [], item["id"]
         else:
             assert item["owning_tests"], item["id"]
             assert item["implementation_tasks"] == [], item["id"]
-            assert item["first_satisfying_version"] == version, item["id"]
+            first_version = item["first_satisfying_version"]
+            assert isinstance(first_version, str), item["id"]
+            assert tuple(map(int, first_version.split("."))) <= tuple(
+                map(int, version.split("."))
+            ), item["id"]
 
         if item["status"] != "validated":
             assert item["evidence_manifests"] == [], item["id"]

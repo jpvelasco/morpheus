@@ -1,33 +1,44 @@
 # Morpheus Architecture
 
-Status: Proposed
+Status: Proposed v0.2; v0.1 observe-mode deployment remains active
 
-Architecture version: 0.1
+Architecture version: 0.2
 
 ## 1. Architectural Objective
 
-Morpheus adds an independently owned control plane and optional sidecars around
-an existing OpenAI-compatible inference service. The architecture must preserve
-the operational value of the current setup while preventing accidental control
-of external containers, data, and GPU configuration.
+Morpheus is a focused developer-inference control plane. It can observe an
+existing OpenAI-compatible service without owning it or manage a separately
+owned model, engine, endpoint, benchmark history, and operational lifecycle.
+The architecture must preserve the deployed v0.1 value while making discovery,
+selection, installation, benchmarking, serving, and diagnosis one coherent and
+reversible product.
 
 The primary design is a ports-and-adapters system. Domain code defines health,
 capability, ownership, policy, and lifecycle behavior. Infrastructure code
-implements vLLM, Docker, NVIDIA, database, filesystem, and third-party service
-adapters behind typed protocols.
+implements platform-native host, process, service, filesystem, telemetry,
+engine, database, and third-party adapters behind typed protocols. Docker,
+vLLM, and NVIDIA are supported adapters, not universal architecture boundaries.
 
 ## 2. System Context
 
 ```mermaid
 flowchart LR
+    Desktop[Desktop App]
     Browser[Operator Browser]
     WebUI[Existing Open WebUI]
-    LLM[Existing history-coder vLLM]
+    External[Observed External Inference]
 
     subgraph Morpheus
-        Dashboard[Dashboard]
+        Dashboard[Operations Workspace]
         API[Control API]
         Agent[Runtime Agent]
+        Discovery[Host Discovery]
+        Catalogs[Model and Engine Catalogs]
+        Selector[Constraint and Ranking Engine]
+        Campaigns[Benchmark Orchestrator]
+        Managed[Managed Inference Runtime]
+        Store[History and Operational Store]
+        Advisor[Optional Diagnostic Advisor]
         Telemetry[Optional Telemetry Proxy]
         Search[Optional SearXNG]
         Voice[Optional STT and TTS]
@@ -36,15 +47,30 @@ flowchart LR
         Images[Optional ComfyUI]
     end
 
+    Desktop --> Dashboard
     Browser --> Dashboard
     Dashboard --> API
     API --> Agent
-    API --> LLM
-    WebUI --> LLM
+    Agent --> Discovery
+    API --> Catalogs
+    API --> Selector
+    Selector --> Catalogs
+    Selector --> Discovery
+    API --> Campaigns
+    Campaigns --> Managed
+    Campaigns -. separately authorized .-> External
+    API --> Managed
+    API --> Store
+    Advisor --> Store
+    Advisor --> API
+    API --> External
+    WebUI --> Managed
+    WebUI --> External
     WebUI --> Search
     WebUI --> Voice
     WebUI --> Images
-    Telemetry --> LLM
+    Telemetry --> Managed
+    Telemetry -. observe mode .-> External
     Workflow --> Telemetry
     Research --> Search
     Research --> Telemetry
@@ -76,12 +102,33 @@ Their names must never be accepted as lifecycle targets.
 - optional third-party sidecars deployed by Morpheus;
 - runtime-agent unit and credentials when the operator installs it;
 - dashboard sessions and telemetry records.
+- machine-profile snapshots and versioned catalogs;
+- managed model artifacts, engine artifacts, rendered launch plans, and caches
+  below configured owned roots;
+- managed inference containers, endpoints, benchmark campaigns, raw observations,
+  normalized summaries, comparisons, and recommendation records;
+- approved redacted log/event history and diagnostic evidence packages.
 
 ### 3.3 Shared but Not Owned
 
 Morpheus sidecars may attach to `ai_default` for Docker DNS connectivity. The
 network is declared external and must never be created, modified, pruned, or
 removed by Morpheus.
+
+### 3.4 Ownership Modes
+
+An inference identity contains an immutable ownership mode:
+
+- `external_observed`: read-only health, model, metrics, and explicitly
+  authorized benchmark access;
+- `morpheus_managed`: lifecycle and configuration through one exact owned
+  deployment manifest;
+- `adoption_candidate`: temporary state used only by the separately authorized
+  migration state machine; never a routine lifecycle target.
+
+Successful discovery, endpoint configuration, matching names, or shared network
+membership cannot change the mode. Adoption commits the new identity only after
+preflight, confirmation, smoke and benchmark gates, and recovery evidence.
 
 ## 4. Repository Architecture
 
@@ -109,6 +156,10 @@ web/
   tests/                Unit and component tests
   e2e/                  Cross-browser accessibility and responsive workflows
 
+desktop/
+  src-tauri/             Minimal Tauri shell, capabilities, and packaging
+  tests/                 Desktop bootstrap and backend compatibility workflows
+
 validation/
   browser/              Pinned internal-only Playwright gate
   load/                 Fixed k6, resource, qualification, and soak profiles
@@ -118,7 +169,9 @@ deploy/
   compose.yaml          Core Morpheus services
   compose.*.yaml        Optional capability overlays
   config/               Versioned non-secret sidecar configuration
-  systemd/              Optional user-level agent unit template
+  linux/                systemd-user units and Linux package definitions
+  windows/              Per-user background registration and package definitions
+  macos/                LaunchAgent and signed package definitions
 
 tests/
   unit/                 Pure and adapter-isolated tests
@@ -161,37 +214,51 @@ Responsibilities:
 - health and capability aggregation;
 - dashboard queries;
 - Morpheus-owned lifecycle requests through the runtime agent;
+- desktop/backend compatibility handshake and bounded bootstrap/update plans;
 - backup, restore preflight, and support bundle coordination;
 - audit events for state-changing actions.
 
 The OpenAPI document is treated as a contract artifact. Breaking changes require
 a new API version or documented migration period.
 
+The authenticated `GET /api/v1/system/compatibility` endpoint is the desktop
+bootstrap boundary. Given `X-Morpheus-Desktop-Version`, it returns the API and
+backend versions, supported desktop range, OS/architecture, enabled adapter
+identities and support tiers, supported operations, and compatibility state. It
+does not install, update, or mutate anything; incompatible or missing local
+state is resolved through a separate confirmed native package plan.
+
 ### 5.3 Runtime Agent
 
-The runtime agent is a small host-native Python service bound to loopback for
-host-native clients or to a Morpheus-owned Unix socket for the containerized
-control API. The API mounts only the socket directory read-only; it never mounts
-the Docker socket. Compose grants the API process only the installing user's
-numeric group so the agent socket can remain group-read/write rather than
-world-accessible. The agent runs as the installing user, not root, and
-authenticates every request with a separate agent credential. Unix-socket file
-permissions are not treated as authentication; the signed request remains
-mandatory.
+The runtime agent is a small target-native backend service bound to loopback.
+Linux deployments may additionally use a Morpheus-owned Unix socket for a
+containerized control API; Windows and macOS do not depend on that transport.
+The API never receives a Docker socket. The agent runs as the installing user,
+not root, and authenticates every request with a separate agent credential.
+Transport permissions are defense in depth and are never treated as
+authentication; signed requests remain mandatory on every platform.
 
-Its command surface is an explicit enum, not arbitrary shell input:
+Its command surface is an explicit enum, not arbitrary shell input. Portable
+operations dispatch through typed ports for host discovery, process supervision,
+service management, filesystem ownership, secrets, hardware telemetry, and
+managed engines. Platform adapters use systemd and Unix process groups on
+Linux, Windows per-user registration and Job Objects, and LaunchAgent and Unix
+process groups on macOS.
+
+Allowed capabilities include:
 
 - read GPU summary;
 - read memory, disk, and clock summary;
-- inspect Morpheus-labeled container state;
-- run Compose actions against the fixed Morpheus project directory;
+- inspect exact Morpheus-owned native processes or labeled container state;
+- run a bounded native-engine or Compose lifecycle plan against its fixed owned
+  deployment root;
 - create a sanitized diagnostic snapshot;
 - validate a proposed GPU workload transition.
 
 The agent rejects:
 
 - caller-supplied executable paths or shell fragments;
-- Compose paths outside the configured deployment root;
+- lifecycle paths outside the configured owned deployment root;
 - unlabeled or differently labeled resources;
 - any target matching an external protected-resource inventory;
 - destructive requests without a valid operation token and audit context.
@@ -201,10 +268,14 @@ explicitly enabled. Lifecycle methods use a separate signed endpoint and accept
 only bounded release or backup identifiers; they never accept resource names,
 commands, shell input, or Compose paths.
 
-### 5.4 Dashboard
+### 5.4 Operations Application
 
-The dashboard is a TypeScript application using React and a conventional build
-tool. It is an operational interface, not a marketing site.
+The operations application is strict TypeScript and React shared by two delivery
+surfaces: a Tauri 2 desktop shell and the backend's loopback browser
+application. Both consume the same versioned API and authorization decisions.
+The Tauri shell exposes only narrowly allowlisted application/bootstrap
+capabilities and gives the webview no general shell or filesystem access. It is
+an operational interface, not a marketing site.
 
 Design characteristics:
 
@@ -362,32 +433,193 @@ are rejected from log context rather than masked after serialization.
 
 ## 11. Deployment and Upgrade
 
-The deployment is a Morpheus Compose project plus an optional user-level runtime
-agent. Installation does not install Docker, GPU drivers, or system packages.
+The default workstation deployment is a signed/checksummed desktop package plus
+a separately versioned target-native backend installed as a per-user background
+service. Linux uses systemd-user, Windows uses per-user background registration,
+and macOS uses LaunchAgent. Backend-only installation remains available for
+headless hosts. Compose is retained as a Linux runtime adapter, not a platform
+prerequisite. Installation does not install GPU drivers or silently enable host
+virtualization/container prerequisites.
 
 Upgrade sequence:
 
 1. validate configuration, disk space, dependency locks, and external runtime;
 2. create a Morpheus-only backup;
-3. pull or build pinned artifacts;
+3. acquire signed or checksummed target-native artifacts;
 4. run database migration preflight;
-5. replace Morpheus services with bounded health waits;
+5. replace the backend, desktop, or managed runtime with bounded health waits;
 6. run behavioral smoke tests;
 7. compare protected external runtime identity and health with the pre-state;
 8. commit the upgrade marker or roll back Morpheus artifacts and database.
 
-Uninstall stops and removes only labeled Morpheus resources. Data preservation
-is the default. The external network is disconnected but never removed.
+Uninstall stops and removes only exact Morpheus-owned services, processes,
+packages, and labeled resources. Data preservation is the default. Any external
+network is disconnected but never removed. Desktop removal and backend removal
+are separate explicit choices.
 
-## 12. Key Decisions
+## 12. v0.2 Selection and Planning Plane
+
+The selection plane is pure domain logic over versioned inputs:
+
+```text
+machine profile
+  + model catalog
+  + engine catalog
+  + operator policy
+  + developer workload profile
+  + comparable benchmark evidence
+  -> viable deployment plans
+  -> ranked recommendations
+```
+
+A deployment plan identifies the model revision and artifact digest,
+quantization/format, engine artifact, rendered engine settings, served aliases,
+context, concurrency, cache policy, memory and disk estimates, owned paths,
+ports, health contract, benchmark gate, rollback target, and source evidence.
+Plans are immutable. Changing any input creates a new plan identity rather than
+silently editing the active record.
+
+Hard constraints and ranking are separate. Hard constraints cover platform and
+engine support, memory/storage capacity and safety margin, required API features,
+license/trust policy, and operator limits. Ranking uses declared weights only
+after a tuple is viable. Estimated, measured, stale, and missing evidence remain
+distinct throughout the calculation and UI.
+
+Catalog refresh is an authenticated administrative operation. Catalog inputs are
+schema-validated, source-attributed, checksummed, and retained by version so an
+old recommendation is reproducible. A catalog is not executable configuration
+and cannot contain shell fragments, arbitrary container arguments, or secret
+values.
+
+## 13. Managed Runtime and Engine Adapters
+
+Each supported engine implements one typed adapter contract:
+
+- platform and accelerator compatibility;
+- model format, quantization, context, tool, structured-output, and streaming
+  support;
+- deterministic launch-plan rendering from bounded typed settings;
+- artifact/cache preflight and disk reservation;
+- start, behavioral health, metrics, approved log/event stream, and graceful
+  stop;
+- cancellation, cleanup, upgrade, rollback, and exact identity reporting.
+
+The adapter never accepts an arbitrary command or free-form engine flag from a
+UI request. New engine settings first become typed configuration fields with
+validation and compatibility tests. Native `llama.cpp`/`llama-server` with
+verified GGUF artifacts is the common stable engine path on Ubuntu x86-64,
+Windows x86-64, and Apple Silicon macOS. Linux NVIDIA additionally qualifies
+vLLM. Ollama is optional; Windows vLLM through WSL2 and Apple
+vLLM-Metal/MLX begin as experimental. Docker Compose is one Linux adapter and
+cannot establish Windows or macOS support.
+
+Installation and promotion are separate state machines:
+
+```text
+planned -> downloading -> staged -> preflighted -> running-candidate
+        -> benchmarked -> approved -> active
+        -> failed -> recovering -> rolled-back
+```
+
+Only one full-GPU runtime or benchmark candidate may own an exclusive device at
+a time unless the machine profile and adapter evidence explicitly support safe
+partitioning. The orchestrator records durable checkpoints before every
+state-changing edge.
+
+## 14. Benchmark and Analytics Data Plane
+
+Benchmark storage is not an unstructured artifacts directory. It has versioned
+entities for:
+
+- machine profiles and volatile pre/post observations;
+- model, engine, deployment-plan, and benchmark-suite identities;
+- campaign intents, authorization, workload parameters, samples, failures, and
+  cancellation;
+- normalized summaries, dispersion, comparability decisions, regressions, and
+  recommendation calibration;
+- imported legacy evidence with source path, checksum, mapping version, and
+  explicit missing provenance.
+
+Raw result payloads are immutable. Derived summaries can be regenerated and
+carry their reducer version. Comparison requires compatible workload, suite,
+model feature, engine/configuration, warm-up/cache, and machine dimensions;
+otherwise the result is labeled normalized, estimated, or incomparable.
+
+SQLite remains suitable for a single-machine initial release, with large raw
+artifacts stored below an owned content-addressed results root and referenced by
+checksum. Export bundles allow results from supported machines and operating
+systems to be reviewed together without introducing a fleet controller.
+
+Operational time series use bounded rollups and retention. Request content is
+not stored. Metrics, deployment events, approved logs, benchmark campaigns, and
+configuration changes share correlation and deployment-plan identifiers so the
+UI can explain before/after changes.
+
+## 15. Operations Workspace and Diagnosis
+
+The shared React application evolves from two tabs into a focused operator
+workspace delivered through Tauri or the loopback browser:
+
+```text
+Overview
+Hardware
+Models
+Engines
+Runtime
+Benchmarks
+Analytics
+Logs & Events
+Diagnostics
+Settings
+Recovery
+```
+
+Routes consume versioned read/query models rather than raw engine output. Live
+views receive bounded polling or event updates, historical views use paginated
+and time-bounded queries, and every observation carries units, freshness, source,
+and missing-data semantics. Settings are generated from typed schemas but
+high-impact changes always become previewable deployment plans.
+
+The diagnostic advisor is behind a provider port. Providers may be disabled,
+local, or remote. The advisor receives a redacted evidence package, never raw
+host access, and returns structured observations, hypotheses, confidence,
+citations, missing evidence, and proposed typed checks. Its output cannot call
+the runtime agent or lifecycle adapter. Any proposed state change re-enters the
+normal plan, policy, preflight, and confirmation path.
+
+## 16. Target and Access Architecture
+
+Stable v0.2 targets Ubuntu 26.04 LTS x86-64, Windows 11 x86-64, and macOS 14 or
+later on Apple Silicon. ubuntu-1 and ubuntu-2 are separate named Linux profiles,
+not special-case branches. The same contracts discover each host and select
+platform, telemetry, process, service, filesystem, secret, and engine adapters
+through capabilities. Unsupported or inaccessible evidence degrades honestly
+and is never represented as zero.
+
+Loopback API/application binding remains the local default. The desktop can
+connect locally or to a backend through an operator-established SSH tunnel; it
+does not manage SSH credentials or silently open tunnels in v0.2. Direct network
+access is a separate deployment profile with TLS termination, trusted identity
+or strong local credentials, origin policy, proxy-header trust, rate limits,
+session revocation, and exposure validation. No surface binds broadly because a
+discovery result or convenience setting requested it.
+
+## 17. Key Decisions
 
 - [ADR-0001: Independent sidecar control plane](adr/0001-independent-sidecar-control-plane.md)
 - [ADR-0002: No Docker socket in web services](adr/0002-no-docker-socket-in-web-services.md)
 - [ADR-0003: React dashboard and signed browser session](adr/0003-frontend-and-browser-authentication.md)
 - [ADR-0004: Defer LiteLLM and independent RAG](adr/0004-gateway-and-rag-decision.md)
+- [ADR-0005: Dual-mode focused inference appliance](adr/0005-dual-mode-focused-inference-appliance.md)
+- [ADR-0006: Evidence-ranked model and engine selection](adr/0006-evidence-ranked-model-engine-selection.md)
+- [ADR-0007: Tauri desktop and independent backend](adr/0007-tauri-desktop-and-independent-backend.md)
+- [ADR-0008: Tiered cross-platform runtime support](adr/0008-tiered-cross-platform-runtime-support.md)
 
 Additional decisions required before implementation reaches them:
 
-- Python packaging and migration libraries;
+- database migration library;
 - telemetry database retention defaults;
-- GPU transition mechanism for image generation;
+- managed model-cache quota and eviction defaults;
+- benchmark history and operational time-series retention defaults;
+- direct network access TLS and identity profile;
+- GPU transition mechanism for legacy image generation if that scope reopens;
