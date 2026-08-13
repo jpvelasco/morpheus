@@ -19,6 +19,14 @@ The active inference and Open WebUI services are protected fixtures, not a
 development sandbox. Live tests are read-only until a later requirement
 explicitly authorizes a state transition.
 
+Phase exit criteria are source-implementation gates unless they explicitly say
+that retained target evidence is required. The `required_environments` and
+`requires_live_evidence` fields in `requirements.json` describe the evidence
+needed to advance a requirement to `validated`; they do not authorize a live
+run and do not block an implemented status once the owning non-live tests pass.
+Every HOST-RO or HOST-MAINT run remains a separate, explicitly authorized
+validation action.
+
 The v0.2 critical path begins at Phase 11 below. Phases 0 through 10 remain the
 historical v0.1 implementation and release plan. Unfinished search, voice,
 research, RAG, workflow, and image-generation work from those phases is not
@@ -42,6 +50,43 @@ Every requirement follows this loop:
 6. **Run the affected pyramid.** Unit, contract, integration, and acceptance
    lanes run according to the changed boundary.
 7. **Record evidence.** Link requirement, tests, commands, and results.
+
+### 2.1 Agent Handoff and Merge Discipline
+
+- `requirements.json` is authoritative for functional-requirement status,
+  implementation task identity, and evidence obligations. `INV-*` identifiers
+  are mandatory cross-cutting constraints traced through the functional
+  requirements they protect; they are not separate status rows in that file.
+- Assign each implementation task to one integration owner and one final owning
+  change. Contributors may prepare non-overlapping slices after shared contracts
+  land; the owner lists the functional requirement IDs, affected invariants,
+  first failing tests, and explicit non-goals before implementation begins.
+- Land shared domain contracts and schema versions before starting parallel
+  adapter, API, persistence, or UI work that consumes them. Agents must not
+  create competing representations of ownership, identity, lifecycle state, or
+  evidence confidence in separate branches.
+- A task may change `planned` to `implemented` only after its owning tests and
+  the affected non-live gate pass. Only retained passing evidence from every
+  required environment may change `implemented` to `validated`.
+- Integration agents resolve contract changes at the domain boundary, run the
+  complete affected pyramid, and update the gap review and release ledger in
+  the same change. They do not weaken a contract to merge divergent adapters.
+
+When the user explicitly authorizes long-horizon v0.2 source implementation,
+agents continue through the dependency-ordered DEV and disposable-lab subphases
+without requesting a new decision at every green gate. At each subphase they
+must update tests, requirement ownership, the gap review, and the release ledger
+before selecting the next unblocked subphase. They diagnose and repair ordinary
+implementation failures rather than treating them as planning blockers.
+Partial subphases leave a functional requirement `planned` until its complete
+observable behavior and owning gate pass; progress is recorded in the ledger
+rather than hidden behind a premature status change.
+
+That continuation authority never implies HOST-RO or HOST-MAINT permission,
+mutation of an external service or cache, use of private signing credentials,
+publication of a release, or weakening an invariant. Missing optional signing,
+notarization, hardware, or external-provider inputs are recorded and bypassed
+through the declared development lane while independent source work continues.
 
 Tests are not allowed to:
 
@@ -574,7 +619,7 @@ Release reports are generated from this manifest and immutable CI artifacts.
 | Optional-service coupling | Broad outage | Separate health, networks, and lifecycle |
 | Database/archive corruption | Lost operational state | Atomic migration/restore and checksums |
 | Platform behavior hidden by Python portability | Data loss or orphaned processes | Native path, service, process-tree, and recovery tests |
-| Desktop/backend version drift | Broken management or unsafe actions | Compatibility handshake, signed update plan, rollback |
+| Desktop/backend version drift | Broken management or unsafe actions | Compatibility handshake, package-trust-aware update plan, rollback |
 | Unsupported engine parity claim | Failed or misleading installation | Evidence-bounded tier matrix and physical qualification |
 | Scope growth | Never-stable project | Phase gates, explicit non-goals, ADRs |
 
@@ -600,6 +645,8 @@ order:
 
 ```text
 contract and ownership
+  -> Ubuntu CPU managed-inference walking skeleton
+  -> evidence-driven self-assessment and bounded replan
   -> portable host/OS foundation and catalogs
   -> benchmark data foundation
   -> deterministic recommendation
@@ -626,14 +673,35 @@ vLLM through WSL2 and Apple vLLM-Metal/MLX begin as experimental. ubuntu-1 and
 ubuntu-2 remain named Linux targets but do not satisfy Windows or macOS release
 evidence.
 
+The dependency and parallel-work boundary is:
+
+| Phase | Entry gate | Parallel work after shared contracts land |
+|---:|---|---|
+| 11 | v0.1 gate green | immutable record/schema lane, state-machine lane, and observe-mode regression lane |
+| 11.5 | Phase 11 contracts fixed | one integrated Ubuntu CPU walking-skeleton lane; do not fan out yet |
+| 12 | walking-skeleton assessment and bounded replan committed | platform collectors/ports and catalog validation |
+| 13 | Phase 12 machine and catalog identities fixed | legacy import, result storage, and campaign policy |
+| 14 | Phase 12 catalogs plus Phase 13 comparable evidence | constraint filtering, scoring profiles, and explanations |
+| 15 | Phase 14 immutable deployment plans | engine adapters, acquisition, lifecycle, and target-native backend packaging |
+| 16 | Phase 15 compatibility and lifecycle APIs fixed | React workspaces, metrics/logs, Tauri shell, and workstation packaging |
+| 17 | Phase 16 authorization and evidence-query APIs fixed | diagnostic providers and local/remote access lanes |
+| 18 | all selected requirements implemented | independent physical target evidence lanes and release integration |
+
+An entry gate is a merge dependency, not permission to use a live target.
+
 ## 21. Phase 11: v0.2 Contracts and Dual Ownership
 
-Requirements: RUNM-001 and the v0.1 ownership, security, lifecycle, and external
-integrity requirements.
+Functional requirement: RUNM-001.
+
+Cross-cutting constraints: INV-001 through INV-009 and regression coverage for
+all currently implemented v0.1 requirements, especially RUN-001 through
+RUN-006, SEC-002, SEC-006, and REL-003.
 
 ### Objectives
 
-- introduce typed observed, managed, and adoption-candidate identities;
+- introduce exactly two inference ownership modes, `external_observed` and
+  `morpheus_managed`, plus workflow-scoped adoption-candidate transfer records
+  that are not ordinary runtime identities or lifecycle targets;
 - define immutable machine, catalog, workload, recommendation, deployment-plan,
   campaign, comparison, and diagnosis contracts;
 - separate staging, benchmark, promotion, rollback, and adoption state machines;
@@ -658,9 +726,114 @@ integrity requirements.
 - adoption is impossible through ordinary install, settings, or lifecycle APIs;
 - the complete Phase 11 gate runs without GPU access or model downloads.
 
-## 22. Phase 12: Portable Host Discovery and Catalogs
+### Phase 11 implementation handoff
+
+`IMP-RUNM-001-01` is the only implementation task in this phase. Execute it in
+this order:
+
+1. A contract owner lands the two ownership modes, exact identity/plan binding,
+   schema-version rules, and adoption-record boundary in the dependency-free
+   domain core.
+2. After that contract is fixed, agents may work in parallel on immutable
+   planning-record codecs, the separate lifecycle state machines, and
+   observe-mode API/CLI/dashboard regression tests.
+3. An integration owner runs the full non-live gate, verifies schema round trips
+   and invalid transitions through public boundaries, and updates
+   `requirements.json`, the gap review, and `docs/RELEASE_STATE.md` together.
+
+The phase does not implement host collectors, catalog contents, recommendation
+algorithms, benchmark execution, model or engine acquisition, persistence
+migrations, state-changing management endpoints, desktop UI, or target
+packaging. DEV and disposable-VM evidence is sufficient to mark RUNM-001
+`implemented`; its required HOST-RO evidence remains a later, separately
+authorized validation step before it can be marked `validated`.
+
+## 22. Phase 11.5: Ubuntu CPU Walking Skeleton and Replan Gate
+
+Delivery milestone: VSLICE-001. It exercises provisional slices of HOST, SEL,
+BENCH, RUNM, PLAT, and GATE behavior but does not by itself change any of those
+functional requirements from `planned` to `implemented`.
+
+### Objectives
+
+- exercise the Phase 11 contracts through one real, narrow, end-to-end managed
+  inference path before building the complete horizontal subsystems;
+- use an Ubuntu x86-64 disposable lab, CPU-only pinned `llama.cpp`/`llama-server`,
+  and a small license-reviewed GGUF artifact with an immutable revision and
+  digest stored only in a Morpheus-owned development cache;
+- run sanitized discovery, a minimal versioned catalog, deterministic selection,
+  verified acquisition, bounded configuration rendering, loopback startup,
+  OpenAI-compatible behavioral health, a short benchmark, promotion, rollback,
+  and cleanup through public API or CLI boundaries;
+- keep the offline CI lane deterministic with fixtures while requiring one real
+  disposable `llama-server` run before the milestone exits;
+- produce evidence about the contracts rather than polishing this narrow path
+  into a premature platform implementation.
+
+### First tests
+
+- one acceptance chain proving machine, catalog, recommendation, deployment,
+  acquisition, campaign, promotion, and rollback records retain the same exact
+  correlated identities;
+- digest mismatch, interrupted acquisition, low disk, invalid engine setting,
+  startup timeout, failed health, benchmark abort, failed promotion, rollback,
+  process-tree cleanup, and repeated-command cases;
+- promotion from a known-good plan A to a distinct candidate plan B, followed by
+  forced failure or explicit rollback that restores A and its behavioral health;
+- protected external identity snapshots before and after the slice, proving no
+  existing inference, Open WebUI, shared network, cache, or persistent data was
+  changed;
+- restart/resume tests proving durable checkpoints neither skip confirmation nor
+  duplicate acquisition, process, campaign, or cleanup work.
+
+### Self-assessment and bounded replan
+
+After the slice passes, the integration owner writes
+`docs/VERTICAL_SLICE_ASSESSMENT.md` with:
+
+- the exact commands, artifact identities, environment, tests, and retained
+  redacted evidence needed to reproduce the slice;
+- which Phase 11 contracts survived unchanged and which caused duplication,
+  unsafe coupling, lossy serialization, unclear ownership, or recovery friction;
+- measured versus estimated CPU, RAM, storage, startup, TTFT, decode, and cleanup
+  behavior, clearly labeled as development evidence rather than support data;
+- every schema, state-machine, port, task-decomposition, or phase-order change
+  recommended before broader implementation;
+- a go, bounded-replan, or stop-and-escalate decision with unresolved risks and
+  rollback.
+
+Agents may autonomously apply evidence-backed changes to internal architecture,
+schemas, adapters, task decomposition, and this implementation sequence, adding
+or superseding ADRs as required. They must rerun the Phase 11 and VSLICE-001
+gates after the replan. A proposed change to product scope, an invariant,
+external-resource policy, live authorization, privacy policy, or the stable
+support matrix requires explicit user review; otherwise the agents continue to
+Phase 12 after the bounded replan is green.
+
+### Exit criteria
+
+- the real disposable CPU lane completes discovery through rollback and cleanup
+  without an orphan process, unowned file, leaked credential, or external-state
+  change;
+- plan A is behaviorally healthy after plan B is rolled back;
+- fixtures reproduce every failure found during the real run;
+- the assessment and any bounded plan/ADR/schema updates are committed with a
+  green non-live gate;
+- no Windows, macOS, GPU, desktop, public signing, or stable-support claim is
+  inferred from this milestone.
+
+## 23. Phase 12: Portable Host Discovery and Catalogs
 
 Requirements: HOST-001, HOST-002, SEL-001, PLAT-001, and PLAT-002.
+
+### Delivery subphases
+
+| Subphase | Primary IDs | Deliverable | Gate |
+|---:|---|---|---|
+| 12.1 | HOST-001, HOST-002, PLAT-001 | normalized machine/profile schemas and portable read-only collectors | stable fingerprint and missing-evidence fixtures green |
+| 12.2 | PLAT-002 | Linux, Windows, and macOS owned-path, secret, process, service, replacement, and telemetry adapters | target-native contract suites clean up every disposable resource |
+| 12.3 | SEL-001 | versioned model/engine catalog schemas, trust policy, and minimal reviewed seed catalogs | parser, provenance, freshness, and historical-version tests green |
+| 12.4 | HOST-001, HOST-002 validation follow-up | privacy review, export format, and guarded real-host capture lanes | source lane green; each available host capture retained separately as HOST-RO evidence |
 
 ### Objectives
 
@@ -670,12 +843,14 @@ Requirements: HOST-001, HOST-002, SEL-001, PLAT-001, and PLAT-002.
   and engine-prerequisite evidence through allowlisted read-only operations;
 - define signed/checksummed model and engine catalog schemas, provenance,
   freshness, license, formats, features, and compatibility expressions;
-- define typed hardware-telemetry, process-supervisor, service-manager,
-  filesystem/owned-path, and secret-store ports;
+- define and implement typed hardware-telemetry, process-supervisor,
+  service-manager, filesystem/owned-path, durable-replacement, and secret-store
+  ports with separate Linux, Windows, and macOS adapters;
 - implement portable system collection plus Linux/NVIDIA, Windows/DXGI/vendor,
   and Apple Metal collectors with explicit unavailable and permission states;
-- capture initial privacy-reviewed ubuntu-1, ubuntu-2, Windows 11 x86-64, and
-  Apple Silicon macOS profiles.
+- prepare guarded capture lanes and, when separately authorized and available,
+  capture initial privacy-reviewed profiles from ubuntu-1, ubuntu-2, one Windows
+  11 x86-64 host, and one Apple Silicon macOS host.
 
 ### First tests
 
@@ -690,15 +865,29 @@ Requirements: HOST-001, HOST-002, SEL-001, PLAT-001, and PLAT-002.
 
 ### Exit criteria
 
-- discovery on all four named qualification machines is read-only, repeatable,
-  exportable, and contains no secret values;
+- sanitized target-shape fixtures prove discovery is read-only, repeatable,
+  exportable, and contains no secret values; real captures remain required for
+  `validated` and support claims but unavailable hardware does not block the
+  Phase 13 source lane;
 - catalog versions reproduce old inputs and never mutate installed plans;
 - unsupported hardware and inaccessible telemetry are reported honestly;
+- platform adapter contract suites pass in disposable target-native labs and
+  cleanup leaves no registered service, child process, credential, or owned-path
+  fixture behind;
 - no compatibility result installs software or probes with a completion request.
 
-## 23. Phase 13: Benchmark Data Foundation and history Import
+## 24. Phase 13: Benchmark Data Foundation and history Import
 
 Requirements: BENCH-001 through BENCH-005.
+
+### Delivery subphases
+
+| Subphase | Primary IDs | Deliverable | Gate |
+|---:|---|---|---|
+| 13.1 | BENCH-002, BENCH-003 | immutable benchmark entities, schema migrations, content-addressed raw store, and reducers | round-trip, migration, backup, restore, and regeneration tests green |
+| 13.2 | BENCH-003 | checksummed history import and limitation mapping | every supported history shape imports without altering or inventing provenance |
+| 13.3 | BENCH-001, BENCH-005 | authorized campaign runner with limits, checkpoints, cancellation, and cleanup | disposable fixture campaigns survive interruption without leaked work |
+| 13.4 | BENCH-002, BENCH-004 | comparability, summaries, regressions, export, and cross-host review | decision tables and public query boundaries green |
 
 ### Objectives
 
@@ -732,9 +921,18 @@ Requirements: BENCH-001 through BENCH-005.
 - campaign interruption leaves no live workload and remains resumable or safely
   terminal according to its contract.
 
-## 24. Phase 14: Constraint Solver and Explainable Recommendation
+## 25. Phase 14: Constraint Solver and Explainable Recommendation
 
 Requirements: SEL-002 through SEL-005.
+
+### Delivery subphases
+
+| Subphase | Primary IDs | Deliverable | Gate |
+|---:|---|---|---|
+| 14.1 | SEL-002 | hard compatibility and resource constraint solver | rejected tuples cannot enter ranking under any weight |
+| 14.2 | SEL-003 | versioned developer workloads, estimates, margins, and operator constraints | deterministic and monotonic fixtures green |
+| 14.3 | SEL-004 | evidence comparability, confidence, calibration, and weighted ranking | stale, foreign-machine, estimated, and measured evidence remain distinct |
+| 14.4 | SEL-004, SEL-005 | immutable recommendation records and API/CLI/initial React explanations | byte-equivalent replay and complete exclusion/tradeoff explanations green |
 
 ### Objectives
 
@@ -765,15 +963,28 @@ Requirements: SEL-002 through SEL-005.
 - changing weights previews a new recommendation without changing installed or
   active state.
 
-## 25. Phase 15: Managed Models, Engines, and Serving
+## 26. Phase 15: Managed Models, Engines, and Serving
 
-Requirements: RUNM-002 through RUNM-006, PLAT-003, and GATE-001 through GATE-003
-where the stable managed endpoint uses the existing gateway contracts.
+Requirements: RUNM-002 through RUNM-006, PLAT-003, and GATE-001. Existing
+GATE-002 and GATE-003 behavior remains a regression contract. GATE-001 is the
+bounded single-endpoint compatibility layer for managed inference, not a
+LiteLLM or broad multi-provider control plane.
+
+### Delivery subphases
+
+| Subphase | Primary IDs | Deliverable | Gate |
+|---:|---|---|---|
+| 15.1 | RUNM-003 | verified resumable model/engine acquisition, reservations, quotas, cache, and cleanup | interruption, corruption, low-disk, license, and owned-path suites green |
+| 15.2 | RUNM-004, RUNM-005, RUNM-006 | engine-neutral staging, campaign, promotion, rollback, removal, and disposable adoption orchestration | every state edge and recovery checkpoint passes fault injection |
+| 15.3 | RUNM-002 | productionized native `llama.cpp` adapters on Linux, Windows, and Apple Silicon macOS | target-native DEV/lab API, process, metrics, lifecycle, and recovery suites green |
+| 15.4 | RUNM-002, RUNM-006, GATE-001 | Linux NVIDIA vLLM tier and bounded stable compatibility endpoint with direct bypass | parity, exclusive-resource, failure, and bypass suites green |
+| 15.5 | PLAT-003 | independently versioned backend services and checksummed target-native developer packages | install, restart, upgrade, rollback, uninstall, manifest, scan, and SBOM gates green |
 
 ### Objectives
 
-- implement native-process, Docker Compose, process-supervision, and per-user
-  OS service adapters without making Docker the portable lifecycle boundary;
+- integrate the Phase 12 native-process, Docker Compose, process-supervision,
+  and per-user OS service adapters with managed engines without making Docker
+  the portable lifecycle boundary;
 - freeze and validate native `llama.cpp`/`llama-server` as the common stable
   engine path and vLLM as an additional Linux NVIDIA tier;
 - classify Ollama as optional and WSL2 vLLM plus Apple vLLM-Metal/MLX as
@@ -787,9 +998,10 @@ where the stable managed endpoint uses the existing gateway contracts.
 - build a separately versioned frozen backend for each target and register it as
   a per-user systemd service, Windows background application, or macOS LaunchAgent;
   keep elevated always-on service mode deferred;
-- package Linux as checksummed/signed `.deb` plus AppImage, Windows as a signed
-  MSI, and macOS as a signed and notarized DMG; build each backend and desktop
-  artifact on a native target runner and publish an SBOM.
+- reproducibly build, checksum, scan, and inventory each target-native
+  backend/service payload on a native target runner and publish its SBOM;
+  workstation desktop installers and formats are delivered in Phase 16 after
+  the Tauri shell exists, while public signing remains an optional final lane.
 
 ### First tests
 
@@ -809,18 +1021,29 @@ where the stable managed endpoint uses the existing gateway contracts.
 
 - the backend exposes an authenticated compatibility handshake containing API
   and backend versions, platform, adapters, operations, and compatibility state;
-- each advertised engine tier passes its complete OS/architecture/accelerator
-  target evidence lane;
+- each implemented engine tier passes its target-native disposable integration
+  lane; it remains unvalidated and unadvertised as stable until Phase 18 retains
+  the complete physical OS/architecture/accelerator evidence lane;
 - staged candidates cannot receive active traffic before promotion;
 - failed promotion restores the exact previous plan and behavioral health;
 - removal cannot escape owned caches, artifacts, configuration, state, or labels;
 - current external inference remains unchanged throughout ordinary development
   and qualification.
 
-## 26. Phase 16: Focused Operations Workspace
+## 27. Phase 16: Focused Operations Workspace
 
 Requirements: OUI-001 through OUI-006, DESK-001, DESK-002, UI-001 through UI-005,
 TEL-001 through TEL-005, RUN-003, RUN-004, and PERF-003.
+
+### Delivery subphases
+
+| Subphase | Primary IDs | Deliverable | Gate |
+|---:|---|---|---|
+| 16.1 | UI-003, OUI-001 | versioned operations query models, navigation, partial states, and compatibility APIs | component, API, accessibility, and stale/error fixtures green |
+| 16.2 | OUI-002, OUI-003, OUI-004 | metrics rollups, approved redacted logs/events, analytics, and comparisons | retention, redaction, units, gaps, bounds, and correlation suites green |
+| 16.3 | OUI-005, OUI-006 | settings, managed workflows, progress/cancellation, and recovery UI | plan preview, confirmation, restart, rollback, reconnect, and session-expiry suites green |
+| 16.4 | DESK-001, DESK-002 | minimal-capability Tauri shell with local/browser/SSH-profile parity | capability, close/reopen, backend mismatch, and browser fallback suites green |
+| 16.5 | DESK-002 | checksummed Linux, Windows, and macOS developer packages and package-trust-aware bootstrap/update | native install/repair/update/rollback tests green; unattended unsigned update impossible |
 
 ### Objectives
 
@@ -829,8 +1052,12 @@ TEL-001 through TEL-005, RUN-003, RUN-004, and PERF-003.
 - keep the React workspace and versioned API shared with the loopback browser
   surface; grant the Tauri webview no general shell or filesystem capability;
 - implement local backend discovery, authenticated compatibility handshake, and
-  confirmed signed install/repair/update flows without tying the service to the
-  desktop window lifecycle;
+  confirmed package-trust-aware install/repair/update flows without tying the
+  service to the desktop window lifecycle;
+- package the workstation development delivery as checksummed Linux `.deb` and
+  AppImage artifacts, a Windows MSI, and a macOS DMG; label unsigned artifacts,
+  disable unattended update for them, keep desktop/backend versions independent,
+  and retain a backend-only installation path for headless hosts;
 - wire live vLLM/engine metrics and bounded historical rollups;
 - implement redacted log/event ingestion, search, filtering, correlation, and
   retention;
@@ -849,7 +1076,8 @@ TEL-001 through TEL-005, RUN-003, RUN-004, and PERF-003.
 - settings source/default/secret/diff/preflight/restart/rollback tests;
 - lifecycle refresh, cancellation, reconnect, duplicate submit, and session
   expiry during long operations;
-- visual evidence for ubuntu-1 desktop and tunneled ubuntu-2/mobile viewports;
+- visual evidence for an Ubuntu desktop client and for tunneled ubuntu-1,
+  ubuntu-2, and mobile browser viewports;
 - target-native desktop install, close/reopen, backend restart, reboot,
   version-mismatch, update rollback, and browser-fallback workflows.
 
@@ -860,13 +1088,23 @@ TEL-001 through TEL-005, RUN-003, RUN-004, and PERF-003.
 - request metrics and benchmark history are real application data, not static
   cards or ignored artifacts;
 - no UI action bypasses ownership, typed plans, confirmation, or agent policy;
-- Windows, Linux, and macOS desktop artifacts pass signing/checksum, capability,
+- Windows, Linux, and macOS desktop artifacts pass checksum, capability,
   accessibility, security, polling/event, render, and backend-compatibility
-  gates; equivalent browser workflows remain green.
+  development gates; equivalent browser workflows remain green, and no stable
+  target claim is made before Phase 18 physical qualification.
 
-## 27. Phase 17: AI-Assisted Diagnosis and Secure Access
+## 28. Phase 17: AI-Assisted Diagnosis and Secure Access
 
 Requirements: AID-001 through AID-004, ACCESS-001, ACCESS-002, and DESK-003.
+
+### Delivery subphases
+
+| Subphase | Primary IDs | Deliverable | Gate |
+|---:|---|---|---|
+| 17.1 | AID-001 | bounded redacted diagnostic evidence packages and ordinary non-AI diagnosis | canary, size, provenance, and prompt/log-injection corpora green |
+| 17.2 | AID-002, AID-003, AID-004 | disabled, local, and external provider adapters with grounded structured findings | timeout, malformed, hallucination, refusal, cost, consent, and advisory-boundary suites green |
+| 17.3 | ACCESS-001, DESK-003 | loopback and operator-established SSH-tunnel access profiles | teardown, revocation, reconnect, cookie, CSRF, and parity suites green |
+| 17.4 | ACCESS-002, DESK-003 | optional TLS-authenticated network profile and remote desktop/browser parity | exposure, certificate, origin, proxy-header, brute-force, and recovery suites green |
 
 ### Objectives
 
@@ -900,11 +1138,21 @@ Requirements: AID-001 through AID-004, ACCESS-001, ACCESS-002, and DESK-003.
 - local/SSH remains the default and optional network access is independently
   secured and documented.
 
-## 28. Phase 18: Three-OS Physical Qualification
+## 29. Phase 18: Three-OS Physical Qualification
 
 Requirements: HOST-003, PLAT-004, ACCESS-003, all v0.2 requirements assigned to
 the selected release, and the applicable original security, reliability,
 performance, backup, and release requirements.
+
+### Delivery subphases
+
+| Subphase | Primary IDs | Deliverable | Gate |
+|---:|---|---|---|
+| 18.1 | HOST-003, PLAT-004, ACCESS-003 | frozen target/support matrix, native package manifests, runbooks, and evidence tasks | every claim maps to an exact artifact, machine, lane, and rollback path |
+| 18.2 | HOST-003, PLAT-004, ACCESS-003 | Ubuntu, ubuntu-1, and ubuntu-2 physical lanes | named Linux discovery, managed-runtime, lifecycle, access, and recovery evidence green |
+| 18.3 | HOST-003, PLAT-004, ACCESS-003 | Windows 11 x86-64 physical lane | native `llama.cpp`, desktop/backend, package, lifecycle, access, and recovery evidence green |
+| 18.4 | HOST-003, PLAT-004, ACCESS-003 | Apple Silicon macOS physical lane | native `llama.cpp`, desktop/backend, package, lifecycle, access, and recovery evidence green |
+| 18.5 | all selected v0.2 requirements | cross-target comparison, independent operator walkthrough, and developer/source release report | all three stable OS lanes green and unsupported combinations explicit |
 
 ### Objectives
 
@@ -915,9 +1163,9 @@ performance, backup, and release requirements.
   backup, restore, upgrade, rollback, uninstall, and access;
 - compare predicted and measured resource/performance envelopes;
 - complete fault, resource, short-soak, and full-soak validation;
-- build artifacts on native runners and publish signed/checksummed backend and
-  desktop packages, catalogs, target profiles, runbooks, SBOMs, evidence maps,
-  and explicit support statements;
+- build artifacts on native runners and publish checksummed backend and desktop
+  developer packages, catalogs, target profiles, runbooks, SBOMs, evidence maps,
+  package qualification levels, and explicit support statements;
 - classify AMD Windows, Intel Mac, WSL2 vLLM, vLLM-Metal/MLX, and additional
   Linux distributions as experimental until equivalent physical evidence exists.
 
@@ -936,7 +1184,7 @@ performance, backup, and release requirements.
   unsupported model/engine/platform combinations without optimistic inference;
 - no stable v0.2 release is declared until every three-OS stable lane passes.
 
-## 29. v0.2 Priority Boundary
+## 30. v0.2 Priority Boundary
 
 The following remain outside the focused v0.2 critical path even where v0.1
 source primitives exist:
@@ -953,3 +1201,53 @@ Reopening one of these areas requires a concrete need, interaction analysis with
 managed inference, updated requirements and priority, and explicit review. It
 must not delay the first complete Ubuntu, Windows, and Apple Silicon macOS
 developer-inference release by default.
+
+## 31. Optional Signed-Distribution Hardening
+
+This post-qualification lane is deliberately outside the source-development and
+developer/source release critical path. Agents attempt it only when the required
+external accounts, identities, credentials, agreements, and operator authority
+are available:
+
+1. sign Windows backend and MSI artifacts and verify signatures on a clean host;
+2. sign macOS backend and application bundles, notarize the DMG, staple and
+   verify the result, and repeat install/update/rollback on a clean host;
+3. apply any selected Linux repository/package signing policy and verify it from
+   a clean installation root;
+4. sign update metadata, enable unattended update only for the matching trusted
+   channel, and exercise compromise, expiry, revocation, downgrade, and rollback
+   cases;
+5. publish a signed-distribution-qualified report bound to the already qualified
+   source revision and exact package digests.
+
+Missing credentials produce a documented `not_configured` optional-lane result,
+not a failed product phase. Agents must not solicit, generate, retrieve, or store
+private signing material as a workaround. Developer/source-qualified artifacts
+remain checksummed, scanned, SBOM-backed, explicitly confirmed, and usable with
+documented platform trust steps; they never claim unattended trusted update.
+
+## 32. Optional Public Open-Source Publication
+
+The current package metadata says `Proprietary - no license granted`. Product
+implementation, testing, packaging, and private/source-available qualification
+continue under that status. Public repository visibility does not itself grant
+an open-source license, and agents must not select legal terms on the operator's
+behalf.
+
+If the operator explicitly chooses an open-source publication policy, the final
+publication lane must:
+
+1. add the selected `LICENSE` and align package, installer, documentation, and
+   source-header metadata without retroactively relicensing third-party work;
+2. regenerate and review third-party license inventories and notices against the
+   chosen distribution policy;
+3. finalize contribution terms, DCO/CLA policy if any, governance expectations,
+   security reporting, release ownership, and trademark/name guidance;
+4. verify that source archives, generated clients, bundled engine/model
+   components, fixtures, documentation assets, and binary packages contain only
+   material that may be redistributed under the declared policy;
+5. publish an explicit source and artifact provenance statement.
+
+An undecided license is a publication blocker, not a development blocker. Agents
+record it as `decision_pending` and finish every independent product task without
+claiming that Morpheus is open source.

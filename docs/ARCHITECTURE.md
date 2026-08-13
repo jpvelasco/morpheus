@@ -117,14 +117,17 @@ removed by Morpheus.
 
 ### 3.4 Ownership Modes
 
-An inference identity contains an immutable ownership mode:
+An inference identity contains exactly one immutable ownership mode:
 
 - `external_observed`: read-only health, model, metrics, and explicitly
   authorized benchmark access;
 - `morpheus_managed`: lifecycle and configuration through one exact owned
   deployment manifest;
-- `adoption_candidate`: temporary state used only by the separately authorized
-  migration state machine; never a routine lifecycle target.
+
+An adoption candidate is a separate workflow-scoped transfer record that binds
+one exact `external_observed` identity, its captured pre-state, one proposed
+`morpheus_managed` identity, confirmation, and recovery plan. It is not a third
+ownership mode and cannot be supplied to ordinary lifecycle operations.
 
 Successful discovery, endpoint configuration, matching names, or shared network
 membership cannot change the mode. Adoption commits the new identity only after
@@ -171,7 +174,7 @@ deploy/
   config/               Versioned non-secret sidecar configuration
   linux/                systemd-user units and Linux package definitions
   windows/              Per-user background registration and package definitions
-  macos/                LaunchAgent and signed package definitions
+  macos/                LaunchAgent and package/trust definitions
 
 tests/
   unit/                 Pure and adapter-isolated tests
@@ -433,19 +436,24 @@ are rejected from log context rather than masked after serialization.
 
 ## 11. Deployment and Upgrade
 
-The default workstation deployment is a signed/checksummed desktop package plus
-a separately versioned target-native backend installed as a per-user background
-service. Linux uses systemd-user, Windows uses per-user background registration,
-and macOS uses LaunchAgent. Backend-only installation remains available for
-headless hosts. Compose is retained as a Linux runtime adapter, not a platform
-prerequisite. Installation does not install GPU drivers or silently enable host
+The default workstation deployment is a checksummed desktop package plus a
+separately versioned target-native backend installed as a per-user background
+service. Developer/source-qualified packages may be unsigned; their manifest
+states that status, installation requires explicit local confirmation, and
+unattended update remains disabled. Signed-distribution qualification is an
+optional final lane when platform credentials are available. Linux uses
+systemd-user, Windows uses per-user background registration, and macOS uses
+LaunchAgent. Backend-only installation remains available for headless hosts.
+Compose is retained as a Linux runtime adapter, not a platform prerequisite.
+Installation does not install GPU drivers or silently enable host
 virtualization/container prerequisites.
 
 Upgrade sequence:
 
 1. validate configuration, disk space, dependency locks, and external runtime;
 2. create a Morpheus-only backup;
-3. acquire signed or checksummed target-native artifacts;
+3. acquire target-native artifacts verified under the active package trust
+   policy;
 4. run database migration preflight;
 5. replace the backend, desktop, or managed runtime with bounded health waits;
 6. run behavioral smoke tests;
@@ -513,13 +521,28 @@ vLLM. Ollama is optional; Windows vLLM through WSL2 and Apple
 vLLM-Metal/MLX begin as experimental. Docker Compose is one Linux adapter and
 cannot establish Windows or macOS support.
 
-Installation and promotion are separate state machines:
+Acquisition/staging, benchmark, promotion, rollback, and adoption are separate
+immutable state machines. Their records share exact plan and artifact
+identities, but a transition in one machine never implies a transition in
+another:
 
-```text
-planned -> downloading -> staged -> preflighted -> running-candidate
-        -> benchmarked -> approved -> active
-        -> failed -> recovering -> rolled-back
-```
+| Machine | Allowed non-terminal transitions | Terminal states |
+|---|---|---|
+| acquisition/staging | `planned -> acquiring|cancelled`; `acquiring -> verified|cancelled|failed`; `verified -> staged|failed` | `staged`, `cancelled`, `failed` |
+| benchmark campaign | `planned -> authorized|cancelled`; `authorized -> running|cancelled`; `running -> succeeded|cancelled|aborted|failed` | `succeeded`, `cancelled`, `aborted`, `failed` |
+| promotion | `proposed -> preflighted|rejected`; `preflighted -> confirmed|rejected`; `confirmed -> activating`; `activating -> active|recovering`; `recovering -> rolled_back|failed` | `active`, `rejected`, `rolled_back`, `failed` |
+| rollback | `requested -> preflighted|rejected`; `preflighted -> restoring|rejected`; `restoring -> verified|failed`; `verified -> completed|failed` | `completed`, `rejected`, `failed` |
+| adoption | `proposed -> pre_state_captured|rejected`; `pre_state_captured -> preflighted|rejected`; `preflighted -> confirmed|rejected`; `confirmed -> transferring`; `transferring -> validating|restoring`; `validating -> adopted|restoring`; `restoring -> restored|failed` | `adopted`, `rejected`, `restored`, `failed` |
+
+Success in acquisition or benchmark only supplies evidence to a later machine.
+Promotion and adoption each require their own confirmation. Adoption is the only
+machine allowed to propose an ownership transfer. The captured external identity
+record always remains immutable and `external_observed`; when adoption reaches
+`adopted`, its separately proposed `morpheus_managed` identity becomes the
+current managed target.
+Terminal records never transition again. Failures not listed above leave the
+current durable record unchanged and produce a separate error/audit result;
+adapters cannot invent a transition to make cleanup convenient.
 
 Only one full-GPU runtime or benchmark candidate may own an exclusive device at
 a time unless the machine profile and adapter evidence explicitly support safe
@@ -614,6 +637,7 @@ discovery result or convenience setting requested it.
 - [ADR-0006: Evidence-ranked model and engine selection](adr/0006-evidence-ranked-model-engine-selection.md)
 - [ADR-0007: Tauri desktop and independent backend](adr/0007-tauri-desktop-and-independent-backend.md)
 - [ADR-0008: Tiered cross-platform runtime support](adr/0008-tiered-cross-platform-runtime-support.md)
+- [ADR-0009: Dev-first packages and optional distribution signing](adr/0009-dev-first-packages-and-optional-distribution-signing.md)
 
 Additional decisions required before implementation reaches them:
 

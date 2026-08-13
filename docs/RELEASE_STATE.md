@@ -27,8 +27,10 @@ private request data, host addresses, or unredacted evidence.
   Silicon macOS. ubuntu-1 and ubuntu-2 remain named Linux qualification
   machines. The accepted plan adds evidence-ranked selection, managed inference,
   benchmark history, a Tauri desktop plus independent backend, operations, and
-  bounded AI-assisted diagnosis. No v0.2 runtime implementation or target
-  mutation has started.
+  bounded AI-assisted diagnosis. The planning handoff was consistency-audited
+  and refined on 2026-08-12 with an early vertical slice, bounded self-replan,
+  smaller delivery subphases, and optional distribution signing; no v0.2 runtime
+  implementation or target mutation has started.
 - **Implementation inventory:** 44 implemented, 41 planned, 12 deferred; see
   [`requirements.json`](../requirements.json) and the
   [implementation gap review](IMPLEMENTATION_GAP_REVIEW.md).
@@ -260,27 +262,41 @@ workspace; refer to the candidate commit and task ID in its redacted manifest.
 
 ## Active Milestone
 
-**v0.2 plan established; implementation begins with Phase 11 only after explicit
-authorization.** The next source milestone is the dual-mode contract and
-ownership foundation described in `docs/IMPLEMENTATION_PLAN.md`. It must preserve
-the deployed ubuntu-1 v0.1 read-only behavior and requires no model download, GPU
-workload, or runtime mutation.
+**v0.2 plan audited and ready for implementation handoff; implementation begins
+with Phase 11 only after explicit authorization.** The next source milestone is
+the dual-mode contract and ownership foundation and its agent handoff packet in
+`docs/IMPLEMENTATION_PLAN.md`. It must preserve the deployed ubuntu-1 v0.1
+read-only behavior and requires no model download, GPU workload, or runtime
+mutation.
 
 ## v0.2 Queue
 
-1. **Phase 11 — contracts and ownership:** introduce typed observed, managed,
-   and adoption-candidate identities plus immutable planning and lifecycle state
-   machines, using fakes and disposable tests only.
-2. **Phase 12 — portable discovery and catalogs:** capture privacy-reviewed
+1. **Phase 11 — contracts and ownership:** introduce exactly two typed ownership
+   modes, workflow-scoped adoption transfer records, and separate immutable
+   planning and lifecycle state machines, using fakes and disposable tests only.
+2. **Phase 11.5 — walking skeleton and replan:** run one real disposable Ubuntu
+   CPU `llama.cpp` discovery-to-rollback path, record the findings, apply a
+   bounded evidence-driven plan adjustment, and continue automatically when its
+   gate is green.
+3. **Phase 12 — portable discovery and catalogs:** prepare privacy-reviewed
    ubuntu-1, ubuntu-2, Windows, and Apple Silicon macOS profiles through
    read-only lanes; define native platform ports and versioned catalogs.
-3. **Phase 13 — benchmark foundation:** normalize and import the existing
+4. **Phase 13 — benchmark foundation:** normalize and import the existing
    history result history before creating new model-management workflows.
 
 The optional search, voice, workflow, research, RAG, and image-generation suite
 is not on this critical path. Any product-source change after the existing v0.1
 freeze creates a distinct v0.2 candidate; existing artifacts retain their
 recorded identity.
+
+Developer/source qualification uses checksummed, scanned, SBOM-backed native
+packages and never waits on public signing credentials. Windows signing, Apple
+signing/notarization, Linux distribution signing, and trusted unattended update
+are optional post-qualification work under ADR-0009.
+
+The repository still declares `Proprietary - no license granted`. A possible
+future open-source publication is a separate operator decision and does not block
+implementation; no agent may infer or announce an open-source license.
 
 ## Operating Constraints
 

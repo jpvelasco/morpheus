@@ -37,7 +37,7 @@ The initial deployment target is the current server:
 These values describe the deployed v0.1 baseline. They are not hard-coded v0.2
 assumptions. ubuntu-1 and ubuntu-2 remain named Linux validation machines. A
 stable v0.2 release additionally requires a qualified Windows 11 x86-64 host and
-an Apple Silicon macOS host, each with signed or checksummed machine, install,
+an Apple Silicon macOS host, each with checksummed machine, install,
 engine, benchmark, lifecycle, access, and recovery evidence.
 
 ## 2. Product Principles
@@ -417,10 +417,12 @@ Workflow and research exit criteria:
 - service failure does not degrade direct chat or core Morpheus health;
 - imported templates are validated against a versioned schema.
 
-### 7.8 Optional Gateway
+### 7.8 Bounded Compatibility Layer
 
-**GATE-001 Stable API.** A gateway may expose one authenticated endpoint for the
-current vLLM model and future providers.
+**GATE-001 Stable API.** When enabled, the bounded Morpheus compatibility layer
+exposes one authenticated endpoint for the selected managed runtime. This
+requirement does not introduce LiteLLM, automatic provider routing, or a broad
+multi-provider control plane.
 
 **GATE-002 Alias control.** External model aliases map deterministically to
 upstream model IDs and cannot silently change without configuration evidence.
@@ -571,7 +573,9 @@ Recommendation exit criteria:
 
 **RUNM-001 Dual operating modes.** Every inference target is explicitly
 external-observed or Morpheus-managed. API, CLI, UI, audit, and agent requests
-carry that ownership mode and reject ambiguous or cross-mode actions.
+carry that ownership mode and reject ambiguous or cross-mode actions. An
+adoption candidate is a workflow-scoped transfer record, not a third ownership
+mode or an ordinary lifecycle target.
 
 **RUNM-002 Engine adapters.** Managed engines implement a typed contract for
 capability detection, immutable configuration rendering, preflight, start,
@@ -764,8 +768,10 @@ adapter, not the portable host abstraction.
 **PLAT-003 Independent backend service.** The backend is a separately versioned,
 target-native package registered as a per-user background service by default.
 Closing the desktop application does not stop the backend or managed inference.
-Backend install, repair, upgrade, rollback, and removal are signed or
-checksummed, health-gated, ownership-bounded, and independently testable.
+Backend install, repair, upgrade, rollback, and removal are checksummed,
+health-gated, ownership-bounded, and independently testable. Public signing and
+Apple notarization are optional distribution-hardening lanes; unsigned packages
+are labeled developer/source-qualified and cannot update unattended.
 
 **PLAT-004 Evidence-bounded engine tiers.** Stable v0.2 provides a qualified
 native `llama.cpp` managed path on Ubuntu x86-64, Windows x86-64, and Apple
@@ -785,9 +791,10 @@ authenticated `GET /api/v1/system/compatibility` handshake. The desktop supplies
 its semantic version in `X-Morpheus-Desktop-Version`; the response contains API
 and backend versions, supported desktop version range, OS and architecture,
 enabled adapter identities and tiers, supported operations, and compatibility
-status. A missing or incompatible local backend produces a signed
+status. A missing or incompatible local backend produces a package-trust-aware
 install/repair/update plan and requires confirmation; it never silently replaces
-a running service.
+a running service. Unsigned developer packages require local checksum
+verification and cannot use unattended bootstrap or update.
 
 **DESK-003 Local and remote parity.** The desktop can connect to its local
 backend or a backend reached through an operator-established SSH tunnel. The
@@ -797,7 +804,9 @@ and recovery semantics apply to desktop, browser, CLI, and remote-tunneled use.
 Cross-platform exit criteria:
 
 - target-native backend and desktop artifacts are built on native CI runners,
-  signed or checksummed, version-inventoried, and accompanied by an SBOM;
+  checksummed, version-inventoried, and accompanied by an SBOM; package manifests
+  distinguish developer/source-qualified from optional signed-distribution-
+  qualified artifacts;
 - Ubuntu uses a per-user systemd service, Windows uses per-user background
   registration, and macOS uses a LaunchAgent; elevated always-on system service
   mode is deferred;
@@ -897,7 +906,8 @@ to that release have linked automated tests and the following are true:
 10. Operator setup, troubleshooting, recovery, and security documentation is
     complete and has been followed by a person starting from a clean checkout.
 11. Release artifacts include checksums, dependency locks, image digests, SBOM,
-    migration version, and a signed validation report.
+    migration version, and a checksummed validation report. Public artifact and
+    report signing is an optional signed-distribution qualification.
 12. Known limitations and deferred requirements are explicit and contain no
     unsupported claim of readiness.
 13. Physical qualification passes on Ubuntu 26.04 x86-64, Windows 11 x86-64,
@@ -906,13 +916,21 @@ to that release have linked automated tests and the following are true:
 
 ## 11. Requirement Traceability
 
-Every implementation pull request must list the requirement IDs it affects.
-Acceptance tests use requirement IDs in test names or metadata. The release
-validation report is generated from the mapping:
+Every implementation pull request must list the functional requirement IDs and
+cross-cutting `INV-*` constraints it affects. `requirements.json` tracks status,
+tasks, and evidence for functional requirements; invariants are mandatory
+acceptance constraints traced through the functional requirements they protect
+rather than separate status rows. Acceptance tests use functional, invariant,
+or explicitly declared delivery-milestone IDs such as `VSLICE-001` in test names
+or metadata. Delivery milestones exercise integration order but never substitute
+for functional-requirement completion. The release validation report is
+generated from the mapping:
 
 ```text
 requirement -> test evidence -> build artifact -> release decision
 ```
 
-A requirement without evidence is not complete. A test without a requirement
-or defect reference is reviewed as unowned scope.
+A functional requirement without an owning test cannot be `implemented`; one
+without all required retained passing evidence cannot be `validated`. A test
+without a functional requirement, invariant, delivery milestone, or defect
+reference is reviewed as unowned scope.

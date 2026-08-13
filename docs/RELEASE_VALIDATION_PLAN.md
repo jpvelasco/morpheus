@@ -11,8 +11,10 @@ reviewable evidence or an explicit, approved deferral.
 
 The checklist below remains the historical v0.1 release lane. The reopened v0.2
 product requirements are phased in `IMPLEMENTATION_PLAN.md` Sections 20 through
-29 and culminate in Ubuntu, Windows, and Apple Silicon macOS qualification under
-Phase 18. ubuntu-1 and ubuntu-2 remain named Linux evidence targets.
+32, include an early Ubuntu CPU walking skeleton and bounded replan, and
+culminate in Ubuntu, Windows, and Apple Silicon macOS qualification under Phase
+18. Public platform signing is a separate optional final lane. ubuntu-1 and
+ubuntu-2 remain named Linux evidence targets.
 No unchecked v0.1 optional-service item is implicitly promoted into the v0.2
 critical path, and this document does not yet constitute v0.2 release evidence.
 
@@ -48,14 +50,23 @@ Execution environments:
 | Code | Environment | Permitted state |
 |---|---|---|
 | DEV | Local checkout or CI | Repository and disposable test state only |
-| VM | Disposable `morpheus-validation` guest | Any declared lab mutation |
-| HOST-RO | ubuntu-1 against external services | Read-only observations only |
-| HOST-MAINT | ubuntu-1 maintenance window | Only the explicitly authorized operation |
+| VM | A disposable target-native lab; the current v0.1 lane is the Ubuntu `morpheus-validation` guest | Any declared lab mutation |
+| HOST-RO | A physical qualification target; ubuntu-1 is the current v0.1 target | Read-only observations only |
+| HOST-MAINT | A physical target in an approved maintenance window | Only the explicitly authorized operation |
 
 Phase 18 adds target-native Windows and macOS lab/host lanes using the same
 read-only versus explicitly authorized maintenance distinction. Their physical
-machines, signing identities, and immutable baselines must be recorded before
-those lanes can produce stable support evidence.
+machines and immutable baselines must be recorded before those lanes can produce
+stable support evidence. Signing identities are required only for the optional
+signed-distribution lane.
+
+`HOST-RO` and `HOST-MAINT` describe permission scope, not an operating system or
+machine name. Every v0.2 host manifest must also record a privacy-reviewed target
+identity, OS, architecture, accelerator class, and lane revision. Before Phase
+12 captures a real profile, this plan must name that lane and its authorization;
+before Phase 18, it must add the complete Windows, macOS, and Linux physical task
+matrix. Generic environment codes must never be used to imply cross-platform
+coverage.
 
 Every evidence-producing run uses an identifier such as
 `20260715T180000Z-<commit>` and writes only to the ignored directory
@@ -438,9 +449,12 @@ soak shows no unbounded resource, task, connection, log, or database growth.
 - [ ] **SUPPLY-005 — Immutable release manifest.** Record checksums, OCI digests,
   source commit, dependency locks, image locks, schema versions, SBOM digests,
   tool versions, and rollback artifacts.
-- [ ] **SUPPLY-006 — Sign and verify.** Choose a documented signing mechanism and
-  protected key location; sign the release manifest and validation report, then
-  verify from a fresh VM clone. No signing key enters the repository or VM base.
+- [ ] **SUPPLY-006 — Sign and verify (historical v0.1 / optional v0.2).** Choose a
+  documented signing mechanism and protected key location; sign the release
+  manifest and validation report, then verify from a fresh VM clone. No signing
+  key enters the repository or VM base. For v0.2 this maps to Implementation Plan
+  Section 31 and does not block developer/source qualification when credentials
+  are unavailable.
 - [ ] **DOC-001 — Complete operator runbooks.** Installation, configuration,
   startup, diagnostics, backup, restore, upgrade, rollback, uninstall,
   troubleshooting, security, recovery, and limitations must match tested
