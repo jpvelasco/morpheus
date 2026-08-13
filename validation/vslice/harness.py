@@ -23,6 +23,11 @@ ACQUISITION_SOURCE = "https://github.com/ggml-org/llama.cpp/releases/download/b1
 MODEL_SOURCE = "https://huggingface.co/bartowski/SmolLM2-135M-Instruct-GGUF/resolve/f0a2b81d63eb57be0e90e82e327e03a7fc66a7dc/SmolLM2-135M-Instruct-Q4_K_M.gguf"
 
 _SETTING_ALLOWLIST = frozenset({"context_length", "threads", "batch_size"})
+_ENGINE_FLAGS = {
+    "context_length": "--ctx-size",
+    "threads": "--threads",
+    "batch_size": "--batch-size",
+}
 
 
 class ArtifactVerificationError(ValueError):
@@ -207,9 +212,9 @@ def render_command(plan: DeploymentPlan) -> tuple[str, ...]:
             raise ValueError(f"setting {key!r} is not an allowed engine setting")
         if isinstance(value, bool):
             if value:
-                command.append(f"--{key}")
+                command.append(_ENGINE_FLAGS[key])
         else:
-            command.extend([f"--{key}", str(value)])
+            command.extend([_ENGINE_FLAGS[key], str(value)])
     return tuple(command)
 
 
