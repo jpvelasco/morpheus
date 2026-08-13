@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import json
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from enum import StrEnum
 from types import MappingProxyType
 
@@ -174,3 +175,43 @@ class StateMachine:
             checkpoint=record.checkpoint + 1,
         )
         return StateTransitionResult(accepted=True, record=advanced, audit="")
+
+
+def encode_machine_record(record: MachineRecord) -> bytes:
+    """Canonical durable checkpoint encoding with the shared schema rules."""
+    return json.dumps(
+        {
+            "record_type": "machine_record",
+            "schema_version": record.schema_version,
+            "record_id": record.record_id,
+            "payload": record.public_dict(),
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+
+
+def decode_machine_record(data: bytes) -> MachineRecord:
+    document = json.loads(data.decode())
+    if not isinstance(document, dict):
+        raise ValueError("machine record must be a JSON object")
+    if document.get("record_type") != "machine_record":
+        raise ValueError("envelope is not a machine record")
+    payload = document.get("payload")
+    if not isinstance(payload, dict):
+        raise ValueError("machine record payload must be an object")
+    expected = {field.name for field in fields(MachineRecord)}
+    if set(payload) != expected:
+        raise ValueError("machine record payload must contain exactly its declared fields")
+    record = MachineRecord(
+        machine=MachineKind(payload["machine"]),
+        record_id=payload["record_id"],
+        state=payload["state"],
+        schema_version=payload["schema_version"],
+        checkpoint=payload["checkpoint"],
+    )
+    if record.schema_version != document.get("schema_version"):
+        raise ValueError("machine record schema version mismatch")
+    if record.record_id != document.get("record_id"):
+        raise ValueError("machine record identity mismatch")
+    return record

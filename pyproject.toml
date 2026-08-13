@@ -55,6 +55,7 @@ packages = ["src/morpheus"]
 [tool.pytest.ini_options]
 addopts = "--strict-config --strict-markers"
 testpaths = ["tests"]
+pythonpath = ["."]
 markers = [
   "acceptance: requirement-level acceptance tests",
   "contract: stable protocol and schema contract tests",
