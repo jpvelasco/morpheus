@@ -542,10 +542,11 @@ class DockerComposeLifecycleAdapter:
                 os.fsync(stream.fileno())
             os.chmod(temporary, 0o600)
             os.replace(temporary, path)
-            descriptor = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY)
-            try:
-                os.fsync(descriptor)
-            finally:
-                os.close(descriptor)
+            if os.name != "nt":
+                descriptor = os.open(path.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+                try:
+                    os.fsync(descriptor)
+                finally:
+                    os.close(descriptor)
         finally:
             temporary.unlink(missing_ok=True)

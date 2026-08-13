@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pytest
@@ -153,10 +154,13 @@ def test_CFG_003_accepts_empty_or_http_runtime_agent_endpoint() -> None:
 
 
 def test_CFG_003_rejects_multiple_runtime_agent_transports() -> None:
+    socket_path = (
+        "/run/morpheus-agent/agent.sock" if os.sep == "/" else "C:/run/morpheus-agent/agent.sock"
+    )
     with pytest.raises(ValidationError, match="only one runtime agent"):
         MorpheusSettings(
             runtime_agent_url="http://127.0.0.1:7402",
-            runtime_agent_socket="/run/morpheus-agent/agent.sock",
+            runtime_agent_socket=socket_path,
         )
 
 
