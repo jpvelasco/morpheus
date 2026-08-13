@@ -1,20 +1,40 @@
 # AGENTS.md
 
-## Where We Left Off (2026-08-11)
+## Where We Left Off (2026-08-12)
 
 **Product direction reopened for v0.2 planning.** Morpheus is now planned as a
 focused developer-inference appliance with stable native paths on Ubuntu,
 Windows, and Apple Silicon macOS. Batwing and Batmobile remain named Linux
 qualification machines. The plan adds evidence-ranked model/engine selection,
 managed runtime, benchmark history, Tauri desktop plus independent backend,
-operations, and bounded AI-assisted diagnosis. Read
-`docs/IMPLEMENTATION_PLAN.md` Phase 11 onward and ADR-0005 through ADR-0008.
+operations, and bounded AI-assisted diagnosis. The plan has passed a handoff
+consistency review; read `docs/IMPLEMENTATION_PLAN.md` Phase 11 onward, including
+the Phase 11 implementation handoff, Phase 11.5 walking-skeleton/replan gate,
+and ADR-0005 through ADR-0009.
 
 This plan update does not authorize v0.2 runtime implementation or live target
 mutation. The next source milestone is Phase 11 contracts and ownership only
 when explicitly requested. Search, voice, workflows, research, RAG, image
 generation, and other ODS-like breadth are outside the focused v0.2 critical
 path unless separately reopened.
+
+Once a user explicitly authorizes long-horizon v0.2 implementation, agents may
+continue across green DEV and disposable-lab subphases without asking at every
+phase boundary. They must run the Phase 11.5 Ubuntu CPU walking skeleton, record
+its self-assessment, apply any bounded evidence-driven replan, and then continue
+in dependency order. This standing continuation never authorizes a live-host
+operation, external-service/cache mutation, release publication, or access to
+signing credentials.
+
+Windows public signing and Apple signing/notarization are optional final
+distribution-hardening lanes. Missing credentials must not delay source,
+packaging, DEV/VM, or physical product work. Unsigned development artifacts stay
+checksummed and explicitly confirmed, and unattended update remains disabled.
+
+The repository currently declares `Proprietary - no license granted`. Public
+visibility alone is not an open-source license. Do not change licensing metadata,
+add a license, or claim Morpheus is open source until the user explicitly chooses
+the license and publication policy; that decision does not block implementation.
 
 The deployed v0.1 Morpheus remains a **read-only operator surface** next to
 existing inference. It answers: is inference up, which model, GPU/disk via the
@@ -87,6 +107,7 @@ Run the smallest relevant test lane while iterating, then the complete required
 gate for the affected phase. Live-system tests are opt-in and read-only unless
 the user explicitly authorizes mutation.
 
-Do not treat remaining formal release checklist items (24h soak, full browser
-matrix, dual-VM rebuilds, optional sidecars) as open mandatory work unless the
-user asks.
+Do not pull formal release checklist items (24h soak, full browser matrix,
+dual-VM rebuilds, optional sidecars, public signing/notarization) ahead of their
+declared phase. Missing optional distribution credentials are never a reason to
+stop independent implementation work.

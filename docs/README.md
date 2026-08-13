@@ -7,7 +7,10 @@
 - [Architecture](ARCHITECTURE.md): ownership boundaries, components, data
   flows, security model, and deployment shape.
 - [Implementation plan](IMPLEMENTATION_PLAN.md): test-driven build sequence,
-  quality gates, v0.1 history, and v0.2 focused-appliance phases.
+  quality gates, agent handoff/merge discipline, v0.1 history, and dependency-
+  ordered v0.2 focused-appliance phases.
+- [OpenCode implementation bootstrap](OPENCODE_IMPLEMENTATION_BOOTSTRAP.md):
+  copy-paste long-horizon Build-agent prompt and DeepSeek V4 Flash setup notes.
 - [Dual-mode appliance decision](adr/0005-dual-mode-focused-inference-appliance.md):
   observed versus managed inference ownership and focused scope.
 - [Evidence-ranked selection decision](adr/0006-evidence-ranked-model-engine-selection.md):
@@ -16,6 +19,9 @@
   shared React desktop/browser UI, backend service lifecycle, and version handshake.
 - [Tiered cross-platform runtime decision](adr/0008-tiered-cross-platform-runtime-support.md):
   stable three-OS targets, native engine baseline, and evidence-bounded tiers.
+- [Dev-first package decision](adr/0009-dev-first-packages-and-optional-distribution-signing.md):
+  checksummed native development packages without a signing-credential blocker,
+  plus an optional final signed-distribution lane.
 - [Release validation plan](RELEASE_VALIDATION_PLAN.md): prioritized host and VM
   prerequisites, executable validation tasks, evidence, and release gates.
 - [Release state](RELEASE_STATE.md): durable current-candidate ledger, completed

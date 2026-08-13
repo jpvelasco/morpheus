@@ -27,6 +27,10 @@ operations workspace, Tauri desktop, cross-platform backend, AI-assisted
 diagnosis, and secure target access. Existing tests therefore establish a useful
 v0.1 foundation without claiming that the v0.2 appliance exists.
 
+The 97 status rows are functional requirements. INV-001 through INV-009 are
+mandatory cross-cutting constraints mapped to the functional requirements they
+protect; they do not receive independent status rows or inflate these counts.
+
 ## Complete Disposition
 
 - Implemented: CFG-001 through CFG-004; RUN-001 through RUN-006;
@@ -53,14 +57,16 @@ development.
 
 | Order | Phase | Requirements | Outcome |
 |---:|---:|---|---|
-| 1 | 11 | RUNM-001 | Dual observed/managed ownership and immutable v0.2 contracts without changing deployed behavior. |
-| 2 | 12 | HOST-001, HOST-002, SEL-001, PLAT-001, PLAT-002 | Read-only normalized host profiles, native OS capability contracts, and versioned catalogs. |
-| 3 | 13 | BENCH-001 through BENCH-005 | Durable benchmark provenance, Qwopus import, safe campaigns, comparisons, and regression records. |
-| 4 | 14 | SEL-002 through SEL-005 | Deterministic compatibility filtering and explainable developer-workload ranking. |
-| 5 | 15 | RUNM-002 through RUNM-006, PLAT-003, GATE-001 | Target-native backend packaging and verified model/engine installation, serving, rollback, and recovery. |
-| 6 | 16 | UI-003, OUI-001 through OUI-006, DESK-001, DESK-002 | Tauri and browser operations UI with backend compatibility/bootstrap. |
-| 7 | 17 | AID-001 through AID-004, ACCESS-001, ACCESS-002, DESK-003 | Bounded diagnosis and local/SSH-tunneled desktop/browser access. |
-| 8 | 18 | HOST-003, PLAT-004, ACCESS-003 | Ubuntu, Windows, and Apple Silicon macOS physical qualification and explicit tier claims. |
+| 1 | 11 | RUNM-001 | Exactly two observed/managed ownership modes, workflow-scoped adoption records, and immutable v0.2 contracts without changing deployed behavior. |
+| 2 | 11.5 | VSLICE-001 delivery gate; no status row | Real disposable Ubuntu CPU discovery-to-rollback walking skeleton, self-assessment, and bounded evidence-driven replan. |
+| 3 | 12 | HOST-001, HOST-002, SEL-001, PLAT-001, PLAT-002 | Read-only normalized host profiles, native OS capability contracts, and versioned catalogs. |
+| 4 | 13 | BENCH-001 through BENCH-005 | Durable benchmark provenance, Qwopus import, safe campaigns, comparisons, and regression records. |
+| 5 | 14 | SEL-002 through SEL-005 | Deterministic compatibility filtering and explainable developer-workload ranking. |
+| 6 | 15 | RUNM-002 through RUNM-006, PLAT-003, GATE-001 | Target-native backend packaging, a bounded stable managed endpoint, and verified model/engine installation, serving, rollback, and recovery. |
+| 7 | 16 | UI-003, OUI-001 through OUI-006, DESK-001, DESK-002 | Tauri and browser operations UI with backend compatibility/bootstrap. |
+| 8 | 17 | AID-001 through AID-004, ACCESS-001, ACCESS-002, DESK-003 | Bounded diagnosis and local/SSH-tunneled desktop/browser access. |
+| 9 | 18 | HOST-003, PLAT-004, ACCESS-003 | Ubuntu, Windows, and Apple Silicon macOS physical developer/source qualification and explicit tier claims. |
+| 10 | optional | no functional status row | Windows/Apple/Linux signing, notarization, and trusted unattended-update qualification only when external credentials exist. |
 
 Completed after the snapshot: **IMP-SEC-005-01** added the digest-pinned,
 offline candidate scan and two-format per-artifact SBOM gate, closed evidence
@@ -93,10 +99,13 @@ Validation tasks that exercise missing behavior are blocked by the matching
 `IMP-*` task, not failed as if the behavior existed. Independent lanes may run
 as soon as their own prerequisites are met. In particular, clean build/install,
 core container startup, read-only runtime discovery, evidence privacy, and
-external-resource integrity can proceed before optional research, gateway,
-voice-GPU, or image-generation implementation.
+external-resource integrity can proceed before optional research,
+multi-provider gateway breadth, voice-GPU, or image-generation implementation.
 
 For v0.2, Phase 11 contracts are the next source milestone. Existing v0.1
 optional-service validation is not a prerequisite. Target-host mutation remains
 blocked until the managed-runtime contracts, disposable lifecycle lanes, exact
 resource bounds, rollback, and separate HOST-MAINT authorization are present.
+After Phase 11, VSLICE-001 is the mandatory integration/replan gate before
+horizontal Phase 12 work fans out. Missing public signing identities or
+notarization credentials never block the developer/source implementation path.
