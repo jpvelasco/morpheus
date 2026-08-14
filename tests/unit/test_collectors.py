@@ -79,9 +79,13 @@ def test_collector_memory_read_failure_is_permission_denied(
 
 
 def _set_windll(monkeypatch: pytest.MonkeyPatch, value: object) -> None:
-    if not hasattr(ctypes, "windll"):
-        monkeypatch.setattr(ctypes, "windll", None)
-    monkeypatch.setattr(ctypes, "windll", value)
+    from types import SimpleNamespace
+
+    monkeypatch.setattr(
+        collectors,
+        "ctypes",
+        SimpleNamespace(windll=value, sizeof=ctypes.sizeof, byref=ctypes.byref),
+    )
 
 
 def test_collector_windows_memory_unsupported_when_windll_absent(
