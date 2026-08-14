@@ -370,10 +370,10 @@
       "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-HOST-003-01"]
     },
     {
-      "id": "SEL-001", "phase": 12, "status": "planned",
-      "owning_tests": [], "risk": "high",
+      "id": "SEL-001", "phase": 12, "status": "implemented",
+      "owning_tests": ["tests/contract/test_catalog_contract.py", "tests/unit/test_catalog.py"], "risk": "high",
       "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-SEL-001-01"]
+      "first_satisfying_version": "0.2.0", "evidence_manifests": [], "implementation_tasks": []
     },
     {
       "id": "SEL-002", "phase": 14, "status": "planned",
