@@ -152,7 +152,13 @@ def _run_script(
 
 
 class TestProcessSupervision:
+    def _fake_native_tools(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(
+            "morpheus.adapters.platform.windows._native_tool", lambda name: name
+        )
+
     def test_windows_alive_from_tasklist(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        self._fake_native_tools(monkeypatch)
         monkeypatch.setattr(
             "morpheus.adapters.platform.windows.subprocess.run",
             lambda *a, **k: _run_script("   1234 services.exe"),
@@ -166,7 +172,7 @@ class TestProcessSupervision:
 
     def test_windows_terminate_tree(self, monkeypatch: pytest.MonkeyPatch) -> None:
         calls: list[list[str]] = []
-        monkeypatch.setattr("morpheus.adapters.platform.windows._native_tool", lambda name: name)
+        self._fake_native_tools(monkeypatch)
         monkeypatch.setattr(
             "morpheus.adapters.platform.windows.subprocess.run",
             lambda args, **k: calls.append(list(args)) or _run_script(),
@@ -175,6 +181,7 @@ class TestProcessSupervision:
         assert calls == [["taskkill", "/PID", "1234", "/T", "/F"]]
 
     def test_windows_terminate_tree_error(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        self._fake_native_tools(monkeypatch)
         monkeypatch.setattr(
             "morpheus.adapters.platform.windows.subprocess.run",
             lambda args, **k: _run_script(stderr="access denied", returncode=5),
@@ -236,7 +243,13 @@ class TestProcessSupervision:
 
 
 class TestServiceLifecycle:
+    def _fake_native_tools(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(
+            "morpheus.adapters.platform.windows._native_tool", lambda name: name
+        )
+
     def test_windows_status(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        self._fake_native_tools(monkeypatch)
         monkeypatch.setattr(
             "morpheus.adapters.platform.windows.subprocess.run",
             lambda args, **k: _run_script(stdout="SERVICE_NAME: foo"),
@@ -244,6 +257,7 @@ class TestServiceLifecycle:
         assert "SERVICE_NAME: foo" in WindowsServiceLifecycle().status("foo")
 
     def test_windows_start_error(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        self._fake_native_tools(monkeypatch)
         monkeypatch.setattr(
             "morpheus.adapters.platform.windows.subprocess.run",
             lambda args, **k: _run_script(returncode=1062),
