@@ -283,7 +283,7 @@ def _spawn_kwargs() -> dict[str, Any]:
 
 def _kill_process_tree(process: subprocess.Popen[bytes]) -> None:
     if os.name == "nt":
-        subprocess.run(  # noqa: S603  # nosec B603
+        subprocess.run(  # noqa: S603  # nosec B603 B607
             ["taskkill", "/PID", str(process.pid), "/T", "/F"],  # noqa: S607 - fixed Windows process-tree killer on PATH
             capture_output=True,
             check=False,
