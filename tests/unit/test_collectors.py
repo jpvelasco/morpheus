@@ -78,10 +78,53 @@ def test_collector_memory_read_failure_is_permission_denied(
     assert state is CapabilityValue.PERMISSION_DENIED
 
 
-def test_collector_windows_memory_helpers(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(ctypes, "windll", None, raising=False)
-    value, state = PortableHostCollector()._memory_bytes()
+def test_collector_windows_memory_unsupported_when_windll_absent(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(ctypes, "windll", None, raising=True)
+    value, state = collectors._windows_memory_bytes()
     assert value is None and state is CapabilityValue.UNSUPPORTED
+
+
+def test_collector_windows_memory_permission_denied_without_kernel32(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from types import SimpleNamespace
+
+    monkeypatch.setattr(ctypes, "windll", SimpleNamespace(), raising=True)
+    value, state = collectors._windows_memory_bytes()
+    assert value is None and state is CapabilityValue.PERMISSION_DENIED
+
+
+def test_collector_windows_memory_permission_denied_without_probe(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from types import SimpleNamespace
+
+    monkeypatch.setattr(ctypes, "windll", SimpleNamespace(kernel32=SimpleNamespace()), raising=True)
+    value, state = collectors._windows_memory_bytes()
+    assert value is None and state is CapabilityValue.PERMISSION_DENIED
+
+
+def test_collector_windows_memory_success_and_failure_paths(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from types import SimpleNamespace
+
+    class Kernel:
+        def __init__(self, ok: bool) -> None:
+            self._ok = ok
+
+        def GlobalMemoryStatusEx(self, _pointer: object) -> int:
+            return 1 if self._ok else 0
+
+    monkeypatch.setattr(ctypes, "windll", SimpleNamespace(kernel32=Kernel(True)), raising=True)
+    value, state = collectors._windows_memory_bytes()
+    assert value == 0 and state is CapabilityValue.KNOWN
+
+    monkeypatch.setattr(ctypes, "windll", SimpleNamespace(kernel32=Kernel(False)), raising=True)
+    value, state = collectors._windows_memory_bytes()
+    assert value is None and state is CapabilityValue.PERMISSION_DENIED
 
 
 def test_collector_storage_failure_is_permission_denied(
