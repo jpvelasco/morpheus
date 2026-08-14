@@ -352,16 +352,16 @@
       "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
     },
     {
-      "id": "HOST-001", "phase": 12, "status": "planned",
-      "owning_tests": [], "risk": "critical",
+      "id": "HOST-001", "phase": 12, "status": "implemented",
+      "owning_tests": ["tests/unit/test_discovery.py", "tests/contract/test_discovery_contract.py", "tests/acceptance/test_discovery_pipeline.py"], "risk": "critical",
       "required_environments": ["DEV", "VM", "HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": true,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-HOST-001-01"]
+      "first_satisfying_version": "0.2.0", "evidence_manifests": [], "implementation_tasks": []
     },
     {
-      "id": "HOST-002", "phase": 12, "status": "planned",
-      "owning_tests": [], "risk": "high",
+      "id": "HOST-002", "phase": 12, "status": "implemented",
+      "owning_tests": ["tests/unit/test_discovery.py", "tests/contract/test_discovery_contract.py", "tests/acceptance/test_discovery_pipeline.py"], "risk": "high",
       "required_environments": ["DEV", "VM", "HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": true,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-HOST-002-01"]
+      "first_satisfying_version": "0.2.0", "evidence_manifests": [], "implementation_tasks": []
     },
     {
       "id": "HOST-003", "phase": 18, "status": "planned",
@@ -436,10 +436,10 @@
       "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-RUNM-006-01"]
     },
     {
-      "id": "PLAT-001", "phase": 12, "status": "planned",
-      "owning_tests": [], "risk": "critical",
+      "id": "PLAT-001", "phase": 12, "status": "implemented",
+      "owning_tests": ["tests/contract/test_discovery_contract.py", "tests/acceptance/test_discovery_pipeline.py", "tests/unit/test_discovery.py"], "risk": "critical",
       "required_environments": ["DEV", "VM", "HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": true,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-PLAT-001-01"]
+      "first_satisfying_version": "0.2.0", "evidence_manifests": [], "implementation_tasks": []
     },
     {
       "id": "PLAT-002", "phase": 12, "status": "planned",
