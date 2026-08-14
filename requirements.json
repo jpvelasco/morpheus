@@ -4,586 +4,1835 @@
   "version": "0.2.0",
   "requirements": [
     {
-      "id": "CFG-001", "phase": 1, "status": "implemented",
-      "owning_tests": ["tests/unit/test_config.py"], "risk": "high",
-      "required_environments": ["DEV"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "CFG-002", "phase": 1, "status": "implemented",
-      "owning_tests": ["tests/unit/test_config.py", "tests/test_repository_policy.py", "tests/integration/test_evidence_privacy.py"], "risk": "critical",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "CFG-003", "phase": 1, "status": "implemented",
-      "owning_tests": ["tests/unit/test_config.py"], "risk": "high",
-      "required_environments": ["DEV"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "CFG-004", "phase": 1, "status": "implemented",
-      "owning_tests": ["tests/unit/test_config.py"], "risk": "medium",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "RUN-001", "phase": 1, "status": "implemented",
-      "owning_tests": ["tests/contract/test_inference_adapter.py", "tests/contract/test_control_api.py", "tests/unit/test_models_and_capabilities.py"], "risk": "high",
-      "required_environments": ["DEV", "VM", "HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "RUN-002", "phase": 1, "status": "implemented",
-      "owning_tests": ["tests/unit/test_health.py", "tests/contract/test_inference_adapter.py"], "risk": "high",
-      "required_environments": ["DEV", "VM", "HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "RUN-003", "phase": 2, "status": "implemented",
-      "owning_tests": ["tests/contract/test_metrics_adapter.py"], "risk": "medium",
-      "required_environments": ["DEV", "VM", "HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "RUN-004", "phase": 2, "status": "implemented",
-      "owning_tests": ["tests/unit/test_host_inspector.py", "tests/contract/test_control_api.py", "tests/contract/test_runtime_agent_client.py"], "risk": "critical",
-      "required_environments": ["VM", "HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": true,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "RUN-005", "phase": 1, "status": "implemented",
-      "owning_tests": ["tests/unit/test_models_and_capabilities.py", "tests/contract/test_control_api.py"], "risk": "high",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "RUN-006", "phase": 2, "status": "implemented",
-      "owning_tests": ["tests/unit/test_cli.py", "tests/acceptance/test_read_only_operator.py", "tests/contract/test_control_api.py"], "risk": "high",
-      "required_environments": ["VM", "HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "UI-001", "phase": 3, "status": "implemented",
-      "owning_tests": ["web/tests/App.test.tsx", "web/e2e/dashboard.spec.ts", "tests/contract/test_dashboard_app.py", "tests/e2e/test_operator_surfaces.py"], "risk": "medium",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "UI-002", "phase": 3, "status": "implemented",
-      "owning_tests": ["web/tests/App.test.tsx", "web/e2e/dashboard.spec.ts", "tests/contract/test_control_api.py"], "risk": "medium",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "UI-003", "phase": 16, "status": "planned",
-      "owning_tests": [], "risk": "critical",
-      "required_environments": ["VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-UI-003-01"]
-    },
-    {
-      "id": "UI-004", "phase": 3, "status": "implemented",
-      "owning_tests": ["web/tests/App.test.tsx", "web/e2e/dashboard.spec.ts", "tests/contract/test_control_api.py"], "risk": "high",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "UI-005", "phase": 3, "status": "implemented",
-      "owning_tests": ["web/tests/App.test.tsx", "web/e2e/dashboard.spec.ts"], "risk": "medium",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "SRCH-001", "phase": 4, "status": "implemented",
-      "owning_tests": ["tests/contract/test_search_adapter.py", "tests/contract/test_optional_compose.py"], "risk": "medium",
-      "required_environments": ["VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "SRCH-002", "phase": 4, "status": "deferred",
-      "owning_tests": [], "risk": "high",
-      "required_environments": ["VM", "HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "SRCH-003", "phase": 4, "status": "implemented",
-      "owning_tests": ["tests/contract/test_optional_compose.py"], "risk": "critical",
-      "required_environments": ["VM", "HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "VOICE-001", "phase": 5, "status": "implemented",
-      "owning_tests": ["tests/contract/test_voice_adapter.py", "tests/contract/test_voice_gateway.py", "tests/contract/test_optional_compose.py"], "risk": "high",
-      "required_environments": ["VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "VOICE-002", "phase": 5, "status": "implemented",
-      "owning_tests": ["tests/contract/test_voice_adapter.py", "tests/contract/test_voice_gateway.py", "tests/contract/test_optional_compose.py"], "risk": "high",
-      "required_environments": ["VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "VOICE-003", "phase": 5, "status": "deferred",
-      "owning_tests": ["tests/contract/test_voice_gateway.py"], "risk": "high",
-      "required_environments": ["VM", "HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "VOICE-004", "phase": 5, "status": "deferred",
-      "owning_tests": ["tests/contract/test_optional_compose.py", "tests/contract/test_voice_gateway.py"], "risk": "critical",
-      "required_environments": ["VM", "HOST-MAINT"], "requires_live_evidence": true, "requires_hardware_evidence": true,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "TEL-001", "phase": 6, "status": "implemented",
-      "owning_tests": ["tests/unit/test_telemetry.py", "tests/contract/test_telemetry_proxy.py"], "risk": "high",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "TEL-002", "phase": 6, "status": "implemented",
-      "owning_tests": ["tests/unit/test_telemetry.py", "tests/integration/test_sqlite_store.py", "tests/contract/test_telemetry_proxy.py"], "risk": "high",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "TEL-003", "phase": 6, "status": "implemented",
-      "owning_tests": ["tests/unit/test_telemetry.py", "tests/integration/test_sqlite_store.py", "tests/integration/test_evidence_privacy.py"], "risk": "critical",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "TEL-004", "phase": 6, "status": "implemented",
-      "owning_tests": ["tests/contract/test_telemetry_proxy.py", "tests/unit/test_config.py"], "risk": "critical",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "TEL-005", "phase": 6, "status": "implemented",
-      "owning_tests": ["tests/unit/test_telemetry.py", "tests/contract/test_telemetry_proxy.py"], "risk": "high",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "FLOW-001", "phase": 7, "status": "implemented",
-      "owning_tests": ["tests/contract/test_optional_compose.py"], "risk": "high",
-      "required_environments": ["VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "FLOW-002", "phase": 7, "status": "implemented",
-      "owning_tests": ["tests/contract/test_optional_compose.py"], "risk": "critical",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "RSCH-001", "phase": 7, "status": "deferred",
-      "owning_tests": ["tests/contract/test_optional_compose.py"], "risk": "high",
-      "required_environments": ["VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "RSCH-002", "phase": 7, "status": "deferred",
-      "owning_tests": [], "risk": "high",
-      "required_environments": ["VM", "HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "GATE-001", "phase": 15, "status": "planned",
-      "owning_tests": [], "risk": "critical",
-      "required_environments": ["VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-GATE-001-01"]
-    },
-    {
-      "id": "GATE-002", "phase": 7, "status": "implemented",
-      "owning_tests": ["tests/unit/test_gateway.py"], "risk": "critical",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "GATE-003", "phase": 7, "status": "implemented",
-      "owning_tests": ["tests/contract/test_compose_policy.py"], "risk": "critical",
-      "required_environments": ["VM", "HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "RAG-001", "phase": 8, "status": "deferred",
-      "owning_tests": [], "risk": "low",
-      "required_environments": ["DEV", "HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "RAG-002", "phase": 8, "status": "deferred",
-      "owning_tests": [], "risk": "high",
-      "required_environments": ["VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "RAG-003", "phase": 8, "status": "deferred",
-      "owning_tests": [], "risk": "medium",
-      "required_environments": ["VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "IMG-001", "phase": 9, "status": "deferred",
-      "owning_tests": ["tests/contract/test_comfy_adapter.py"], "risk": "critical",
-      "required_environments": ["VM", "HOST-MAINT"], "requires_live_evidence": true, "requires_hardware_evidence": true,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "IMG-002", "phase": 9, "status": "deferred",
-      "owning_tests": ["tests/unit/test_gpu_policy.py"], "risk": "critical",
-      "required_environments": ["HOST-MAINT"], "requires_live_evidence": true, "requires_hardware_evidence": true,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "IMG-003", "phase": 9, "status": "deferred",
-      "owning_tests": ["tests/unit/test_gpu_policy.py"], "risk": "critical",
-      "required_environments": ["HOST-MAINT"], "requires_live_evidence": true, "requires_hardware_evidence": true,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "IMG-004", "phase": 9, "status": "deferred",
-      "owning_tests": ["tests/unit/test_gpu_policy.py"], "risk": "critical",
-      "required_environments": ["HOST-MAINT"], "requires_live_evidence": true, "requires_hardware_evidence": true,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "OPS-001", "phase": 10, "status": "implemented",
-      "owning_tests": ["tests/integration/test_backup_restore.py"], "risk": "high",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "OPS-002", "phase": 10, "status": "implemented",
-      "owning_tests": ["tests/integration/test_backup_restore.py"], "risk": "critical",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "OPS-003", "phase": 10, "status": "implemented",
-      "owning_tests": ["tests/integration/test_support_bundle.py", "tests/integration/test_evidence_privacy.py"], "risk": "critical",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "SEC-001", "phase": 2, "status": "implemented",
-      "owning_tests": ["tests/contract/test_control_api.py", "tests/contract/test_runtime_agent_client.py", "tests/unit/test_agent_security.py", "tests/contract/test_voice_gateway.py"], "risk": "critical",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "SEC-002", "phase": 2, "status": "implemented",
-      "owning_tests": ["tests/unit/test_ownership.py", "tests/unit/test_host_inspector.py"], "risk": "critical",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "SEC-003", "phase": 2, "status": "implemented",
-      "owning_tests": ["tests/unit/test_body_limit.py", "tests/unit/test_concurrency.py", "tests/contract/test_control_api.py", "tests/contract/test_runtime_agent_app.py", "tests/contract/test_telemetry_proxy.py", "tests/contract/test_voice_gateway.py"], "risk": "critical",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "SEC-004", "phase": 3, "status": "implemented",
-      "owning_tests": ["tests/unit/test_browser_sessions.py", "tests/contract/test_control_api.py", "web/tests/App.test.tsx", "web/tests/api.test.ts", "web/e2e/dashboard.spec.ts", "tests/contract/test_browser_gate.py", "tests/unit/test_browser_evidence.py"], "risk": "critical",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "SEC-005", "phase": 10, "status": "implemented",
-      "owning_tests": ["tests/unit/test_supply_chain.py", "tests/contract/test_supply_chain_gate.py", "tests/contract/test_release_tooling.py", "tests/test_repository_policy.py"], "risk": "critical",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "SEC-006", "phase": 10, "status": "implemented",
-      "owning_tests": ["tests/integration/test_backup_restore.py", "tests/contract/test_comfy_adapter.py", "tests/unit/test_release_evidence.py"], "risk": "critical",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "SEC-007", "phase": 4, "status": "implemented",
-      "owning_tests": ["tests/contract/test_optional_compose.py", "tests/contract/test_compose_policy.py", "tests/contract/test_validation_fixtures.py"], "risk": "critical",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "REL-001", "phase": 2, "status": "implemented",
-      "owning_tests": ["tests/contract/test_optional_compose.py", "tests/contract/test_compose_policy.py", "tests/unit/test_models_and_capabilities.py"], "risk": "critical",
-      "required_environments": ["VM", "HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "REL-002", "phase": 1, "status": "implemented",
-      "owning_tests": ["tests/unit/test_telemetry.py", "tests/contract/test_telemetry_proxy.py"], "risk": "high",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "REL-003", "phase": 9, "status": "implemented",
-      "owning_tests": ["tests/unit/test_lifecycle.py", "tests/unit/test_lifecycle_cli.py", "tests/contract/test_lifecycle_adapter.py", "tests/contract/test_runtime_agent_app.py", "tests/contract/test_runtime_agent_client.py", "tests/integration/test_backup_restore.py"], "risk": "critical",
-      "required_environments": ["VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "REL-004", "phase": 1, "status": "implemented",
-      "owning_tests": ["tests/unit/test_health.py", "tests/integration/test_sqlite_store.py"], "risk": "high",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "PERF-001", "phase": 6, "status": "implemented",
-      "owning_tests": ["tests/contract/test_compose_policy.py", "tests/unit/test_performance.py", "tests/contract/test_load_gate.py"], "risk": "high",
-      "required_environments": ["HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": true,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "PERF-002", "phase": 10, "status": "implemented",
-      "owning_tests": ["tests/contract/test_compose_policy.py", "tests/unit/test_performance.py", "tests/contract/test_resource_adapter.py", "tests/contract/test_load_gate.py"], "risk": "high",
-      "required_environments": ["VM", "HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": true,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "PERF-003", "phase": 3, "status": "implemented",
-      "owning_tests": ["web/tests/App.test.tsx", "web/e2e/dashboard.spec.ts"], "risk": "medium",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.1.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "HOST-001", "phase": 12, "status": "implemented",
-      "owning_tests": ["tests/unit/test_discovery.py", "tests/contract/test_discovery_contract.py", "tests/acceptance/test_discovery_pipeline.py"], "risk": "critical",
-      "required_environments": ["DEV", "VM", "HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": true,
-      "first_satisfying_version": "0.2.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "HOST-002", "phase": 12, "status": "implemented",
-      "owning_tests": ["tests/unit/test_discovery.py", "tests/contract/test_discovery_contract.py", "tests/acceptance/test_discovery_pipeline.py"], "risk": "high",
-      "required_environments": ["DEV", "VM", "HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": true,
-      "first_satisfying_version": "0.2.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "HOST-003", "phase": 18, "status": "planned",
-      "owning_tests": [], "risk": "critical",
-      "required_environments": ["HOST-RO", "HOST-MAINT"], "requires_live_evidence": true, "requires_hardware_evidence": true,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-HOST-003-01"]
-    },
-    {
-      "id": "SEL-001", "phase": 12, "status": "implemented",
-      "owning_tests": ["tests/contract/test_catalog_contract.py", "tests/unit/test_catalog.py"], "risk": "high",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.2.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "SEL-002", "phase": 14, "status": "planned",
-      "owning_tests": [], "risk": "critical",
-      "required_environments": ["DEV", "VM", "HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": true,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-SEL-002-01"]
-    },
-    {
-      "id": "SEL-003", "phase": 14, "status": "planned",
-      "owning_tests": [], "risk": "medium",
-      "required_environments": ["DEV"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-SEL-003-01"]
-    },
-    {
-      "id": "SEL-004", "phase": 14, "status": "planned",
-      "owning_tests": [], "risk": "high",
-      "required_environments": ["DEV", "VM", "HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": true,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-SEL-004-01"]
-    },
-    {
-      "id": "SEL-005", "phase": 14, "status": "planned",
-      "owning_tests": [], "risk": "high",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-SEL-005-01"]
-    },
-    {
-      "id": "RUNM-001", "phase": 11, "status": "implemented",
-      "owning_tests": ["tests/unit/test_ownership_modes.py", "tests/unit/test_planning_records.py", "tests/unit/test_state_machines.py", "tests/contract/test_v02_contracts.py", "tests/acceptance/test_dual_ownership.py"], "risk": "critical",
-      "required_environments": ["DEV", "VM", "HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.2.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "RUNM-002", "phase": 15, "status": "planned",
-      "owning_tests": [], "risk": "critical",
-      "required_environments": ["DEV", "VM", "HOST-MAINT"], "requires_live_evidence": true, "requires_hardware_evidence": true,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-RUNM-002-01"]
-    },
-    {
-      "id": "RUNM-003", "phase": 15, "status": "planned",
-      "owning_tests": [], "risk": "critical",
-      "required_environments": ["VM", "HOST-MAINT"], "requires_live_evidence": true, "requires_hardware_evidence": true,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-RUNM-003-01"]
-    },
-    {
-      "id": "RUNM-004", "phase": 15, "status": "planned",
-      "owning_tests": [], "risk": "critical",
-      "required_environments": ["VM", "HOST-MAINT"], "requires_live_evidence": true, "requires_hardware_evidence": true,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-RUNM-004-01"]
-    },
-    {
-      "id": "RUNM-005", "phase": 15, "status": "planned",
-      "owning_tests": [], "risk": "critical",
-      "required_environments": ["VM", "HOST-MAINT"], "requires_live_evidence": true, "requires_hardware_evidence": true,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-RUNM-005-01"]
-    },
-    {
-      "id": "RUNM-006", "phase": 15, "status": "planned",
-      "owning_tests": [], "risk": "critical",
-      "required_environments": ["DEV", "VM", "HOST-MAINT"], "requires_live_evidence": true, "requires_hardware_evidence": true,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-RUNM-006-01"]
-    },
-    {
-      "id": "PLAT-001", "phase": 12, "status": "implemented",
-      "owning_tests": ["tests/contract/test_discovery_contract.py", "tests/acceptance/test_discovery_pipeline.py", "tests/unit/test_discovery.py"], "risk": "critical",
-      "required_environments": ["DEV", "VM", "HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": true,
-      "first_satisfying_version": "0.2.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "PLAT-002", "phase": 12, "status": "implemented",
-      "owning_tests": ["tests/contract/test_platform_contract.py", "tests/unit/test_platform_adapters.py"], "risk": "critical",
-      "required_environments": ["DEV", "VM", "HOST-MAINT"], "requires_live_evidence": true, "requires_hardware_evidence": true,
-      "first_satisfying_version": "0.2.0", "evidence_manifests": [], "implementation_tasks": []
-    },
-    {
-      "id": "PLAT-003", "phase": 15, "status": "planned",
-      "owning_tests": [], "risk": "critical",
-      "required_environments": ["DEV", "VM", "HOST-MAINT"], "requires_live_evidence": true, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-PLAT-003-01"]
-    },
-    {
-      "id": "PLAT-004", "phase": 18, "status": "planned",
-      "owning_tests": [], "risk": "critical",
-      "required_environments": ["HOST-RO", "HOST-MAINT"], "requires_live_evidence": true, "requires_hardware_evidence": true,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-PLAT-004-01"]
-    },
-    {
-      "id": "BENCH-001", "phase": 13, "status": "planned",
-      "owning_tests": [], "risk": "high",
-      "required_environments": ["DEV", "VM", "HOST-MAINT"], "requires_live_evidence": true, "requires_hardware_evidence": true,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-BENCH-001-01"]
-    },
-    {
-      "id": "BENCH-002", "phase": 13, "status": "planned",
-      "owning_tests": [], "risk": "critical",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-BENCH-002-01"]
-    },
-    {
-      "id": "BENCH-003", "phase": 13, "status": "planned",
-      "owning_tests": [], "risk": "high",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-BENCH-003-01"]
-    },
-    {
-      "id": "BENCH-004", "phase": 13, "status": "planned",
-      "owning_tests": [], "risk": "high",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-BENCH-004-01"]
-    },
-    {
-      "id": "BENCH-005", "phase": 13, "status": "planned",
-      "owning_tests": [], "risk": "critical",
-      "required_environments": ["DEV", "VM", "HOST-MAINT"], "requires_live_evidence": true, "requires_hardware_evidence": true,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-BENCH-005-01"]
-    },
-    {
-      "id": "OUI-001", "phase": 16, "status": "planned",
-      "owning_tests": [], "risk": "medium",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-OUI-001-01"]
-    },
-    {
-      "id": "OUI-002", "phase": 16, "status": "planned",
-      "owning_tests": [], "risk": "high",
-      "required_environments": ["DEV", "VM", "HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": true,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-OUI-002-01"]
-    },
-    {
-      "id": "OUI-003", "phase": 16, "status": "planned",
-      "owning_tests": [], "risk": "critical",
-      "required_environments": ["DEV", "VM", "HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-OUI-003-01"]
-    },
-    {
-      "id": "OUI-004", "phase": 16, "status": "planned",
-      "owning_tests": [], "risk": "medium",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-OUI-004-01"]
-    },
-    {
-      "id": "OUI-005", "phase": 16, "status": "planned",
-      "owning_tests": [], "risk": "critical",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-OUI-005-01"]
-    },
-    {
-      "id": "OUI-006", "phase": 16, "status": "planned",
-      "owning_tests": [], "risk": "critical",
-      "required_environments": ["DEV", "VM", "HOST-MAINT"], "requires_live_evidence": true, "requires_hardware_evidence": true,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-OUI-006-01"]
-    },
-    {
-      "id": "DESK-001", "phase": 16, "status": "planned",
-      "owning_tests": [], "risk": "high",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-DESK-001-01"]
-    },
-    {
-      "id": "DESK-002", "phase": 16, "status": "planned",
-      "owning_tests": [], "risk": "critical",
-      "required_environments": ["DEV", "VM", "HOST-MAINT"], "requires_live_evidence": true, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-DESK-002-01"]
-    },
-    {
-      "id": "DESK-003", "phase": 17, "status": "planned",
-      "owning_tests": [], "risk": "high",
-      "required_environments": ["VM", "HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-DESK-003-01"]
-    },
-    {
-      "id": "AID-001", "phase": 17, "status": "planned",
-      "owning_tests": [], "risk": "critical",
-      "required_environments": ["DEV", "VM", "HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-AID-001-01"]
-    },
-    {
-      "id": "AID-002", "phase": 17, "status": "planned",
-      "owning_tests": [], "risk": "critical",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-AID-002-01"]
-    },
-    {
-      "id": "AID-003", "phase": 17, "status": "planned",
-      "owning_tests": [], "risk": "high",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-AID-003-01"]
-    },
-    {
-      "id": "AID-004", "phase": 17, "status": "planned",
-      "owning_tests": [], "risk": "critical",
-      "required_environments": ["DEV", "VM"], "requires_live_evidence": false, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-AID-004-01"]
-    },
-    {
-      "id": "ACCESS-001", "phase": 17, "status": "planned",
-      "owning_tests": [], "risk": "high",
-      "required_environments": ["VM", "HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-ACCESS-001-01"]
-    },
-    {
-      "id": "ACCESS-002", "phase": 17, "status": "planned",
-      "owning_tests": [], "risk": "critical",
-      "required_environments": ["VM", "HOST-MAINT"], "requires_live_evidence": true, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-ACCESS-002-01"]
-    },
-    {
-      "id": "ACCESS-003", "phase": 18, "status": "planned",
-      "owning_tests": [], "risk": "high",
-      "required_environments": ["HOST-RO", "HOST-MAINT"], "requires_live_evidence": true, "requires_hardware_evidence": true,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-ACCESS-003-01"]
+      "id": "CFG-001",
+      "phase": 1,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_config.py"
+      ],
+      "risk": "high",
+      "required_environments": [
+        "DEV"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "CFG-002",
+      "phase": 1,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_config.py",
+        "tests/test_repository_policy.py",
+        "tests/integration/test_evidence_privacy.py"
+      ],
+      "risk": "critical",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "CFG-003",
+      "phase": 1,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_config.py"
+      ],
+      "risk": "high",
+      "required_environments": [
+        "DEV"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "CFG-004",
+      "phase": 1,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_config.py"
+      ],
+      "risk": "medium",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "RUN-001",
+      "phase": 1,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/contract/test_inference_adapter.py",
+        "tests/contract/test_control_api.py",
+        "tests/unit/test_models_and_capabilities.py"
+      ],
+      "risk": "high",
+      "required_environments": [
+        "DEV",
+        "VM",
+        "HOST-RO"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "RUN-002",
+      "phase": 1,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_health.py",
+        "tests/contract/test_inference_adapter.py"
+      ],
+      "risk": "high",
+      "required_environments": [
+        "DEV",
+        "VM",
+        "HOST-RO"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "RUN-003",
+      "phase": 2,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/contract/test_metrics_adapter.py"
+      ],
+      "risk": "medium",
+      "required_environments": [
+        "DEV",
+        "VM",
+        "HOST-RO"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "RUN-004",
+      "phase": 2,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_host_inspector.py",
+        "tests/contract/test_control_api.py",
+        "tests/contract/test_runtime_agent_client.py"
+      ],
+      "risk": "critical",
+      "required_environments": [
+        "VM",
+        "HOST-RO"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": true,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "RUN-005",
+      "phase": 1,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_models_and_capabilities.py",
+        "tests/contract/test_control_api.py"
+      ],
+      "risk": "high",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "RUN-006",
+      "phase": 2,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_cli.py",
+        "tests/acceptance/test_read_only_operator.py",
+        "tests/contract/test_control_api.py"
+      ],
+      "risk": "high",
+      "required_environments": [
+        "VM",
+        "HOST-RO"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "UI-001",
+      "phase": 3,
+      "status": "implemented",
+      "owning_tests": [
+        "web/tests/App.test.tsx",
+        "web/e2e/dashboard.spec.ts",
+        "tests/contract/test_dashboard_app.py",
+        "tests/e2e/test_operator_surfaces.py"
+      ],
+      "risk": "medium",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "UI-002",
+      "phase": 3,
+      "status": "implemented",
+      "owning_tests": [
+        "web/tests/App.test.tsx",
+        "web/e2e/dashboard.spec.ts",
+        "tests/contract/test_control_api.py"
+      ],
+      "risk": "medium",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "UI-003",
+      "phase": 16,
+      "status": "planned",
+      "owning_tests": [],
+      "risk": "critical",
+      "required_environments": [
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": [
+        "IMP-UI-003-01"
+      ]
+    },
+    {
+      "id": "UI-004",
+      "phase": 3,
+      "status": "implemented",
+      "owning_tests": [
+        "web/tests/App.test.tsx",
+        "web/e2e/dashboard.spec.ts",
+        "tests/contract/test_control_api.py"
+      ],
+      "risk": "high",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "UI-005",
+      "phase": 3,
+      "status": "implemented",
+      "owning_tests": [
+        "web/tests/App.test.tsx",
+        "web/e2e/dashboard.spec.ts"
+      ],
+      "risk": "medium",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "SRCH-001",
+      "phase": 4,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/contract/test_search_adapter.py",
+        "tests/contract/test_optional_compose.py"
+      ],
+      "risk": "medium",
+      "required_environments": [
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "SRCH-002",
+      "phase": 4,
+      "status": "deferred",
+      "owning_tests": [],
+      "risk": "high",
+      "required_environments": [
+        "VM",
+        "HOST-RO"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "SRCH-003",
+      "phase": 4,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/contract/test_optional_compose.py"
+      ],
+      "risk": "critical",
+      "required_environments": [
+        "VM",
+        "HOST-RO"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "VOICE-001",
+      "phase": 5,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/contract/test_voice_adapter.py",
+        "tests/contract/test_voice_gateway.py",
+        "tests/contract/test_optional_compose.py"
+      ],
+      "risk": "high",
+      "required_environments": [
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "VOICE-002",
+      "phase": 5,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/contract/test_voice_adapter.py",
+        "tests/contract/test_voice_gateway.py",
+        "tests/contract/test_optional_compose.py"
+      ],
+      "risk": "high",
+      "required_environments": [
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "VOICE-003",
+      "phase": 5,
+      "status": "deferred",
+      "owning_tests": [
+        "tests/contract/test_voice_gateway.py"
+      ],
+      "risk": "high",
+      "required_environments": [
+        "VM",
+        "HOST-RO"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "VOICE-004",
+      "phase": 5,
+      "status": "deferred",
+      "owning_tests": [
+        "tests/contract/test_optional_compose.py",
+        "tests/contract/test_voice_gateway.py"
+      ],
+      "risk": "critical",
+      "required_environments": [
+        "VM",
+        "HOST-MAINT"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": true,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "TEL-001",
+      "phase": 6,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_telemetry.py",
+        "tests/contract/test_telemetry_proxy.py"
+      ],
+      "risk": "high",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "TEL-002",
+      "phase": 6,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_telemetry.py",
+        "tests/integration/test_sqlite_store.py",
+        "tests/contract/test_telemetry_proxy.py"
+      ],
+      "risk": "high",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "TEL-003",
+      "phase": 6,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_telemetry.py",
+        "tests/integration/test_sqlite_store.py",
+        "tests/integration/test_evidence_privacy.py"
+      ],
+      "risk": "critical",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "TEL-004",
+      "phase": 6,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/contract/test_telemetry_proxy.py",
+        "tests/unit/test_config.py"
+      ],
+      "risk": "critical",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "TEL-005",
+      "phase": 6,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_telemetry.py",
+        "tests/contract/test_telemetry_proxy.py"
+      ],
+      "risk": "high",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "FLOW-001",
+      "phase": 7,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/contract/test_optional_compose.py"
+      ],
+      "risk": "high",
+      "required_environments": [
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "FLOW-002",
+      "phase": 7,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/contract/test_optional_compose.py"
+      ],
+      "risk": "critical",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "RSCH-001",
+      "phase": 7,
+      "status": "deferred",
+      "owning_tests": [
+        "tests/contract/test_optional_compose.py"
+      ],
+      "risk": "high",
+      "required_environments": [
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "RSCH-002",
+      "phase": 7,
+      "status": "deferred",
+      "owning_tests": [],
+      "risk": "high",
+      "required_environments": [
+        "VM",
+        "HOST-RO"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "GATE-001",
+      "phase": 15,
+      "status": "planned",
+      "owning_tests": [],
+      "risk": "critical",
+      "required_environments": [
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": [
+        "IMP-GATE-001-01"
+      ]
+    },
+    {
+      "id": "GATE-002",
+      "phase": 7,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_gateway.py"
+      ],
+      "risk": "critical",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "GATE-003",
+      "phase": 7,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/contract/test_compose_policy.py"
+      ],
+      "risk": "critical",
+      "required_environments": [
+        "VM",
+        "HOST-RO"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "RAG-001",
+      "phase": 8,
+      "status": "deferred",
+      "owning_tests": [],
+      "risk": "low",
+      "required_environments": [
+        "DEV",
+        "HOST-RO"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "RAG-002",
+      "phase": 8,
+      "status": "deferred",
+      "owning_tests": [],
+      "risk": "high",
+      "required_environments": [
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "RAG-003",
+      "phase": 8,
+      "status": "deferred",
+      "owning_tests": [],
+      "risk": "medium",
+      "required_environments": [
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "IMG-001",
+      "phase": 9,
+      "status": "deferred",
+      "owning_tests": [
+        "tests/contract/test_comfy_adapter.py"
+      ],
+      "risk": "critical",
+      "required_environments": [
+        "VM",
+        "HOST-MAINT"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": true,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "IMG-002",
+      "phase": 9,
+      "status": "deferred",
+      "owning_tests": [
+        "tests/unit/test_gpu_policy.py"
+      ],
+      "risk": "critical",
+      "required_environments": [
+        "HOST-MAINT"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": true,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "IMG-003",
+      "phase": 9,
+      "status": "deferred",
+      "owning_tests": [
+        "tests/unit/test_gpu_policy.py"
+      ],
+      "risk": "critical",
+      "required_environments": [
+        "HOST-MAINT"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": true,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "IMG-004",
+      "phase": 9,
+      "status": "deferred",
+      "owning_tests": [
+        "tests/unit/test_gpu_policy.py"
+      ],
+      "risk": "critical",
+      "required_environments": [
+        "HOST-MAINT"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": true,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "OPS-001",
+      "phase": 10,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/integration/test_backup_restore.py"
+      ],
+      "risk": "high",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "OPS-002",
+      "phase": 10,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/integration/test_backup_restore.py"
+      ],
+      "risk": "critical",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "OPS-003",
+      "phase": 10,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/integration/test_support_bundle.py",
+        "tests/integration/test_evidence_privacy.py"
+      ],
+      "risk": "critical",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "SEC-001",
+      "phase": 2,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/contract/test_control_api.py",
+        "tests/contract/test_runtime_agent_client.py",
+        "tests/unit/test_agent_security.py",
+        "tests/contract/test_voice_gateway.py"
+      ],
+      "risk": "critical",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "SEC-002",
+      "phase": 2,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_ownership.py",
+        "tests/unit/test_host_inspector.py"
+      ],
+      "risk": "critical",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "SEC-003",
+      "phase": 2,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_body_limit.py",
+        "tests/unit/test_concurrency.py",
+        "tests/contract/test_control_api.py",
+        "tests/contract/test_runtime_agent_app.py",
+        "tests/contract/test_telemetry_proxy.py",
+        "tests/contract/test_voice_gateway.py"
+      ],
+      "risk": "critical",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "SEC-004",
+      "phase": 3,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_browser_sessions.py",
+        "tests/contract/test_control_api.py",
+        "web/tests/App.test.tsx",
+        "web/tests/api.test.ts",
+        "web/e2e/dashboard.spec.ts",
+        "tests/contract/test_browser_gate.py",
+        "tests/unit/test_browser_evidence.py"
+      ],
+      "risk": "critical",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "SEC-005",
+      "phase": 10,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_supply_chain.py",
+        "tests/contract/test_supply_chain_gate.py",
+        "tests/contract/test_release_tooling.py",
+        "tests/test_repository_policy.py"
+      ],
+      "risk": "critical",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "SEC-006",
+      "phase": 10,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/integration/test_backup_restore.py",
+        "tests/contract/test_comfy_adapter.py",
+        "tests/unit/test_release_evidence.py"
+      ],
+      "risk": "critical",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "SEC-007",
+      "phase": 4,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/contract/test_optional_compose.py",
+        "tests/contract/test_compose_policy.py",
+        "tests/contract/test_validation_fixtures.py"
+      ],
+      "risk": "critical",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "REL-001",
+      "phase": 2,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/contract/test_optional_compose.py",
+        "tests/contract/test_compose_policy.py",
+        "tests/unit/test_models_and_capabilities.py"
+      ],
+      "risk": "critical",
+      "required_environments": [
+        "VM",
+        "HOST-RO"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "REL-002",
+      "phase": 1,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_telemetry.py",
+        "tests/contract/test_telemetry_proxy.py"
+      ],
+      "risk": "high",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "REL-003",
+      "phase": 9,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_lifecycle.py",
+        "tests/unit/test_lifecycle_cli.py",
+        "tests/contract/test_lifecycle_adapter.py",
+        "tests/contract/test_runtime_agent_app.py",
+        "tests/contract/test_runtime_agent_client.py",
+        "tests/integration/test_backup_restore.py"
+      ],
+      "risk": "critical",
+      "required_environments": [
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "REL-004",
+      "phase": 1,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_health.py",
+        "tests/integration/test_sqlite_store.py"
+      ],
+      "risk": "high",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "PERF-001",
+      "phase": 6,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/contract/test_compose_policy.py",
+        "tests/unit/test_performance.py",
+        "tests/contract/test_load_gate.py"
+      ],
+      "risk": "high",
+      "required_environments": [
+        "HOST-RO"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": true,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "PERF-002",
+      "phase": 10,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/contract/test_compose_policy.py",
+        "tests/unit/test_performance.py",
+        "tests/contract/test_resource_adapter.py",
+        "tests/contract/test_load_gate.py"
+      ],
+      "risk": "high",
+      "required_environments": [
+        "VM",
+        "HOST-RO"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": true,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "PERF-003",
+      "phase": 3,
+      "status": "implemented",
+      "owning_tests": [
+        "web/tests/App.test.tsx",
+        "web/e2e/dashboard.spec.ts"
+      ],
+      "risk": "medium",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.1.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "HOST-001",
+      "phase": 12,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_discovery.py",
+        "tests/contract/test_discovery_contract.py",
+        "tests/acceptance/test_discovery_pipeline.py"
+      ],
+      "risk": "critical",
+      "required_environments": [
+        "DEV",
+        "VM",
+        "HOST-RO"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": true,
+      "first_satisfying_version": "0.2.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "HOST-002",
+      "phase": 12,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_discovery.py",
+        "tests/contract/test_discovery_contract.py",
+        "tests/acceptance/test_discovery_pipeline.py"
+      ],
+      "risk": "high",
+      "required_environments": [
+        "DEV",
+        "VM",
+        "HOST-RO"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": true,
+      "first_satisfying_version": "0.2.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "HOST-003",
+      "phase": 18,
+      "status": "planned",
+      "owning_tests": [],
+      "risk": "critical",
+      "required_environments": [
+        "HOST-RO",
+        "HOST-MAINT"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": true,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": [
+        "IMP-HOST-003-01"
+      ]
+    },
+    {
+      "id": "SEL-001",
+      "phase": 12,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/contract/test_catalog_contract.py",
+        "tests/unit/test_catalog.py"
+      ],
+      "risk": "high",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.2.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "SEL-002",
+      "phase": 14,
+      "status": "planned",
+      "owning_tests": [],
+      "risk": "critical",
+      "required_environments": [
+        "DEV",
+        "VM",
+        "HOST-RO"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": true,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": [
+        "IMP-SEL-002-01"
+      ]
+    },
+    {
+      "id": "SEL-003",
+      "phase": 14,
+      "status": "planned",
+      "owning_tests": [],
+      "risk": "medium",
+      "required_environments": [
+        "DEV"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": [
+        "IMP-SEL-003-01"
+      ]
+    },
+    {
+      "id": "SEL-004",
+      "phase": 14,
+      "status": "planned",
+      "owning_tests": [],
+      "risk": "high",
+      "required_environments": [
+        "DEV",
+        "VM",
+        "HOST-RO"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": true,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": [
+        "IMP-SEL-004-01"
+      ]
+    },
+    {
+      "id": "SEL-005",
+      "phase": 14,
+      "status": "planned",
+      "owning_tests": [],
+      "risk": "high",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": [
+        "IMP-SEL-005-01"
+      ]
+    },
+    {
+      "id": "RUNM-001",
+      "phase": 11,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_ownership_modes.py",
+        "tests/unit/test_planning_records.py",
+        "tests/unit/test_state_machines.py",
+        "tests/contract/test_v02_contracts.py",
+        "tests/acceptance/test_dual_ownership.py"
+      ],
+      "risk": "critical",
+      "required_environments": [
+        "DEV",
+        "VM",
+        "HOST-RO"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.2.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "RUNM-002",
+      "phase": 15,
+      "status": "planned",
+      "owning_tests": [],
+      "risk": "critical",
+      "required_environments": [
+        "DEV",
+        "VM",
+        "HOST-MAINT"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": true,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": [
+        "IMP-RUNM-002-01"
+      ]
+    },
+    {
+      "id": "RUNM-003",
+      "phase": 15,
+      "status": "planned",
+      "owning_tests": [],
+      "risk": "critical",
+      "required_environments": [
+        "VM",
+        "HOST-MAINT"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": true,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": [
+        "IMP-RUNM-003-01"
+      ]
+    },
+    {
+      "id": "RUNM-004",
+      "phase": 15,
+      "status": "planned",
+      "owning_tests": [],
+      "risk": "critical",
+      "required_environments": [
+        "VM",
+        "HOST-MAINT"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": true,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": [
+        "IMP-RUNM-004-01"
+      ]
+    },
+    {
+      "id": "RUNM-005",
+      "phase": 15,
+      "status": "planned",
+      "owning_tests": [],
+      "risk": "critical",
+      "required_environments": [
+        "VM",
+        "HOST-MAINT"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": true,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": [
+        "IMP-RUNM-005-01"
+      ]
+    },
+    {
+      "id": "RUNM-006",
+      "phase": 15,
+      "status": "planned",
+      "owning_tests": [],
+      "risk": "critical",
+      "required_environments": [
+        "DEV",
+        "VM",
+        "HOST-MAINT"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": true,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": [
+        "IMP-RUNM-006-01"
+      ]
+    },
+    {
+      "id": "PLAT-001",
+      "phase": 12,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/contract/test_discovery_contract.py",
+        "tests/acceptance/test_discovery_pipeline.py",
+        "tests/unit/test_discovery.py"
+      ],
+      "risk": "critical",
+      "required_environments": [
+        "DEV",
+        "VM",
+        "HOST-RO"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": true,
+      "first_satisfying_version": "0.2.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "PLAT-002",
+      "phase": 12,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/contract/test_platform_contract.py",
+        "tests/unit/test_platform_adapters.py"
+      ],
+      "risk": "critical",
+      "required_environments": [
+        "DEV",
+        "VM",
+        "HOST-MAINT"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": true,
+      "first_satisfying_version": "0.2.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "PLAT-003",
+      "phase": 15,
+      "status": "planned",
+      "owning_tests": [],
+      "risk": "critical",
+      "required_environments": [
+        "DEV",
+        "VM",
+        "HOST-MAINT"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": [
+        "IMP-PLAT-003-01"
+      ]
+    },
+    {
+      "id": "PLAT-004",
+      "phase": 18,
+      "status": "planned",
+      "owning_tests": [],
+      "risk": "critical",
+      "required_environments": [
+        "HOST-RO",
+        "HOST-MAINT"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": true,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": [
+        "IMP-PLAT-004-01"
+      ]
+    },
+    {
+      "id": "BENCH-001",
+      "phase": 13,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/contract/test_campaign_contract.py",
+        "tests/unit/test_campaign.py",
+        "tests/acceptance/test_campaign_lane.py"
+      ],
+      "risk": "high",
+      "required_environments": [
+        "DEV",
+        "VM",
+        "HOST-MAINT"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": true,
+      "first_satisfying_version": "0.2.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "BENCH-002",
+      "phase": 13,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/contract/test_benchmark_contract.py",
+        "tests/unit/test_benchmark.py",
+        "tests/contract/test_comparison_contract.py",
+        "tests/unit/test_comparison.py"
+      ],
+      "risk": "critical",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.2.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "BENCH-003",
+      "phase": 13,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/contract/test_benchmark_contract.py",
+        "tests/unit/test_benchmark.py",
+        "tests/contract/test_history_contract.py",
+        "tests/unit/test_history.py"
+      ],
+      "risk": "high",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.2.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "BENCH-004",
+      "phase": 13,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/contract/test_comparison_contract.py",
+        "tests/unit/test_comparison.py"
+      ],
+      "risk": "high",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": "0.2.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "BENCH-005",
+      "phase": 13,
+      "status": "implemented",
+      "owning_tests": [
+        "tests/contract/test_campaign_contract.py",
+        "tests/unit/test_campaign.py",
+        "tests/acceptance/test_campaign_lane.py"
+      ],
+      "risk": "critical",
+      "required_environments": [
+        "DEV",
+        "VM",
+        "HOST-MAINT"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": true,
+      "first_satisfying_version": "0.2.0",
+      "evidence_manifests": [],
+      "implementation_tasks": []
+    },
+    {
+      "id": "OUI-001",
+      "phase": 16,
+      "status": "planned",
+      "owning_tests": [],
+      "risk": "medium",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": [
+        "IMP-OUI-001-01"
+      ]
+    },
+    {
+      "id": "OUI-002",
+      "phase": 16,
+      "status": "planned",
+      "owning_tests": [],
+      "risk": "high",
+      "required_environments": [
+        "DEV",
+        "VM",
+        "HOST-RO"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": true,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": [
+        "IMP-OUI-002-01"
+      ]
+    },
+    {
+      "id": "OUI-003",
+      "phase": 16,
+      "status": "planned",
+      "owning_tests": [],
+      "risk": "critical",
+      "required_environments": [
+        "DEV",
+        "VM",
+        "HOST-RO"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": [
+        "IMP-OUI-003-01"
+      ]
+    },
+    {
+      "id": "OUI-004",
+      "phase": 16,
+      "status": "planned",
+      "owning_tests": [],
+      "risk": "medium",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": [
+        "IMP-OUI-004-01"
+      ]
+    },
+    {
+      "id": "OUI-005",
+      "phase": 16,
+      "status": "planned",
+      "owning_tests": [],
+      "risk": "critical",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": [
+        "IMP-OUI-005-01"
+      ]
+    },
+    {
+      "id": "OUI-006",
+      "phase": 16,
+      "status": "planned",
+      "owning_tests": [],
+      "risk": "critical",
+      "required_environments": [
+        "DEV",
+        "VM",
+        "HOST-MAINT"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": true,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": [
+        "IMP-OUI-006-01"
+      ]
+    },
+    {
+      "id": "DESK-001",
+      "phase": 16,
+      "status": "planned",
+      "owning_tests": [],
+      "risk": "high",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": [
+        "IMP-DESK-001-01"
+      ]
+    },
+    {
+      "id": "DESK-002",
+      "phase": 16,
+      "status": "planned",
+      "owning_tests": [],
+      "risk": "critical",
+      "required_environments": [
+        "DEV",
+        "VM",
+        "HOST-MAINT"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": [
+        "IMP-DESK-002-01"
+      ]
+    },
+    {
+      "id": "DESK-003",
+      "phase": 17,
+      "status": "planned",
+      "owning_tests": [],
+      "risk": "high",
+      "required_environments": [
+        "VM",
+        "HOST-RO"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": [
+        "IMP-DESK-003-01"
+      ]
+    },
+    {
+      "id": "AID-001",
+      "phase": 17,
+      "status": "planned",
+      "owning_tests": [],
+      "risk": "critical",
+      "required_environments": [
+        "DEV",
+        "VM",
+        "HOST-RO"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": [
+        "IMP-AID-001-01"
+      ]
+    },
+    {
+      "id": "AID-002",
+      "phase": 17,
+      "status": "planned",
+      "owning_tests": [],
+      "risk": "critical",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": [
+        "IMP-AID-002-01"
+      ]
+    },
+    {
+      "id": "AID-003",
+      "phase": 17,
+      "status": "planned",
+      "owning_tests": [],
+      "risk": "high",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": [
+        "IMP-AID-003-01"
+      ]
+    },
+    {
+      "id": "AID-004",
+      "phase": 17,
+      "status": "planned",
+      "owning_tests": [],
+      "risk": "critical",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": [
+        "IMP-AID-004-01"
+      ]
+    },
+    {
+      "id": "ACCESS-001",
+      "phase": 17,
+      "status": "planned",
+      "owning_tests": [],
+      "risk": "high",
+      "required_environments": [
+        "VM",
+        "HOST-RO"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": [
+        "IMP-ACCESS-001-01"
+      ]
+    },
+    {
+      "id": "ACCESS-002",
+      "phase": 17,
+      "status": "planned",
+      "owning_tests": [],
+      "risk": "critical",
+      "required_environments": [
+        "VM",
+        "HOST-MAINT"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": [
+        "IMP-ACCESS-002-01"
+      ]
+    },
+    {
+      "id": "ACCESS-003",
+      "phase": 18,
+      "status": "planned",
+      "owning_tests": [],
+      "risk": "high",
+      "required_environments": [
+        "HOST-RO",
+        "HOST-MAINT"
+      ],
+      "requires_live_evidence": true,
+      "requires_hardware_evidence": true,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": [
+        "IMP-ACCESS-003-01"
+      ]
     }
   ]
 }
