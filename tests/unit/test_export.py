@@ -194,5 +194,22 @@ class TestGuardedCapture:
             )
         assert not list(tmp_path.rglob("*.json"))
 
+    def test_write_failure_cleans_staged_and_raises_owned_error(
+        self, tmp_path: Path
+    ) -> None:
+        from morpheus.core.paths import OwnedPathError
+
+        blocker = tmp_path / "blocker"
+        blocker.write_text("not a directory", encoding="utf-8")
+        with pytest.raises(OwnedPathError):
+            guarded_capture(
+                _Collector(_result()),
+                authorized=True,
+                host_name="batmobile",
+                artifact_root=blocker,
+                capability_profile=_capabilities(),
+            )
+        assert not list(tmp_path.rglob("*.staged"))
+
     def test_authorization_token_is_constant(self) -> None:
         assert authorization_token() == "morpheus-capture-authorized"
