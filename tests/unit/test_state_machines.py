@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import FrozenInstanceError
 
 import pytest
@@ -10,6 +11,8 @@ from morpheus.core.state_machines import (
     StateMachine,
     StateTransitionError,
     StateTransitionResult,
+    decode_machine_record,
+    encode_machine_record,
 )
 
 VALID_RECORD_ID = "plan-libri-gguf-q4-0001"
@@ -229,3 +232,45 @@ def test_RUNM_001_machine_kinds_are_exactly_the_five_separate_machines() -> None
         "rollback",
         "adoption",
     }
+
+
+def test_RUNM_001_machine_record_codec_round_trips_exactly() -> None:
+    record = _record(MachineKind.CAMPAIGN, "running")
+
+    restored = decode_machine_record(encode_machine_record(record))
+
+    assert restored == record
+    assert restored.machine == MachineKind.CAMPAIGN
+    assert restored.record_id == VALID_RECORD_ID
+    assert restored.checkpoint == record.checkpoint
+
+
+@pytest.mark.parametrize("mutation", ["record_type", "schema_version", "identity", "payload_field"])
+def test_RUNM_001_machine_record_codec_rejects_tampered_envelopes(
+    mutation: str,
+) -> None:
+    record = _record(MachineKind.ACQUISITION, "acquiring")
+    document = json.loads(encode_machine_record(record).decode())
+
+    if mutation == "record_type":
+        document["record_type"] = "deployment_plan"
+    elif mutation == "schema_version":
+        document["schema_version"] = 0
+    elif mutation == "identity":
+        document["record_id"] = "plan-other-0001"
+    elif mutation == "payload_field":
+        document["payload"]["extra"] = 1
+
+    with pytest.raises(ValueError, match="machine record"):
+        decode_machine_record(json.dumps(document).encode())
+
+
+def test_RUNM_001_machine_record_codec_rejects_non_object_envelope() -> None:
+    with pytest.raises(ValueError, match="machine record"):
+        decode_machine_record(b"[]")
+    with pytest.raises(ValueError, match="machine record"):
+        decode_machine_record(json.dumps({"record_type": "machine_record"}).encode())
+    with pytest.raises(ValueError, match="machine record"):
+        decode_machine_record(
+            json.dumps({"record_type": "machine_record", "payload": {"partial": True}}).encode()
+        )
