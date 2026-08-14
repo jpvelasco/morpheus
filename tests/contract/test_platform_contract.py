@@ -47,7 +47,13 @@ class TestTypedSurface:
             ), f"{name} looks like a value retrieval channel"
 
     def test_secret_roundtrip_and_cleanup(self, platform: str, tmp_path: Path) -> None:
+        from morpheus.adapters.platform.windows import _windll
+
         store = _secret_store(platform_ports(platform), tmp_path)
+        if platform == "win32" and _windll() is None:
+            with pytest.raises(RuntimeError):
+                store.store("contract-key", b"v")
+            return
         store.store("contract-key", b"v")
         assert store.exists("contract-key")
         assert store.verify("contract-key", b"v")
