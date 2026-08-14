@@ -8,6 +8,7 @@ from typing import Any, get_args, get_origin, get_type_hints
 CURRENT_SCHEMA_VERSION = 1
 
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+_DISPLAY_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 ._+-]{0,127}$")
 _DIGEST = re.compile(r"^[0-9a-f]{64}$")
 _ABSOLUTE_PATH = re.compile(r"^/[^;$\n]{1,511}$")
 _SETTING_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
@@ -412,6 +413,203 @@ class Recommendation:
         }
 
 
+@dataclass(frozen=True, slots=True)
+class AcceleratorFacts:
+    vendor: str
+    name: str
+    device_id: str
+    memory_bytes: int | None
+    topology: tuple[str, ...]
+    capabilities: tuple[str, ...]
+    state: str
+
+    def __post_init__(self) -> None:
+        _bounded(self.vendor, _IDENTIFIER, "vendor")
+        if not _DISPLAY_NAME.fullmatch(self.name):
+            raise ValueError("name must be a bounded display name")
+        _bounded(self.device_id, _IDENTIFIER, "device_id")
+        if self.memory_bytes is not None and self.memory_bytes < 1:
+            raise ValueError("accelerator memory must be positive when known")
+        for item in self.topology:
+            _bounded(item, _IDENTIFIER, "topology")
+        for item in self.capabilities:
+            _bounded(item, _IDENTIFIER, "capabilities")
+        _bounded(self.state, _IDENTIFIER, "state")
+
+    def public_dict(self) -> dict[str, Any]:
+        return {
+            "vendor": self.vendor,
+            "name": self.name,
+            "device_id": self.device_id,
+            "memory_bytes": self.memory_bytes,
+            "topology": list(self.topology),
+            "capabilities": list(self.capabilities),
+            "state": self.state,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class StorageFacts:
+    category: str
+    total_bytes: int
+
+    def __post_init__(self) -> None:
+        _bounded(self.category, _IDENTIFIER, "category")
+        if self.total_bytes < 1:
+            raise ValueError("storage capacity must be positive")
+
+    def public_dict(self) -> dict[str, Any]:
+        return {"category": self.category, "total_bytes": self.total_bytes}
+
+
+@dataclass(frozen=True, slots=True)
+class DriverFacts:
+    kind: str
+    version: str
+
+    def __post_init__(self) -> None:
+        _bounded(self.kind, _IDENTIFIER, "kind")
+        _bounded(self.version, _IDENTIFIER, "version")
+
+    def public_dict(self) -> dict[str, Any]:
+        return {"kind": self.kind, "version": self.version}
+
+
+@dataclass(frozen=True, slots=True)
+class HostProfile:
+    profile_version: int
+    machine_id: str
+    platform: str
+    architecture: str
+    cpu_cores: int | None
+    cpu_features: tuple[str, ...]
+    memory_bytes: int | None
+    accelerators: tuple[AcceleratorFacts, ...]
+    storage: tuple[StorageFacts, ...]
+    os_version: str
+    container_runtime: str | None
+    driver_versions: tuple[DriverFacts, ...]
+    schema_version: int = CURRENT_SCHEMA_VERSION
+
+    def __post_init__(self) -> None:
+        if self.profile_version < 1:
+            raise ValueError("profile version must be positive")
+        _bounded(self.machine_id, _IDENTIFIER, "machine_id")
+        _bounded(self.platform, _IDENTIFIER, "platform")
+        _bounded(self.architecture, _IDENTIFIER, "architecture")
+        if self.cpu_cores is not None and self.cpu_cores < 1:
+            raise ValueError("cpu core count must be positive when known")
+        for feature in self.cpu_features:
+            _bounded(feature, _IDENTIFIER, "cpu_features")
+        if self.memory_bytes is not None and self.memory_bytes < 1:
+            raise ValueError("memory must be positive when known")
+        for accelerator in self.accelerators:
+            if not isinstance(accelerator, AcceleratorFacts):
+                raise ValueError("profile must contain exact accelerator facts")
+        for entry in self.storage:
+            if not isinstance(entry, StorageFacts):
+                raise ValueError("profile must contain exact storage facts")
+        _bounded(self.os_version, _IDENTIFIER, "os_version")
+        if self.container_runtime is not None:
+            _bounded(self.container_runtime, _IDENTIFIER, "container_runtime")
+        for driver in self.driver_versions:
+            if not isinstance(driver, DriverFacts):
+                raise ValueError("profile must contain exact driver facts")
+
+    @property
+    def record_id(self) -> str:
+        return self.machine_id
+
+    def public_dict(self) -> dict[str, Any]:
+        return {
+            "profile_version": self.profile_version,
+            "machine_id": self.machine_id,
+            "platform": self.platform,
+            "architecture": self.architecture,
+            "cpu_cores": self.cpu_cores,
+            "cpu_features": list(self.cpu_features),
+            "memory_bytes": self.memory_bytes,
+            "accelerators": [item.public_dict() for item in self.accelerators],
+            "storage": [item.public_dict() for item in self.storage],
+            "os_version": self.os_version,
+            "container_runtime": self.container_runtime,
+            "driver_versions": [item.public_dict() for item in self.driver_versions],
+            "schema_version": self.schema_version,
+        }
+
+
+_CAPABILITY_VALUES = frozenset({"known", "unavailable", "permission_denied", "unsupported"})
+
+
+@dataclass(frozen=True, slots=True)
+class CapabilityProfile:
+    machine_id: str
+    memory_state: str
+    memory_bytes: int | None
+    storage_state: str
+    storage_bytes: int | None
+    accelerator_state: str
+    accelerator_count: int | None
+    accelerator_memory_state: str
+    accelerator_memory_bytes: int | None
+    driver_state: str
+    container_runtime: str | None
+    supported_formats: tuple[str, ...]
+    features: tuple[str, ...]
+    missing_evidence: tuple[str, ...]
+    schema_version: int = CURRENT_SCHEMA_VERSION
+
+    def __post_init__(self) -> None:
+        _bounded(self.machine_id, _IDENTIFIER, "machine_id")
+        self._validate_state("memory_state", self.memory_state, self.memory_bytes)
+        self._validate_state("storage_state", self.storage_state, self.storage_bytes)
+        self._validate_state("accelerator_state", self.accelerator_state, self.accelerator_count)
+        self._validate_state(
+            "accelerator_memory_state",
+            self.accelerator_memory_state,
+            self.accelerator_memory_bytes,
+        )
+        self._validate_state("driver_state", self.driver_state, None)
+        if self.container_runtime is not None:
+            _bounded(self.container_runtime, _IDENTIFIER, "container_runtime")
+        for item in self.supported_formats:
+            _bounded(item, _IDENTIFIER, "supported_formats")
+        for item in self.features:
+            _bounded(item, _IDENTIFIER, "features")
+        for item in self.missing_evidence:
+            _bounded(item, _IDENTIFIER, "missing_evidence")
+
+    @staticmethod
+    def _validate_state(field: str, state: str, amount: int | None) -> None:
+        if state not in _CAPABILITY_VALUES:
+            raise ValueError(f"{field} must be a PLAT-001 capability value")
+        if state in {"permission_denied", "unsupported"} and amount is not None:
+            raise ValueError(f"{field} amount must be unknown unless the value is observed")
+
+    @property
+    def record_id(self) -> str:
+        return self.machine_id
+
+    def public_dict(self) -> dict[str, Any]:
+        return {
+            "machine_id": self.machine_id,
+            "memory_state": self.memory_state,
+            "memory_bytes": self.memory_bytes,
+            "storage_state": self.storage_state,
+            "storage_bytes": self.storage_bytes,
+            "accelerator_state": self.accelerator_state,
+            "accelerator_count": self.accelerator_count,
+            "accelerator_memory_state": self.accelerator_memory_state,
+            "accelerator_memory_bytes": self.accelerator_memory_bytes,
+            "driver_state": self.driver_state,
+            "container_runtime": self.container_runtime,
+            "supported_formats": list(self.supported_formats),
+            "features": list(self.features),
+            "missing_evidence": list(self.missing_evidence),
+            "schema_version": self.schema_version,
+        }
+
+
 _RECORD_TYPES: dict[str, type[Any]] = {
     "machine_profile": MachineProfile,
     "model_identity": ModelIdentity,
@@ -422,6 +620,8 @@ _RECORD_TYPES: dict[str, type[Any]] = {
     "benchmark_comparison": BenchmarkComparison,
     "diagnosis": DiagnosisRecord,
     "recommendation": Recommendation,
+    "host_profile": HostProfile,
+    "capability_profile": CapabilityProfile,
 }
 _RECORD_TYPE_NAMES = {record_type: name for name, record_type in _RECORD_TYPES.items()}
 

@@ -75,3 +75,7 @@ Thumbs.db
 .cache/
 .direnv/
 .envrc
+
+
+#Ignore vscode AI rules
+.github\instructions\codacy.instructions.md
