@@ -277,7 +277,8 @@ def _drain_pipe(
 
 def _spawn_kwargs() -> dict[str, Any]:
     if os.name == "nt":
-        return {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
+        creationflags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+        return {"creationflags": creationflags}
     return {"start_new_session": True}
 
 
