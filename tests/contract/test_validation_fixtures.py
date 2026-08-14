@@ -189,6 +189,17 @@ def test_chat_fault_modes_are_deterministic() -> None:
         ) as slow_stream:
             first_chunk = next(slow_stream.iter_raw())
             first_chunk_elapsed = time.monotonic() - started
+        slow_250_started = time.monotonic()
+        slow_250 = httpx.post(
+            f"{base_url}/v1/chat/completions",
+            headers=AUTH,
+            json={
+                **request,
+                "morpheus_fixture_mode": "slow",
+                "morpheus_fixture_delay_ms": 250,
+            },
+        )
+        slow_250_elapsed = time.monotonic() - slow_250_started
 
     assert unavailable.status_code == 503
     assert unavailable.json()["error"]["code"] == "fixture_unavailable"
@@ -201,7 +212,11 @@ def test_chat_fault_modes_are_deterministic() -> None:
     assert "[DONE]" not in partial.text
     assert slow_stream.status_code == 200
     assert b"fixture-partial" in first_chunk
-    assert first_chunk_elapsed < 0.2
+    # The first chunk must arrive before the declared delay window completes;
+    # comparing against a same-shape non-streaming response keeps the early
+    # streaming contract deterministic under per-host baseline latency.
+    assert slow_250.status_code == 200
+    assert first_chunk_elapsed < slow_250_elapsed - 0.2
 
 
 def test_fixture_compose_is_hardened_internal_and_loopback_only() -> None:

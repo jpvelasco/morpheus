@@ -9,10 +9,15 @@ from pathlib import Path
 import pytest
 
 pytestmark = pytest.mark.contract
+NEEDS_POSIX_HOST = pytest.mark.skipif(
+    os.name != "posix",
+    reason="the candidate bundle builder executes a POSIX-only shell script",
+)
 ROOT = Path(__file__).resolve().parents[2]
 BUILDER = ROOT / "validation/candidate/build.sh"
 
 
+@NEEDS_POSIX_HOST
 def test_ART_001_candidate_bundle_builder_is_reproducible(tmp_path: Path) -> None:
     outputs = [tmp_path / "first", tmp_path / "second"]
     environment = {

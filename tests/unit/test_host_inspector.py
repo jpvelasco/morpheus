@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
@@ -25,6 +26,10 @@ def test_RUN_004_host_summary_uses_bounded_memory_and_disk_fields(
         "disk_usage",
         lambda path: SimpleNamespace(total=2000, used=750, free=1250),
     )
+    if os.name == "nt":
+        # The /proc process state is a Linux-only observation source.
+        monkeypatch.setattr(host, "_load_average_1m", lambda: 0.5)
+        monkeypatch.setattr(host, "_uptime_seconds", lambda: 42.0)
 
     result = SystemHostInspector(project_id="morpheus", data_dir=tmp_path).inspect(
         AgentOperation.HOST_SUMMARY

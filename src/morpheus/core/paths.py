@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import re
 import tempfile
 from dataclasses import dataclass
@@ -34,12 +35,14 @@ class OwnedPathResolver:
 
     def resolve_relative(self, value: Path | str) -> Path:
         path = Path(value)
+        text = str(value)
         if (
-            not str(value)
-            or "\\" in str(value)
-            or path.is_absolute()
+            not text
+            or bool(path.root)
+            or bool(path.drive)
             or path == Path(".")
             or ".." in path.parts
+            or (os.sep != "\\" and "\\" in text)
         ):
             raise OwnedPathError(
                 "path must be a non-empty relative child of the Morpheus-owned root"

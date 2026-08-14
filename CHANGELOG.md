@@ -9,6 +9,17 @@ first implementation artifact is released.
 
 ### Added
 
+- Phase 11 contract foundation: exactly two inference ownership modes
+  (`external_observed`, `morpheus_managed`), workflow-scoped adoption-candidate
+  transfer records that are never identities or lifecycle targets, and a public
+  lifecycle identity guard.
+- Immutable planning records (machine, model, engine, workload, deployment
+  plan, campaign, comparison, diagnosis, recommendation) with a canonical
+  versioned envelope codec and strict schema-version rules.
+- Five separate lifecycle state machines (acquisition/staging, benchmark
+  campaign, promotion, rollback, adoption) implementing the architecture
+  transition tables, terminal-state immutability, and audit results for
+  undefined edges.
 - v0.2 focused developer-inference appliance specification and phased plan for
   Ubuntu, Windows, and Apple Silicon macOS, retaining Batwing and Batmobile as
   named Linux qualification machines.
@@ -27,6 +38,10 @@ first implementation artifact is released.
 
 ### Changed
 
+- Restored Windows parity for the local validation lanes with bounded fixes
+  that leave POSIX behavior unchanged: platform-correct path-escape checks,
+  process-tree spawn/kill helpers, directory-fsync guards, and platform-aware
+  test fixtures and bash-executing lane guards.
 - Audited the v0.2 implementation handoff: fixed the two-mode ownership and
   adoption boundary, separated lifecycle state machines, ordered backend and
   desktop packaging, bounded the compatibility endpoint, and made physical

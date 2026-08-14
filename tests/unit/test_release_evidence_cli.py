@@ -112,8 +112,10 @@ def test_cli_requires_private_canary_file_and_host_authorization(tmp_path: Path)
         "automated-test",
     ]
 
-    with pytest.raises(ValueError, match="permissions"):
-        main(
+    if os.name == "nt":
+        # Windows cannot express POSIX mode bits through chmod; its default ACLs
+        # already deny group and other users, so a non-owner-created file passes.
+        exit_code = main(
             [
                 *common,
                 "--run-id",
@@ -126,6 +128,22 @@ def test_cli_requires_private_canary_file_and_host_authorization(tmp_path: Path)
                 os.devnull,
             ]
         )
+        assert exit_code == 125
+    else:
+        with pytest.raises(ValueError, match="permissions"):
+            main(
+                [
+                    *common,
+                    "--run-id",
+                    "20260715T210000Z-permissions",
+                    "--environment",
+                    "DEV",
+                    "--canary-file",
+                    str(canary_file),
+                    "--",
+                    os.devnull,
+                ]
+            )
 
     with pytest.raises(ValueError, match="authorization"):
         main(

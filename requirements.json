@@ -400,10 +400,10 @@
       "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-SEL-005-01"]
     },
     {
-      "id": "RUNM-001", "phase": 11, "status": "planned",
-      "owning_tests": [], "risk": "critical",
+      "id": "RUNM-001", "phase": 11, "status": "implemented",
+      "owning_tests": ["tests/unit/test_ownership_modes.py", "tests/unit/test_planning_records.py", "tests/unit/test_state_machines.py", "tests/contract/test_v02_contracts.py", "tests/acceptance/test_dual_ownership.py"], "risk": "critical",
       "required_environments": ["DEV", "VM", "HOST-RO"], "requires_live_evidence": true, "requires_hardware_evidence": false,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-RUNM-001-01"]
+      "first_satisfying_version": "0.2.0", "evidence_manifests": [], "implementation_tasks": []
     },
     {
       "id": "RUNM-002", "phase": 15, "status": "planned",

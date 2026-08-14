@@ -116,7 +116,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             env=environment,
-            start_new_session=True,
+            **(_spawn_kwargs()),
         )
         if process.stdout is None or process.stderr is None:
             raise RuntimeError("validation command pipes were not created")
@@ -142,8 +142,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             try:
                 exit_code = process.wait(timeout=args.timeout)
             except subprocess.TimeoutExpired:
-                with suppress(ProcessLookupError):
-                    os.killpg(process.pid, signal.SIGKILL)
+                _kill_process_tree(process)
                 process.wait()
                 timed_out = True
                 exit_code = 124
@@ -213,7 +212,7 @@ def _load_canaries(path: Path | None) -> dict[str, str]:
         return {}
     if path.is_symlink() or not path.is_file():
         raise ValueError("canary file must be a regular file")
-    if path.stat().st_mode & 0o077:
+    if os.name != "nt" and path.stat().st_mode & 0o077:
         raise ValueError("canary file permissions must deny group and other access")
     value: Any = json.loads(path.read_text())
     if not isinstance(value, dict) or any(
@@ -274,3 +273,24 @@ def _drain_pipe(
             destination.write(chunk)
     except BaseException as error:
         errors.append(error)
+
+
+def _spawn_kwargs() -> dict[str, Any]:
+    if os.name == "nt":
+        creationflags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+        return {"creationflags": creationflags}
+    return {"start_new_session": True}
+
+
+def _kill_process_tree(process: subprocess.Popen[bytes]) -> None:
+    if os.name == "nt":
+        subprocess.run(  # noqa: S603  # nosec B603 B607
+            ["taskkill", "/PID", str(process.pid), "/T", "/F"],  # noqa: S607 - fixed Windows process-tree killer on PATH
+            capture_output=True,
+            check=False,
+        )
+        return
+    with suppress(ProcessLookupError):
+        killpg = getattr(os, "killpg", None)
+        if killpg is not None:
+            killpg(process.pid, getattr(signal, "SIGKILL", 9))
