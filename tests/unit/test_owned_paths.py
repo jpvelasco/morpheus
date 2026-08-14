@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pytest
@@ -16,7 +17,14 @@ def test_SEC_006_resolves_relative_paths_beneath_the_canonical_owned_root(tmp_pa
     assert resolved == resolver.root / "data" / "morpheus.sqlite3"
 
 
-@pytest.mark.parametrize("value", ["../outside", "/var/outside", "", ".", "dir\\file"])
+_UNSAFE_RELATIVE = (
+    ["../outside", "/var/outside", "", ".", "dir\\file"]
+    if os.sep != "\\"
+    else ["../outside", "C:/outside", "\\outside", "", "."]
+)
+
+
+@pytest.mark.parametrize("value", _UNSAFE_RELATIVE)
 def test_SEC_006_rejects_paths_that_escape_or_are_not_relative_children(
     tmp_path: Path, value: str
 ) -> None:

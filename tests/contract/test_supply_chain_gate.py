@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import json
-import shutil
 import subprocess
 from pathlib import Path
 
 import pytest
+from _posix_tools import NEEDS_USABLE_BASH, USABLE_BASH
 
 pytestmark = pytest.mark.contract
 ROOT = Path(__file__).resolve().parents[2]
@@ -39,8 +39,9 @@ def test_SEC_005_policy_blocks_required_findings_and_covers_every_scan_scope() -
     assert policy["forbidden_licenses"]
 
 
+@NEEDS_USABLE_BASH
 def test_SEC_005_runner_is_offline_hardened_pinned_and_release_blocking() -> None:
-    bash = shutil.which("bash")
+    bash = USABLE_BASH
     assert bash is not None
     subprocess.run([bash, "-n", RUNNER], check=True)  # noqa: S603 - fixed checked-in script
     source = RUNNER.read_text(encoding="utf-8")
@@ -93,8 +94,9 @@ def test_SEC_005_finalizer_is_structured_and_never_emits_secret_values() -> None
     assert "security_manifest=passed" in source
 
 
+@NEEDS_USABLE_BASH
 def test_SEC_005_vulnerability_database_cache_is_inventoried_and_separate() -> None:
-    bash = shutil.which("bash")
+    bash = USABLE_BASH
     assert bash is not None
     subprocess.run(  # noqa: S603 - fixed checked-in script
         [bash, "-n", CACHE_BUILDER], check=True

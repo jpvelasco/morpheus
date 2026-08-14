@@ -182,12 +182,20 @@ def _write_durable(destination: Path, data: bytes) -> None:
 
 
 def _fsync_file(path: Path) -> None:
+    if os.name == "nt":
+        # Windows cannot fsync a read-only file handle; its write path already
+        # flushes file data, so directory-level durability has no counterpart.
+        return
     with path.open("rb") as stream:
         os.fsync(stream.fileno())
 
 
 def _fsync_directory(path: Path) -> None:
-    descriptor = os.open(path, os.O_RDONLY | os.O_DIRECTORY)
+    if os.name == "nt":
+        # Windows flushes directory metadata through file fsync; the POSIX
+        # O_DIRECTORY descriptor protocol does not exist there.
+        return
+    descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
     try:
         os.fsync(descriptor)
     finally:

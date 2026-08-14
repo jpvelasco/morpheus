@@ -9,6 +9,10 @@ from pathlib import Path
 import pytest
 
 pytestmark = pytest.mark.contract
+NEEDS_POSIX_HOST = pytest.mark.skipif(
+    os.name != "posix",
+    reason="the offline candidate pipeline executes POSIX-only shell scripts",
+)
 ROOT = Path(__file__).resolve().parents[2]
 OFFLINE_GUARD = ROOT / "validation/vm/offline-egress.sh"
 POPULATE = ROOT / "validation/candidate/populate-cache.sh"
@@ -20,6 +24,7 @@ CANDIDATE_COMPOSE = ROOT / "validation/candidate/compose.yaml"
 AGENT_INSTALLER = ROOT / "deploy/agent/install.sh"
 
 
+@NEEDS_POSIX_HOST
 def test_CLEAN_002_scripts_are_executable_and_parse_as_bash() -> None:
     for script in (OFFLINE_GUARD, POPULATE, REBUILD, COMPARE, AGENT_INSTALLER):
         assert script.stat().st_mode & 0o111
@@ -105,6 +110,7 @@ def test_ART_001_agent_bundle_installer_is_offline_verified_and_atomic() -> None
     assert "wget" not in installer
 
 
+@NEEDS_POSIX_HOST
 def test_BUILD_001_comparator_proves_equal_rebuilds(tmp_path: Path) -> None:
     rebuilds = [tmp_path / "first", tmp_path / "second"]
     paths = [

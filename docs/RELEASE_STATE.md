@@ -251,6 +251,7 @@ workspace; refer to the candidate commit and task ID in its redacted manifest.
 
 | Commit | Milestone |
 |---|---|
+| `b07ffce` | Windows parity for the local validation lanes; POSIX behavior unchanged (bounded fixes only). |
 | `aa09417` | Request body limits, content/schema checks, timeouts, rate limits, and bounded concurrency across exposed APIs. |
 | `cdb3eba` | Signed browser-session decision record and validation-plan correction. |
 | `3c4ba66` | Browser API-key removal; signed, expiring cookie sessions with CSRF-protected logout. |
@@ -262,18 +263,20 @@ workspace; refer to the candidate commit and task ID in its redacted manifest.
 
 ## Active Milestone
 
-**v0.2 plan audited and ready for implementation handoff; implementation begins
-with Phase 11 only after explicit authorization.** The next source milestone is
-the dual-mode contract and ownership foundation and its agent handoff packet in
-`docs/IMPLEMENTATION_PLAN.md`. It must preserve the deployed ubuntu-1 v0.1
-read-only behavior and requires no model download, GPU workload, or runtime
-mutation.
+**Phase 11 contract foundation is implemented; the next source milestone is the
+Phase 11.5 Ubuntu CPU walking skeleton.** RUNM-001 (exactly two ownership modes,
+workflow-scoped adoption records, immutable planning contracts, and separate
+state machines) is `implemented` with unit, contract, and acceptance coverage
+and a complete non-live gate that runs without GPU access or model downloads.
+Deployed ubuntu-1 v0.1 read-only behavior is preserved; required HOST-RO evidence
+for `validated` status remains a later, separately authorized validation step.
 
 ## v0.2 Queue
 
-1. **Phase 11 — contracts and ownership:** introduce exactly two typed ownership
-   modes, workflow-scoped adoption transfer records, and separate immutable
-   planning and lifecycle state machines, using fakes and disposable tests only.
+1. **Phase 11 — contracts and ownership:** exactly two typed ownership modes,
+   workflow-scoped adoption transfer records, immutable planning records and
+   versioned envelopes, and five separate lifecycle state machines. **Done —
+   RUNM-001 `implemented`.**
 2. **Phase 11.5 — walking skeleton and replan:** run one real disposable Ubuntu
    CPU `llama.cpp` discovery-to-rollback path, record the findings, apply a
    bounded evidence-driven plan adjustment, and continue automatically when its

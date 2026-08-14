@@ -37,9 +37,9 @@ protect; they do not receive independent status rows or inflate these counts.
   UI-001, UI-002, UI-004, UI-005; SRCH-001, SRCH-003; VOICE-001, VOICE-002;
   TEL-001 through TEL-005; FLOW-001, FLOW-002; GATE-002, GATE-003; OPS-001
   through OPS-003; SEC-001 through SEC-007; REL-001 through REL-004; PERF-001
-  through PERF-003.
+  through PERF-003; RUNM-001.
 - Planned: UI-003; GATE-001; HOST-001 through HOST-003; SEL-001 through
-  SEL-005; RUNM-001 through RUNM-006; BENCH-001 through BENCH-005; OUI-001
+  SEL-005; RUNM-002 through RUNM-006; BENCH-001 through BENCH-005; OUI-001
   through OUI-006; PLAT-001 through PLAT-004; DESK-001 through DESK-003;
   AID-001 through AID-004; ACCESS-001 through ACCESS-003.
 - Deferred: SRCH-002; VOICE-003, VOICE-004; RSCH-001, RSCH-002; RAG-001
@@ -68,7 +68,20 @@ development.
 | 9 | 18 | HOST-003, PLAT-004, ACCESS-003 | Ubuntu, Windows, and Apple Silicon macOS physical developer/source qualification and explicit tier claims. |
 | 10 | optional | no functional status row | Windows/Apple/Linux signing, notarization, and trusted unattended-update qualification only when external credentials exist. |
 
-Completed after the snapshot: **IMP-SEC-005-01** added the digest-pinned,
+Completed after the snapshot: **IMP-RUNM-001-01** introduced exactly two
+inference ownership modes (`external_observed`, `morpheus_managed`) with
+workflow-scoped adoption-candidate transfer records that are not identities or
+lifecycle targets, exact managed-target binding to one immutable deployment
+plan and owned root, a public lifecycle identity guard, nine immutable
+planning-record contracts (machine, model, engine, workload, deployment plan,
+campaign, comparison, diagnosis, recommendation) with a canonical versioned
+envelope codec, and the five separate state machines (acquisition/staging,
+campaign, promotion, rollback, adoption) with the architecture transition
+tables, terminal-state immutability, and audit results for undefined edges.
+Observe-mode v0.1 behavior is unchanged and its regression lanes stay green.
+Host-role evidence remains a later, separately authorized validation step.
+
+**IMP-SEC-005-01** added the digest-pinned,
 offline candidate scan and two-format per-artifact SBOM gate, closed evidence
 verification, vulnerability-database inventory, redacted Git/worktree/artifact
 secret scans, filesystem and OCI vulnerability/misconfiguration scans, and a

@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import json
-import shutil
 import subprocess
 from pathlib import Path
 
 import pytest
 import yaml
+from _posix_tools import NEEDS_USABLE_BASH, USABLE_BASH
 
 pytestmark = pytest.mark.contract
 ROOT = Path(__file__).resolve().parents[2]
@@ -48,8 +48,9 @@ def test_LOAD_001_k6_client_has_fixed_internal_targets_mix_checks_and_abort_limi
     assert "sleep(" not in source
 
 
+@NEEDS_USABLE_BASH
 def test_LOAD_001_runner_is_pinned_hardened_and_accepts_only_an_owned_internal_network() -> None:
-    bash = shutil.which("bash")
+    bash = USABLE_BASH
     assert bash is not None
     runner = LOAD / "run.sh"
     subprocess.run([bash, "-n", runner], check=True)  # noqa: S603 - fixed checked-in script
@@ -113,8 +114,9 @@ def test_LOAD_002_disposable_stack_is_internal_hardened_bounded_and_labeled() ->
         assert service["labels"]["io.morpheus.component"] == name
 
 
+@NEEDS_USABLE_BASH
 def test_LOAD_001_dev_rehearsal_refuses_existing_resources_and_always_cleans_up() -> None:
-    bash = shutil.which("bash")
+    bash = USABLE_BASH
     assert bash is not None
     rehearsal = LOAD / "dev_rehearsal.sh"
     subprocess.run([bash, "-n", rehearsal], check=True)  # noqa: S603 - fixed checked-in script
@@ -130,8 +132,9 @@ def test_LOAD_001_dev_rehearsal_refuses_existing_resources_and_always_cleans_up(
     assert "open-webui" not in source
 
 
+@NEEDS_USABLE_BASH
 def test_SOAK_002_runner_requires_verified_candidate_exact_duration_and_parallel_monitor() -> None:
-    bash = shutil.which("bash")
+    bash = USABLE_BASH
     assert bash is not None
     soak = LOAD / "soak.sh"
     subprocess.run([bash, "-n", soak], check=True)  # noqa: S603 - fixed checked-in script

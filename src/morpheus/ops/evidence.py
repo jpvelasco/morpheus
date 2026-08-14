@@ -401,8 +401,10 @@ class EvidenceRun:
         path = Path(relative_path)
         if (
             not relative_path
-            or "\\" in relative_path
+            or (os.sep != "\\" and "\\" in relative_path)
             or path.is_absolute()
+            or bool(path.root)
+            or bool(path.drive)
             or path == Path(".")
             or ".." in path.parts
             or (relative_path in _RESERVED_PATHS and not reserved)
