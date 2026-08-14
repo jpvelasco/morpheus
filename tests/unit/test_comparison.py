@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 from datetime import UTC, datetime
 
 import pytest
@@ -91,12 +92,12 @@ class TestClassification:
     @pytest.mark.parametrize(
         ("candidate", "expected"),
         [
-            (dict(), COMPARABLE),
-            (dict(machine_id="other-host"), ESTIMATED),
-            (dict(model_id="qwen2.5-7b-instruct"), INCOMPARABLE),
-            (dict(quantization="q4_0"), INCOMPARABLE),
-            (dict(engine_id="vllm"), INCOMPARABLE),
-            (dict(benchmark_revision="bench-2026.1"), INCOMPARABLE),
+            ({}, COMPARABLE),
+            ({"machine_id": "other-host"}, ESTIMATED),
+            ({"model_id": "qwen2.5-7b-instruct"}, INCOMPARABLE),
+            ({"quantization": "q4_0"}, INCOMPARABLE),
+            ({"engine_id": "vllm"}, INCOMPARABLE),
+            ({"benchmark_revision": "bench-2026.1"}, INCOMPARABLE),
         ],
     )
     def test_decision_table(self, candidate: dict, expected: str) -> None:
@@ -271,6 +272,6 @@ class TestExport:
             summary("base", 40.0, 0.2),
             summary("cand", 44.0, 0.18),
         )
-        with pytest.raises(Exception):
+        with pytest.raises(dataclasses.FrozenInstanceError):
             record.percent_change = 0.0
         assert isinstance(record, ComparisonRecord)
