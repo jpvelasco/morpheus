@@ -442,10 +442,10 @@
       "first_satisfying_version": "0.2.0", "evidence_manifests": [], "implementation_tasks": []
     },
     {
-      "id": "PLAT-002", "phase": 12, "status": "planned",
-      "owning_tests": [], "risk": "critical",
+      "id": "PLAT-002", "phase": 12, "status": "implemented",
+      "owning_tests": ["tests/contract/test_platform_contract.py", "tests/unit/test_platform_adapters.py"], "risk": "critical",
       "required_environments": ["DEV", "VM", "HOST-MAINT"], "requires_live_evidence": true, "requires_hardware_evidence": true,
-      "first_satisfying_version": null, "evidence_manifests": [], "implementation_tasks": ["IMP-PLAT-002-01"]
+      "first_satisfying_version": "0.2.0", "evidence_manifests": [], "implementation_tasks": []
     },
     {
       "id": "PLAT-003", "phase": 15, "status": "planned",
