@@ -190,6 +190,7 @@ class TestProcessSupervision:
     def test_windows_terminate_tree_missing_pid_is_ok(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
+        self._fake_native_tools(monkeypatch)
         monkeypatch.setattr(
             "morpheus.adapters.platform.windows.subprocess.run",
             lambda args, **k: _run_script(returncode=128),
