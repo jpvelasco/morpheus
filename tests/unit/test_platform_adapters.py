@@ -153,9 +153,7 @@ def _run_script(
 
 class TestProcessSupervision:
     def _fake_native_tools(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr(
-            "morpheus.adapters.platform.windows._native_tool", lambda name: name
-        )
+        monkeypatch.setattr("morpheus.adapters.platform.windows._native_tool", lambda name: name)
 
     def test_windows_alive_from_tasklist(self, monkeypatch: pytest.MonkeyPatch) -> None:
         self._fake_native_tools(monkeypatch)
@@ -244,9 +242,7 @@ class TestProcessSupervision:
 
 class TestServiceLifecycle:
     def _fake_native_tools(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setattr(
-            "morpheus.adapters.platform.windows._native_tool", lambda name: name
-        )
+        monkeypatch.setattr("morpheus.adapters.platform.windows._native_tool", lambda name: name)
 
     def test_windows_status(self, monkeypatch: pytest.MonkeyPatch) -> None:
         self._fake_native_tools(monkeypatch)
