@@ -1,0 +1,6 @@
+{"campaign": "supporting-software", "model": "llama-3.1-8b-instruct", "engine": "llama.cpp", "t": 2.2, "ttft": 0.3, "tps": 39.0, "tokens": 86}
+{"campaign": "speed", "model": "llama-3.1-8b-instruct", "engine": "llama.cpp", "t": "fast", "ttft": 0.2}
+{"campaign": "unknown-lane", "model": "llama-3.1-8b-instruct", "engine": "llama.cpp", "t": 1.5}
+{"campaign": "speed", "model": "llama-3.1-8b-instruct", "engine": "llama.cpp", "t": 2.0, "ts": "not-a-timestamp"}
+this line is not json at all
+{"campaign": "speed", "model": "llama-3.1-8b-instruct", "t": 1.5}
