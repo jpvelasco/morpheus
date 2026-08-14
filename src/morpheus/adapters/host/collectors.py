@@ -8,6 +8,7 @@ import os
 import platform
 import shutil
 import subprocess  # nosec B404
+import sys
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
@@ -137,6 +138,25 @@ class PortableHostCollector:
             if "MemTotal" not in values:
                 return None, CapabilityValue.PERMISSION_DENIED
             return values["MemTotal"], CapabilityValue.KNOWN
+        if os.name == "posix" and sys.platform == "darwin":
+            try:
+                result = subprocess.run(  # nosec B603
+                    ["/usr/sbin/sysctl", "-n", "hw.memsize"],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
+                )
+            except (FileNotFoundError, subprocess.TimeoutExpired):
+                return None, CapabilityValue.UNSUPPORTED
+            except PermissionError:
+                return None, CapabilityValue.PERMISSION_DENIED
+            if result.returncode != 0:
+                return None, CapabilityValue.UNSUPPORTED
+            try:
+                return int(result.stdout.strip()), CapabilityValue.KNOWN
+            except ValueError:
+                return None, CapabilityValue.UNSUPPORTED
         if os.name == "nt":
             return _windows_memory_bytes()
         return None, CapabilityValue.UNSUPPORTED
