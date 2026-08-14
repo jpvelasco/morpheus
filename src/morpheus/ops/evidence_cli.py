@@ -277,13 +277,14 @@ def _drain_pipe(
 
 def _spawn_kwargs() -> dict[str, Any]:
     if os.name == "nt":
-        return {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
+        creationflags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+        return {"creationflags": creationflags}
     return {"start_new_session": True}
 
 
 def _kill_process_tree(process: subprocess.Popen[bytes]) -> None:
     if os.name == "nt":
-        subprocess.run(  # noqa: S603  # nosec B603
+        subprocess.run(  # noqa: S603  # nosec B603 B607
             ["taskkill", "/PID", str(process.pid), "/T", "/F"],  # noqa: S607 - fixed Windows process-tree killer on PATH
             capture_output=True,
             check=False,
