@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from contextlib import suppress
 from pathlib import Path
 from typing import Protocol
 
@@ -49,8 +50,9 @@ def guarded_capture(
     try:
         staged.write_text(json.dumps(exported, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         staged.replace(destination)
-    except OSError as error:
-        staged.unlink(missing_ok=True)
+    except (OSError, OwnedPathError) as error:
+        with suppress(OSError):
+            staged.unlink(missing_ok=True)
         raise OwnedPathError(f"cannot retain host capture: {error}") from error
     return str(destination)
 
