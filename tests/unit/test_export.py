@@ -194,9 +194,7 @@ class TestGuardedCapture:
             )
         assert not list(tmp_path.rglob("*.json"))
 
-    def test_write_failure_cleans_staged_and_raises_owned_error(
-        self, tmp_path: Path
-    ) -> None:
+    def test_write_failure_cleans_staged_and_raises_owned_error(self, tmp_path: Path) -> None:
         from morpheus.core.paths import OwnedPathError
 
         blocker = tmp_path / "blocker"
