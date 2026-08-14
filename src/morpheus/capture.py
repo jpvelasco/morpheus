@@ -12,7 +12,7 @@ from morpheus.core.export import assert_export_is_private, export_discovery_resu
 from morpheus.core.paths import OwnedPathError, OwnedPathResolver
 from morpheus.core.records import CapabilityProfile
 
-_AUTHORIZATION_TOKEN = "morpheus-capture-authorized"  # noqa: S105 - not a credential; gate token
+_AUTHORIZATION_TOKEN = "morpheus-capture-authorized"  # nosec B105 - gate token, not a credential
 
 
 class CaptureCollector(Protocol):
