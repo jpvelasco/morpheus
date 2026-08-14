@@ -60,9 +60,7 @@ def test_collector_meminfo_missing_key_is_permission_denied(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     monkeypatch.setattr(collectors.os, "name", "posix")
-    monkeypatch.setattr(
-        collectors, "_MEMINFO", _probe(exists=True, content="MemFree: 100 kB\n")
-    )
+    monkeypatch.setattr(collectors, "_MEMINFO", _probe(exists=True, content="MemFree: 100 kB\n"))
     collector = PortableHostCollector(storage_categories={"system": tmp_path})
     memory_bytes, state = collector._memory_bytes()
     assert memory_bytes is None
