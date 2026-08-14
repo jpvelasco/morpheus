@@ -1,0 +1,3 @@
+{"campaign": "context-bump", "model": "llama-3.1-8b-instruct", "engine": "llama.cpp", "ts": "2026-07-05T08:00:00Z", "t": 6.2, "ttft": 0.6, "tps": 38.5, "tokens": 240}
+{"campaign": "context-bump", "model": "llama-3.1-8b-instruct", "engine": "llama.cpp", "ts": "2026-07-05T08:00:07Z", "t": 7.1, "ttft": 0.7, "tps": 37.2, "tokens": 264}
+{"campaign": "context-bump", "model": "llama-3.1-8b-instruct", "engine": "llama.cpp", "ts": "2026-07-05T08:00:14Z", "t": 5.9, "ttft": 0.5, "tps": 39.1, "tokens": 231}

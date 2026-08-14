@@ -1,0 +1,3 @@
+{"campaign": "tools", "model": "qwen2.5-7b-instruct", "engine": "llama.cpp", "ts": "2026-07-03T11:00:00Z", "t": 9.4, "ttft": 0.9, "tps": 33.1, "tokens": 310, "config": [["tools", "enabled"]]}
+{"campaign": "tools", "model": "qwen2.5-7b-instruct", "engine": "llama.cpp", "ts": "2026-07-03T11:00:10Z", "t": 10.2, "ttft": 1.0, "tps": 32.4, "tokens": 330, "config": [["tools", "enabled"]]}
+{"campaign": "tools", "model": "qwen2.5-7b-instruct", "engine": "llama.cpp", "ts": "2026-07-03T11:00:21Z", "t": 8.9, "ttft": 0.8, "tps": 34.0, "tokens": 302, "config": [["tools", "enabled"]]}
