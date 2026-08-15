@@ -56,10 +56,40 @@ const overview: Overview = {
   external_controls: [],
 }
 
+const navigation = {
+  schema_version: 1,
+  observed_at: '2026-07-17T08:00:00+00:00',
+  workspaces: [
+    { id: 'overview', label: 'Overview', state: 'ready', query_model: { schema: 'overview', version: 1 } },
+    { id: 'hardware', label: 'Hardware', state: 'partial', query_model: { schema: 'host', version: 1 } },
+    { id: 'models', label: 'Models', state: 'ready', query_model: { schema: 'models', version: 1 } },
+    { id: 'engines', label: 'Engines', state: 'empty', query_model: null },
+    { id: 'runtime', label: 'Runtime', state: 'partial', query_model: { schema: 'runtime', version: 1 } },
+    { id: 'benchmarks', label: 'Benchmarks', state: 'empty', query_model: null },
+    { id: 'analytics', label: 'Analytics', state: 'empty', query_model: null },
+    { id: 'logs_events', label: 'Logs & Events', state: 'empty', query_model: null },
+    { id: 'diagnostics', label: 'Diagnostics', state: 'ready', query_model: { schema: 'diagnostics', version: 1 } },
+    { id: 'settings', label: 'Settings', state: 'empty', query_model: null },
+    { id: 'recovery', label: 'Recovery', state: 'empty', query_model: null },
+  ],
+}
+
+const controls = {
+  schema_version: 1,
+  observed_at: '2026-07-17T08:00:00+00:00',
+  core_ready: true,
+  controls: [
+    { control: 'core', state: 'usable', configured: true, running: true, healthy: true, usable: true, blockers: [] },
+    { control: 'search', state: 'configured', configured: false, running: false, healthy: false, usable: false, blockers: ['feature_disabled'] },
+    { control: 'voice', state: 'configured', configured: false, running: false, healthy: false, usable: false, blockers: ['voice_profile_not_enabled'] },
+  ],
+}
+
 async function mockControl(
   page: Page,
   payload: Overview = overview,
   overviewHandler?: (requestNumber: number) => Promise<{ status: number; body: string }>,
+  routes: { navigationStatus?: number; controlsStatus?: number } = {},
 ): Promise<() => number> {
   let requests = 0
   await page.route(`${API}/api/v1/session`, async (route) => {
@@ -68,6 +98,23 @@ async function mockControl(
       contentType: 'application/json',
       status: 200,
     })
+  })
+  await page.route(`${API}/api/v1/operations/navigation`, async (route) => {
+    await route.fulfill({
+      body: JSON.stringify(navigation),
+      contentType: 'application/json',
+      status: routes.navigationStatus ?? 200,
+    })
+  })
+  await page.route(`${API}/api/v1/operations/controls`, async (route) => {
+    await route.fulfill({
+      body: JSON.stringify(controls),
+      contentType: 'application/json',
+      status: routes.controlsStatus ?? 200,
+    })
+  })
+  await page.route(`${API}/api/v1/recommendations/latest`, async (route) => {
+    await route.fulfill({ body: '{}', contentType: 'application/json', status: 404 })
   })
   await page.route(`${API}/api/v1/overview`, async (route) => {
     requests += 1
@@ -123,10 +170,14 @@ test('BROW-002 core login, refresh, diagnostics, and logout flow', async ({ page
 
   await expect(page.getByRole('heading', { name: 'System overview' })).toBeVisible()
   await expect(page.getByText('qwen36-27b-nvfp4')).toBeVisible()
-  await expect(page.getByText('Ready')).toBeVisible()
+  await expect(page.locator('main').getByText('Ready')).toBeVisible()
   await expect(page.getByText('Disabled')).toBeVisible()
   await expect(page.getByText('Blocked')).toBeVisible()
   await expect(page.getByText('Voice Profile Not Enabled')).toBeVisible()
+  const workspaceNav = page.getByRole('navigation', { name: 'Operator workspaces' })
+  await expect(workspaceNav.getByRole('button')).toHaveCount(11)
+  await expect(workspaceNav.getByRole('button', { name: 'Overview' })).toHaveAttribute('aria-current', 'page')
+  await expect(workspaceNav.getByRole('button', { name: 'Engines' }).locator('.nav-state')).toHaveText('Empty')
   await expectNoBlockingAccessibilityViolations(page)
 
   await page.getByRole('button', { name: 'Refresh overview' }).click()
@@ -134,6 +185,25 @@ test('BROW-002 core login, refresh, diagnostics, and logout flow', async ({ page
   await page.getByRole('button', { name: 'Diagnostics' }).click()
   await expect(page.getByText('Current evidence')).toBeVisible()
   await expect(page.getByText('No action required')).toBeVisible()
+  await expectNoBlockingAccessibilityViolations(page)
+
+  await page.getByRole('button', { name: 'Runtime' }).click()
+  await expect(page.getByRole('heading', { name: 'Feature controls' })).toBeVisible()
+  await expect(page.getByText('Core runtime ready')).toBeVisible()
+  await expect(page.getByText('Feature Disabled')).toBeVisible()
+  await expect(page.locator('main').getByText('Usable')).toHaveCount(4)
+  await expectNoBlockingAccessibilityViolations(page)
+
+  await page.getByRole('button', { name: 'Hardware' }).click()
+  await expect(page.getByRole('heading', { name: 'Hardware' })).toBeVisible()
+  await expect(page.getByText('12,000 MiB')).toBeVisible()
+  await expect(page.getByText('Available')).toBeVisible()
+  await expect(page.getByText('All probes passed')).toBeVisible()
+  await expectNoBlockingAccessibilityViolations(page)
+
+  await page.getByRole('button', { name: 'Engines' }).click()
+  await expect(page.getByRole('heading', { name: 'Engines' })).toBeVisible()
+  await expect(page.getByText('Engines has no query model in this release yet.')).toBeVisible()
   await expectNoBlockingAccessibilityViolations(page)
   await captureResponsiveEvidence(page, testInfo)
 
@@ -175,6 +245,30 @@ for (const state of ['starting', 'degraded', 'unreachable', 'incompatible'] as c
     await expect(page.getByText('Unavailable')).toBeVisible()
   })
 }
+
+test('BROW-002 navigation and controls failures fall back honestly', async ({ page }) => {
+  await mockControl(page, overview, undefined, { navigationStatus: 500, controlsStatus: 500 })
+  await signIn(page)
+
+  const workspaceNav = page.getByRole('navigation', { name: 'Operator workspaces' })
+  await expect(workspaceNav.getByRole('button')).toHaveCount(11)
+  await page.getByRole('button', { name: 'Engines' }).click()
+  await expect(
+    page.getByText('The evidence source for Engines is unavailable right now.'),
+  ).toBeVisible()
+  await expectNoBlockingAccessibilityViolations(page)
+})
+
+test('BROW-002 controls failure keeps the runtime workspace honest', async ({ page }) => {
+  await mockControl(page, overview, undefined, { controlsStatus: 500 })
+  await signIn(page)
+
+  await page.getByRole('button', { name: 'Runtime' }).click()
+  await expect(
+    page.getByText('Controls are unavailable. The control API did not return a valid report.'),
+  ).toBeVisible()
+  await expectNoBlockingAccessibilityViolations(page)
+})
 
 test('BROW-004 slow failed refresh retains the last valid observation', async ({ page }) => {
   const requestCount = await mockControl(page, overview, async (number) => {

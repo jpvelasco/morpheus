@@ -1,22 +1,26 @@
 # AGENTS.md
 
-## Where We Left Off (2026-08-12)
+## Where We Left Off (2026-08-15)
 
-**Product direction reopened for v0.2 planning.** Morpheus is now planned as a
-focused developer-inference appliance with stable native paths on Ubuntu,
-Windows, and Apple Silicon macOS. Batwing and Batmobile remain named Linux
-qualification machines. The plan adds evidence-ranked model/engine selection,
-managed runtime, benchmark history, Tauri desktop plus independent backend,
-operations, and bounded AI-assisted diagnosis. The plan has passed a handoff
-consistency review; read `docs/IMPLEMENTATION_PLAN.md` Phase 11 onward, including
-the Phase 11 implementation handoff, Phase 11.5 walking-skeleton/replan gate,
-and ADR-0005 through ADR-0009.
+**Phase 16.1 (UI-003 controls ladder + OUI-001 operations navigation) is
+implemented and merged.** Backend (`core/controls.py` ladder, `api/operations.py`
+navigation/controls routes), contract tests (`test_operations_contract.py`),
+and the frontend workspace SPA (11-workspace nav, hardware/runtime/empty
+workspace pages, four-state control flags) are green: 836 unit, 338 contract,
+19 integration, 20 acceptance, 81 vitest (99.27% branches), 44 Playwright e2e.
+UI-003 and OUI-001 are flipped to `implemented` at 0.2.0 in `requirements.json`
+(68 implemented, 17 planned, 12 deferred).
 
-This plan update does not authorize v0.2 runtime implementation or live target
-mutation. The next source milestone is Phase 11 contracts and ownership only
-when explicitly requested. Search, voice, workflows, research, RAG, image
-generation, and other ODS-like breadth are outside the focused v0.2 critical
-path unless separately reopened.
+The v0.2 product direction paragraph below remains the standing context:
+focused developer-inference appliance, Phase 11 onward plan, ADR-0005 through
+ADR-0009, evidence-ranked selection, managed runtime, benchmark history, Tauri
+desktop, operations, and bounded diagnosis. The standing continuation for
+v0.2 work stays in force; the active product queue now starts with Phase 16.2
+(OUI-002 metrics rollups, OUI-003 redacted logs/events, OUI-004 analytics and
+comparisons) in dependency order.
+
+The deployed v0.1 Morpheus remains a **read-only operator surface**; planning
+language must not be mistaken for deployed behavior.
 
 Once a user explicitly authorizes long-horizon v0.2 implementation, agents may
 continue across green DEV and disposable-lab subphases without asking at every
