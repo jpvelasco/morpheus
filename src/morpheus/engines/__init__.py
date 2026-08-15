@@ -1,14 +1,12 @@
-"""llama.cpp engine adapters (RUNM-002)."""
+"""Engine adapters (RUNM-002)."""
 
-from morpheus.engines.llamacpp import (
-    KNOWN_GOOD_BUILDS,
-    STABLE_MINIMUM_BUILD,
+from morpheus.engines.base import (
     CapabilityProbe,
+    EngineCapabilities,
     EngineCommandError,
+    EngineConfiguration,
     EngineRunner,
-    LlamaCppCapabilities,
-    LlamaCppConfiguration,
-    LlamaCppEngine,
+    EngineRuntime,
     LogRing,
     NativeEngineRunner,
     NativeProcessHandle,
@@ -16,17 +14,38 @@ from morpheus.engines.llamacpp import (
     ProcessHandle,
     SocketPortProbe,
     SubprocessCapabilityProbe,
+)
+from morpheus.engines.llamacpp import (
+    KNOWN_GOOD_BUILDS,
+    STABLE_MINIMUM_BUILD,
+    LlamaCppCapabilities,
+    LlamaCppConfiguration,
+    LlamaCppEngine,
     parse_llamacpp_health,
     parse_llamacpp_metrics,
     parse_llamacpp_version,
 )
+from morpheus.engines.vllm import (
+    KNOWN_GOOD_VERSIONS,
+    STABLE_MINIMUM_VERSION,
+    VllmCapabilities,
+    VllmConfiguration,
+    VllmEngine,
+    parse_vllm_health,
+    parse_vllm_version,
+)
 
 __all__ = [
     "KNOWN_GOOD_BUILDS",
+    "KNOWN_GOOD_VERSIONS",
     "STABLE_MINIMUM_BUILD",
+    "STABLE_MINIMUM_VERSION",
     "CapabilityProbe",
+    "EngineCapabilities",
     "EngineCommandError",
+    "EngineConfiguration",
     "EngineRunner",
+    "EngineRuntime",
     "LlamaCppCapabilities",
     "LlamaCppConfiguration",
     "LlamaCppEngine",
@@ -37,7 +56,12 @@ __all__ = [
     "ProcessHandle",
     "SocketPortProbe",
     "SubprocessCapabilityProbe",
+    "VllmCapabilities",
+    "VllmConfiguration",
+    "VllmEngine",
     "parse_llamacpp_health",
     "parse_llamacpp_metrics",
     "parse_llamacpp_version",
+    "parse_vllm_health",
+    "parse_vllm_version",
 ]
