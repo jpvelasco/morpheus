@@ -238,19 +238,23 @@
     {
       "id": "UI-003",
       "phase": 16,
-      "status": "planned",
-      "owning_tests": [],
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_controls.py",
+        "tests/contract/test_operations_contract.py",
+        "web/tests/App.test.tsx",
+        "web/tests/api.test.ts",
+        "web/e2e/dashboard.spec.ts"
+      ],
       "risk": "critical",
       "required_environments": [
         "VM"
       ],
       "requires_live_evidence": false,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": [
-        "IMP-UI-003-01"
-      ]
+      "implementation_tasks": []
     },
     {
       "id": "UI-004",
@@ -1563,8 +1567,13 @@
     {
       "id": "OUI-001",
       "phase": 16,
-      "status": "planned",
-      "owning_tests": [],
+      "status": "implemented",
+      "owning_tests": [
+        "tests/contract/test_operations_contract.py",
+        "web/tests/App.test.tsx",
+        "web/tests/api.test.ts",
+        "web/e2e/dashboard.spec.ts"
+      ],
       "risk": "medium",
       "required_environments": [
         "DEV",
@@ -1572,11 +1581,9 @@
       ],
       "requires_live_evidence": false,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": [
-        "IMP-OUI-001-01"
-      ]
+      "implementation_tasks": []
     },
     {
       "id": "OUI-002",

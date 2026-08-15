@@ -46,7 +46,7 @@ def test_BROW_004_refreshes_are_cancelable_and_stale_responses_are_covered() -> 
     browser_test = (ROOT / "web/e2e/dashboard.spec.ts").read_text(encoding="utf-8")
 
     assert "new AbortController()" in app
-    assert "activeRequest.current?.abort()" in app
+    assert "overviewRequest.current?.abort()" in app
     assert "stale-response" in browser_test
     assert "latest-response" in browser_test
 

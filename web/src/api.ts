@@ -75,6 +75,45 @@ export interface Overview {
   external_controls: never[]
 }
 
+export type WorkspaceState = 'ready' | 'partial' | 'empty' | 'unavailable'
+
+export interface QueryModel {
+  schema: string
+  version: number
+}
+
+export interface Workspace {
+  id: string
+  label: string
+  state: WorkspaceState
+  query_model: QueryModel | null
+}
+
+export interface NavigationManifest {
+  schema_version: number
+  observed_at: string
+  workspaces: Workspace[]
+}
+
+export type ControlState = 'configured' | 'running' | 'healthy' | 'usable'
+
+export interface ControlStatus {
+  control: string
+  state: ControlState
+  configured: boolean
+  running: boolean
+  healthy: boolean
+  usable: boolean
+  blockers: string[]
+}
+
+export interface ControlsReport {
+  schema_version: number
+  observed_at: string
+  core_ready: boolean
+  controls: ControlStatus[]
+}
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:7400'
 
 function record(value: unknown): Record<string, unknown> {
@@ -86,6 +125,11 @@ function record(value: unknown): Record<string, unknown> {
 
 function string(value: unknown, field: string): string {
   if (typeof value !== 'string') throw new Error(`Invalid ${field}`)
+  return value
+}
+
+function number(value: unknown, field: string): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) throw new Error(`Invalid ${field}`)
   return value
 }
 
@@ -196,6 +240,84 @@ export function parseOverview(value: unknown): Overview {
   }
 }
 
+function parseWorkspaces(value: unknown): Workspace[] {
+  if (!Array.isArray(value)) throw new Error('Invalid workspace list')
+  return value.map((candidate) => {
+    const item = record(candidate)
+    const state = string(item.state, 'workspace state')
+    if (!['ready', 'partial', 'empty', 'unavailable'].includes(state)) {
+      throw new Error('Invalid workspace state')
+    }
+    const queryModel = item.query_model
+    if (queryModel !== null) {
+      const model = record(queryModel)
+      return {
+        id: string(item.id, 'workspace id'),
+        label: string(item.label, 'workspace label'),
+        state: state as WorkspaceState,
+        query_model: {
+          schema: string(model.schema, 'query model schema'),
+          version: number(model.version, 'query model version'),
+        },
+      }
+    }
+    return {
+      id: string(item.id, 'workspace id'),
+      label: string(item.label, 'workspace label'),
+      state: state as WorkspaceState,
+      query_model: null,
+    }
+  })
+}
+
+export function parseNavigation(value: unknown): NavigationManifest {
+  const item = record(value)
+  return {
+    schema_version: number(item.schema_version, 'navigation schema version'),
+    observed_at: string(item.observed_at, 'navigation timestamp'),
+    workspaces: parseWorkspaces(item.workspaces),
+  }
+}
+
+function parseControlsReport(value: unknown): ControlStatus[] {
+  if (!Array.isArray(value)) throw new Error('Invalid control list')
+  return value.map((candidate) => {
+      const item = record(candidate)
+      const state = string(item.state, 'control state')
+      if (!['configured', 'running', 'healthy', 'usable'].includes(state)) {
+        throw new Error('Invalid control state')
+      }
+      const booleanFlag = (flag: unknown, field: string): boolean => {
+        if (typeof flag !== 'boolean') throw new Error(`Invalid ${field}`)
+        return flag
+      }
+      if (!Array.isArray(item.blockers) || !item.blockers.every((entry) => typeof entry === 'string')) {
+        throw new Error('Invalid control blockers')
+      }
+      return {
+        control: string(item.control, 'control name'),
+        state: state as ControlState,
+        configured: booleanFlag(item.configured, 'control configured'),
+        running: booleanFlag(item.running, 'control running'),
+        healthy: booleanFlag(item.healthy, 'control healthy'),
+        usable: booleanFlag(item.usable, 'control usable'),
+        blockers: item.blockers,
+      }
+    })
+}
+
+export function parseControls(value: unknown): ControlsReport {
+  const item = record(value)
+  const coreReady = item.core_ready
+  if (typeof coreReady !== 'boolean') throw new Error('Invalid core readiness')
+  return {
+    schema_version: number(item.schema_version, 'controls schema version'),
+    observed_at: string(item.observed_at, 'controls timestamp'),
+    core_ready: coreReady,
+    controls: parseControlsReport(item.controls),
+  }
+}
+
 function csrfToken(): string {
   const item = document.cookie.split('; ').find((value) => value.startsWith('morpheus_csrf='))
   return item ? decodeURIComponent(item.slice('morpheus_csrf='.length)) : ''
@@ -232,6 +354,24 @@ export async function fetchOverview(signal?: AbortSignal): Promise<Overview> {
   })
   requireSuccess(response)
   return parseOverview(await response.json())
+}
+
+export async function fetchNavigation(signal?: AbortSignal): Promise<NavigationManifest> {
+  const response = await fetch(`${API_BASE}/api/v1/operations/navigation`, {
+    credentials: 'include',
+    signal,
+  })
+  requireSuccess(response)
+  return parseNavigation(await response.json())
+}
+
+export async function fetchControls(signal?: AbortSignal): Promise<ControlsReport> {
+  const response = await fetch(`${API_BASE}/api/v1/operations/controls`, {
+    credentials: 'include',
+    signal,
+  })
+  requireSuccess(response)
+  return parseControls(await response.json())
 }
 
 export interface RecommendationContribution {

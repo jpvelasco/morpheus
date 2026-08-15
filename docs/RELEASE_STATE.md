@@ -31,7 +31,7 @@ private request data, host addresses, or unredacted evidence.
   and refined on 2026-08-12 with an early vertical slice, bounded self-replan,
   smaller delivery subphases, and optional distribution signing; no v0.2 runtime
   implementation or target mutation has started.
-- **Implementation inventory:** 44 implemented, 41 planned, 12 deferred; see
+- **Implementation inventory:** 68 implemented, 17 planned, 12 deferred; see
   [`requirements.json`](../requirements.json) and the
   [implementation gap review](IMPLEMENTATION_GAP_REVIEW.md).
 - **Release posture:** not yet release-ready. A passing candidate does not

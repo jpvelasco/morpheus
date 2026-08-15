@@ -94,18 +94,22 @@ button { cursor: pointer; }
 }
 .icon-command:hover, .icon-command:focus-visible { background: #35413e; outline: none; border-color: #84928e; }
 
-.view-tabs {
-  height: 46px;
+.workspace-nav {
+  min-height: 46px;
   display: flex;
+  flex-wrap: wrap;
   align-items: end;
-  gap: 22px;
-  padding: 0 28px;
+  gap: 2px 18px;
+  padding: 6px 28px 0;
   background: #fff;
   border-bottom: 1px solid #ccd5d2;
 }
-.view-tabs button {
-  height: 46px;
-  padding: 0 2px;
+.workspace-nav button {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 2px 2px;
   color: #66736f;
   background: transparent;
   border: 0;
@@ -113,8 +117,14 @@ button { cursor: pointer; }
   font-size: 13px;
   font-weight: 700;
 }
-.view-tabs button.active { color: #12634f; border-bottom-color: #12634f; }
-.view-tabs button:focus-visible { outline: 2px solid #12634f; outline-offset: -2px; }
+.workspace-nav button svg { color: #55716a; }
+.workspace-nav button.active { color: #12634f; border-bottom-color: #12634f; }
+.workspace-nav button.active svg { color: #12634f; }
+.workspace-nav button:focus-visible { outline: 2px solid #12634f; outline-offset: -2px; }
+.nav-state { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.nav-state-ready { color: #176846; }
+.nav-state-partial, .nav-state-running { color: #8a5506; }
+.nav-state-empty, .nav-state-unavailable { color: #5c6663; }
 
 .workspace { width: min(100%, 1500px); margin: 0 auto; padding: 24px 28px 48px; }
 .page-stack { display: grid; gap: 24px; }
@@ -139,10 +149,10 @@ h2 { margin: 0; font-size: 20px; }
   font-weight: 750;
   white-space: nowrap;
 }
-.status-ready, .status-available { color: #176846; background: #edf8f2; }
-.status-starting, .status-degraded, .status-blocked { color: #8a5506; background: #fff7e7; }
+.status-ready, .status-available, .status-usable, .status-healthy { color: #176846; background: #edf8f2; }
+.status-starting, .status-degraded, .status-blocked, .status-running, .status-partial { color: #8a5506; background: #fff7e7; }
 .status-unreachable, .status-incompatible, .status-unhealthy { color: #a13232; background: #fff0f0; }
-.status-unknown, .status-disabled, .status-unavailable { color: #596663; background: #f0f3f2; }
+.status-unknown, .status-disabled, .status-unavailable, .status-configured, .status-empty { color: #596663; background: #f0f3f2; }
 
 .metrics-grid {
   display: grid;
@@ -191,6 +201,31 @@ h2 { margin: 0; font-size: 20px; }
 .feature-name svg { color: #55716a; }
 .feature-blocker { color: #596662; font-size: 13px; overflow-wrap: anywhere; }
 
+.control-row { grid-template-columns: minmax(180px, 1fr) 140px minmax(200px, 2fr) minmax(220px, 2fr); }
+.control-flags { display: flex; flex-wrap: wrap; gap: 6px; }
+.control-flags span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 7px;
+  border-radius: 3px;
+  border: 1px solid currentColor;
+  font-size: 11px;
+  font-weight: 700;
+}
+.flag-on { color: #176846; background: #edf8f2; }
+.flag-off { color: #5c6663; background: #f5f7f6; }
+
+.empty-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 20px;
+  color: #596662;
+}
+.workspace-empty { min-height: 120px; justify-content: center; }
+
 .evidence-list { margin: 0; }
 .evidence-list > div { display: grid; grid-template-columns: 180px 1fr; gap: 20px; padding: 13px 20px; border-bottom: 1px solid #e2e7e5; }
 .evidence-list > div:last-child { border-bottom: 0; }
@@ -221,12 +256,14 @@ h2 { margin: 0; font-size: 20px; }
   .metric-cell:nth-child(-n + 2) { border-bottom: 1px solid #d8dfdd; }
   .feature-row { grid-template-columns: minmax(150px, 1fr) 135px; }
   .feature-blocker { grid-column: 1 / -1; padding-left: 26px; }
+  .control-row { grid-template-columns: minmax(150px, 1fr) 135px; }
+  .control-flags { grid-column: 1 / -1; padding-left: 26px; }
 }
 
 @media (max-width: 600px) {
   .app-header { padding: 0 16px; }
   .last-updated { display: none; }
-  .view-tabs { padding: 0 16px; }
+  .workspace-nav { padding: 6px 16px 0; }
   .workspace { padding: 18px 16px 36px; }
   .summary-band { align-items: flex-start; }
   .metrics-grid { grid-template-columns: 1fr; }
