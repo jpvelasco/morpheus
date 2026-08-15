@@ -102,19 +102,19 @@ BUDGETS = {
 
 
 def candidate(**overrides) -> Candidate:
-    fields = dict(
-        model_id="llama-3.1-8b-instruct",
-        quantization="q8_0",
-        engine_id="llama.cpp",
-        context_window=8192,
-        concurrency=1,
-    )
+    fields = {
+        "model_id": "llama-3.1-8b-instruct",
+        "quantization": "q8_0",
+        "engine_id": "llama.cpp",
+        "context_window": 8192,
+        "concurrency": 1,
+    }
     fields.update(overrides)
     return Candidate(**fields)
 
 
 def requirements(**overrides) -> WorkloadRequirements:
-    fields = dict(features=(), context_tokens=4096, concurrency=1)
+    fields = {"features": (), "context_tokens": 4096, "concurrency": 1}
     fields.update(overrides)
     return WorkloadRequirements(**fields)
 
@@ -147,9 +147,9 @@ class TestDecisionTables:
     @pytest.mark.parametrize(
         ("overrides", "expected"),
         [
-            (dict(), ()),
-            (dict(model_id="qwen2.5-7b-instruct"), ()),
-            (dict(quantization="q4_0"), ()),
+            ({}, ()),
+            ({"model_id": "qwen2.5-7b-instruct"}, ()),
+            ({"quantization": "q4_0"}, ()),
         ],
     )
     def test_ubuntu_nvidia_table(self, overrides: dict, expected: tuple[str, ...]) -> None:
@@ -161,10 +161,10 @@ class TestDecisionTables:
     @pytest.mark.parametrize(
         ("overrides", "expected"),
         [
-            (dict(), ()),
-            (dict(engine_id="vllm"), ()),
-            (dict(quantization="q4_0"), ()),
-            (dict(context_window=65536), ()),
+            ({}, ()),
+            ({"engine_id": "vllm"}, ()),
+            ({"quantization": "q4_0"}, ()),
+            ({"context_window": 65536}, ()),
         ],
     )
     def test_windows_nvidia_table(self, overrides: dict, expected: tuple[str, ...]) -> None:
