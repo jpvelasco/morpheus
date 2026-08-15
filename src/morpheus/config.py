@@ -62,6 +62,10 @@ class MorpheusSettings(BaseModel):
     request_timeout_seconds: float = Field(default=10.0, gt=0, le=120)
     max_request_bytes: int = Field(default=2_097_152, ge=1024, le=64 * 1024 * 1024)
     telemetry_retention_days: int = Field(default=30, ge=1, le=365)
+    metrics_retention_days: int = Field(default=30, ge=1, le=365)
+    events_retention_days: int = Field(default=30, ge=1, le=365)
+    metrics_collection_interval_seconds: int = Field(default=60, ge=5, le=3600)
+    vllm_metrics_url: str | None = None
     enable_lifecycle: bool = False
     lifecycle_deployment_root: Path | None = None
     lifecycle_lab_authorized: bool = False
@@ -85,6 +89,22 @@ class MorpheusSettings(BaseModel):
             raise ValueError("llm_base_url must have a host and no embedded credentials")
         if parsed.query or parsed.fragment or parsed.path.rstrip("/") != "/v1":
             raise ValueError("llm_base_url must contain the /v1 API base path exactly once")
+        return value.rstrip("/")
+
+    @field_validator("vllm_metrics_url", mode="before")
+    @classmethod
+    def validate_vllm_metrics_url(cls, value: Any) -> str | None:
+        if value is None or value == "":
+            return None
+        if not isinstance(value, str):
+            raise ValueError("vllm_metrics_url must be a string")
+        parsed = urlsplit(value)
+        if parsed.scheme not in {"http", "https"}:
+            raise ValueError("vllm_metrics_url must use http or https")
+        if not parsed.hostname or parsed.username or parsed.password:
+            raise ValueError("vllm_metrics_url must have a host and no embedded credentials")
+        if parsed.query or parsed.fragment:
+            raise ValueError("vllm_metrics_url must not contain a query or fragment")
         return value.rstrip("/")
 
     @field_validator("runtime_agent_url", mode="before")

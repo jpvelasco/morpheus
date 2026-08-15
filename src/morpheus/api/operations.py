@@ -34,6 +34,9 @@ QUERY_MODELS: dict[str, dict[str, str | int]] = {
     "hardware": {"schema": "host", "version": 1},
     "models": {"schema": "models", "version": 1},
     "runtime": {"schema": "runtime", "version": 1},
+    "benchmarks": {"schema": "benchmarks", "version": 1},
+    "analytics": {"schema": "analytics", "version": 1},
+    "logs_events": {"schema": "events", "version": 1},
     "diagnostics": {"schema": "diagnostics", "version": 1},
 }
 
@@ -100,15 +103,19 @@ def navigation_payload(
     discovered: Sequence[Any] | None,
     host: dict[str, Any],
     observed_at: str,
+    data_states: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """Build the versioned workspace navigation manifest.
 
     ``discovered`` is None when model discovery failed, an empty list when it
     succeeded with no models, and a list of models otherwise; each maps to an
-    unavailable, partial, or ready models workspace.
+    unavailable, partial, or ready models workspace.  ``data_states`` reports
+    whether the history-backed workspaces (benchmarks, analytics, logs and
+    events) hold recorded evidence.
     """
     host_available = host.get("status") in {"available", "degraded"}
     models_state = "unavailable" if discovered is None else "ready" if discovered else "partial"
+    data_states = data_states or {}
     workspaces = [
         {
             "id": workspace_id,
@@ -117,6 +124,7 @@ def navigation_payload(
                 workspace_id,
                 host_available=host_available,
                 models_state=models_state,
+                data_state=data_states.get(workspace_id, "empty"),
             ),
             "query_model": QUERY_MODELS.get(workspace_id),
         }
@@ -125,13 +133,21 @@ def navigation_payload(
     return {"schema_version": 1, "observed_at": observed_at, "workspaces": workspaces}
 
 
-def _workspace_state(workspace_id: str, *, host_available: bool, models_state: str) -> str:
+def _workspace_state(
+    workspace_id: str,
+    *,
+    host_available: bool,
+    models_state: str,
+    data_state: str = "empty",
+) -> str:
     if workspace_id in {"overview", "diagnostics"}:
         return "ready"
     if workspace_id in {"hardware", "runtime"}:
         return "partial" if host_available else "unavailable"
     if workspace_id == "models":
         return models_state
+    if workspace_id in {"benchmarks", "analytics", "logs_events"}:
+        return data_state
     return "empty"
 
 
@@ -195,4 +211,98 @@ def controls_payload(
             }
             for status in report.values()
         ],
+    }
+
+
+def metrics_payload(
+    *,
+    observed_at: str,
+    signal: str,
+    unit: str,
+    freshness: dict[str, Any],
+    sources: Sequence[tuple[str, str, str | None]],
+    buckets: Sequence[Any],
+    gaps: Sequence[tuple[str, str]],
+    sample_count: int,
+) -> dict[str, Any]:
+    """Versioned metrics trend payload with explicit units, freshness, and gaps."""
+    return {
+        "schema_version": 1,
+        "observed_at": observed_at,
+        "signal": signal,
+        "unit": unit,
+        "freshness": freshness,
+        "sources": [
+            {"source": name, "state": state, "reason": reason} for name, state, reason in sources
+        ],
+        "buckets": [
+            {
+                "start": bucket.start,
+                "end": bucket.end,
+                "count": bucket.count,
+                "min": bucket.min,
+                "max": bucket.max,
+                "mean": bucket.mean,
+                "p50": bucket.p50,
+                "p95": bucket.p95,
+            }
+            for bucket in buckets
+        ],
+        "gaps": [{"start": start, "end": end} for start, end in gaps],
+        "sample_count": sample_count,
+    }
+
+
+def events_payload(
+    *,
+    observed_at: str,
+    events: Sequence[Any],
+) -> dict[str, Any]:
+    """Versioned events payload; messages are redacted before persistence."""
+    return {
+        "schema_version": 1,
+        "observed_at": observed_at,
+        "count": len(events),
+        "events": [
+            {
+                "recorded_at": event.recorded_at,
+                "source": event.source,
+                "severity": event.severity,
+                "message": event.message,
+                "correlation_id": event.correlation_id,
+                "deployment_id": event.deployment_id,
+                "campaign_id": event.campaign_id,
+            }
+            for event in events
+        ],
+    }
+
+
+def benchmarks_payload(
+    *,
+    observed_at: str,
+    runs: Sequence[Any],
+) -> dict[str, Any]:
+    """Versioned benchmark history payload (most recent first)."""
+    return {
+        "schema_version": 1,
+        "observed_at": observed_at,
+        "count": len(runs),
+        "runs": [run.to_dict() for run in runs],
+    }
+
+
+def analytics_payload(
+    *,
+    observed_at: str,
+    report: dict[str, Any],
+) -> dict[str, Any]:
+    """Versioned analytics payload with usage, scorecards, comparisons, regressions."""
+    return {
+        "schema_version": 1,
+        "observed_at": observed_at,
+        "usage": report["usage"],
+        "scorecards": report["scorecards"],
+        "comparisons": report["comparisons"],
+        "regressions": report["regressions"],
     }

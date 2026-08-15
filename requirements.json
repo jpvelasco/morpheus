@@ -1588,8 +1588,15 @@
     {
       "id": "OUI-002",
       "phase": 16,
-      "status": "planned",
-      "owning_tests": [],
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_metrics_history.py",
+        "tests/unit/test_metrics_collector.py",
+        "tests/contract/test_operations_contract.py",
+        "web/tests/App.test.tsx",
+        "web/tests/api.test.ts",
+        "web/e2e/dashboard.spec.ts"
+      ],
       "risk": "high",
       "required_environments": [
         "DEV",
@@ -1598,17 +1605,21 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": true,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": [
-        "IMP-OUI-002-01"
-      ]
+      "implementation_tasks": []
     },
     {
       "id": "OUI-003",
       "phase": 16,
-      "status": "planned",
-      "owning_tests": [],
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_events.py",
+        "tests/contract/test_operations_contract.py",
+        "web/tests/App.test.tsx",
+        "web/tests/api.test.ts",
+        "web/e2e/dashboard.spec.ts"
+      ],
       "risk": "critical",
       "required_environments": [
         "DEV",
@@ -1617,17 +1628,21 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": [
-        "IMP-OUI-003-01"
-      ]
+      "implementation_tasks": []
     },
     {
       "id": "OUI-004",
       "phase": 16,
-      "status": "planned",
-      "owning_tests": [],
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_analytics.py",
+        "tests/contract/test_operations_contract.py",
+        "web/tests/App.test.tsx",
+        "web/tests/api.test.ts",
+        "web/e2e/dashboard.spec.ts"
+      ],
       "risk": "medium",
       "required_environments": [
         "DEV",
@@ -1635,11 +1650,9 @@
       ],
       "requires_live_evidence": false,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": [
-        "IMP-OUI-004-01"
-      ]
+      "implementation_tasks": []
     },
     {
       "id": "OUI-005",

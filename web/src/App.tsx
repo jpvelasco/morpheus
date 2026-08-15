@@ -30,16 +30,27 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import {
   createSession,
   destroySession,
+  fetchAnalytics,
+  fetchBenchmarks,
   fetchControls,
+  fetchEvents,
   fetchLatestRecommendation,
+  fetchMetricsTrend,
   fetchNavigation,
   fetchOverview,
+  type AnalyticsReport,
+  type BenchmarksReport,
   type CapabilityState,
   type ControlState,
   type ControlsReport,
+  type EventRecord,
+  type EventsReport,
   type HealthState,
   type HostAvailable,
   type HostUnavailable,
+  type MetricBucket,
+  type MetricGap,
+  type MetricsTrend,
   type NavigationManifest,
   type Overview,
   type RecommendationRecord,
@@ -449,18 +460,311 @@ function EmptyWorkspacePage({ workspace }: { workspace: Workspace }) {
   )
 }
 
+const TREND_SIGNALS = [
+  ['gpu_cache_usage', 'GPU cache usage'],
+  ['utilization_percent', 'GPU utilization'],
+  ['temperature_c', 'GPU temperature'],
+  ['memory_available_bytes', 'Memory available'],
+  ['memory_used_bytes', 'Memory used'],
+  ['free_bytes', 'Disk free'],
+] as const
+
+function formatMetric(value: number | null, unit: string): string {
+  if (value === null) return 'No data'
+  if (unit === 'percent') return `${String(Math.round(value))}%`
+  if (unit === 'bytes') return `${String(Math.round(value / 1_048_576))} MiB`
+  if (unit === 'tokens') return `${Math.round(value).toLocaleString()} tokens`
+  return value.toLocaleString()
+}
+
+function TrendChart({ buckets, gaps, unit }: { buckets: MetricBucket[]; gaps: MetricGap[]; unit: string }) {
+  const peak = useMemo(() => Math.max(1, ...buckets.map((bucket) => bucket.mean ?? 0)), [buckets])
+  if (buckets.length === 0) {
+    return <p className="empty-state">No samples in this window yet.</p>
+  }
+  return (
+    <div className="trend-chart" role="img" aria-label={`Trend of ${unit} over the selected window`}>
+      {buckets.map((bucket) => {
+        const height = bucket.mean === null ? 0 : Math.max(2, (bucket.mean / peak) * 100)
+        const label = `${new Date(bucket.start).toLocaleString()} – ${String(bucket.count)} samples, mean ${formatMetric(bucket.mean, unit)}`
+        const gapAfter = gaps.some((gap) => gap.start === bucket.end)
+        return (
+          <div className="trend-column" key={bucket.start}>
+            <div
+              className="trend-bar"
+              style={{ height: `${String(height)}%` }}
+              role="img"
+              aria-label={label}
+              title={label}
+            />
+            {gapAfter && (
+              <div className="trend-gap" role="img" aria-label="Missing data interval" title="Missing data interval" />
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function MetricsPage({
+  trend,
+  trendSignal,
+  onTrendSignal,
+}: {
+  trend: MetricsTrend | null
+  trendSignal: string
+  onTrendSignal: (signal: string) => void
+}) {
+  const freshness = trend?.freshness
+  const freshnessLabel = freshness?.state === 'fresh'
+    ? 'Fresh evidence'
+    : freshness?.state === 'stale'
+      ? `Stale evidence · ${String(Math.round((freshness.age_seconds ?? 0) / 60))} min old`
+      : 'No samples yet'
+  return (
+    <section className="diagnostics-section" aria-labelledby="trends-heading">
+      <div className="section-heading">
+        <div>
+          <p className="section-label">Bounded metric rollups</p>
+          <h2 id="trends-heading">Hardware trends</h2>
+        </div>
+        {freshness && <span className={`status status-${freshness.state}`}>{freshnessLabel}</span>}
+      </div>
+      <div className="toolbar">
+        <label htmlFor="trend-signal">Signal</label>
+        <select
+          id="trend-signal"
+          value={trendSignal}
+          onChange={(event) => { onTrendSignal(event.target.value) }}
+        >
+          {TREND_SIGNALS.map(([value, label]) => (
+            <option value={value} key={value}>{label}</option>
+          ))}
+        </select>
+        {trend && <span>Unit: {trend.unit}</span>}
+      </div>
+      {trend && (
+        <div className="trend-meta">
+          <TrendChart buckets={trend.buckets} gaps={trend.gaps} unit={trend.unit} />
+          <div className="trend-foot">
+            <span>{trend.sample_count.toLocaleString()} samples in window</span>
+            <span>Sources: {trend.sources.map((source) => `${source.source} ${source.state}`).join(' · ')}</span>
+          </div>
+        </div>
+      )}
+      {trend === null && <p className="empty-state">Trend data is unavailable right now.</p>}
+    </section>
+  )
+}
+
+function EventsPage({ report }: { report: EventsReport | null }) {
+  const [source, setSource] = useState('all')
+  const [severity, setSeverity] = useState('all')
+  const events = useMemo(() => report?.events ?? [], [report])
+  const sources = useMemo(() => Array.from(new Set(events.map((event) => event.source))).sort(), [events])
+  const filtered = events.filter((event) =>
+    (source === 'all' || event.source === source) &&
+    (severity === 'all' || event.severity === severity),
+  )
+  return (
+    <section className="diagnostics-section" aria-labelledby="events-heading">
+      <div className="section-heading">
+        <div>
+          <p className="section-label">Redacted operator log</p>
+          <h2 id="events-heading">Logs & events</h2>
+        </div>
+        {report && <span>{report.count} recorded</span>}
+      </div>
+      <div className="toolbar">
+        <label htmlFor="event-source">Source</label>
+        <select id="event-source" value={source} onChange={(event) => { setSource(event.target.value) }}>
+          <option value="all">All sources</option>
+          {sources.map((name) => <option value={name} key={name}>{humanName(name)}</option>)}
+        </select>
+        <label htmlFor="event-severity">Severity</label>
+        <select id="event-severity" value={severity} onChange={(event) => { setSeverity(event.target.value) }}>
+          <option value="all">All severities</option>
+          <option value="info">Info</option>
+          <option value="warn">Warning</option>
+          <option value="error">Error</option>
+        </select>
+      </div>
+      {filtered.length === 0 ? (
+        <p className="empty-state">{report === null ? 'Event log is unavailable right now.' : 'No events match the filters.'}</p>
+      ) : (
+        <div className="feature-table event-table" role="table" aria-label="Recorded events">
+          {filtered.map((event, index) => (
+            <EventRow event={event} index={index} key={`${event.recorded_at}-${event.source}-${String(index)}`} />
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
+function EventRow({ event, index }: { event: EventRecord; index: number }) {
+  const correlation = event.correlation_id ? ` · ${event.correlation_id}` : ''
+  return (
+    <div className="feature-row event-row" role="row" key={`${event.recorded_at}-${String(index)}`}>
+      <div className="event-time" role="cell">{new Date(event.recorded_at).toLocaleString()}</div>
+      <div role="cell">{humanName(event.source)}</div>
+      <div role="cell"><span className={`severity severity-${event.severity}`}>{event.severity}</span></div>
+      <div className="event-message" role="cell" title={event.message}>{event.message}{correlation}</div>
+    </div>
+  )
+}
+
+function BenchmarksPage({ report }: { report: BenchmarksReport | null }) {
+  return (
+    <section className="diagnostics-section" aria-labelledby="benchmarks-heading">
+      <div className="section-heading">
+        <div>
+          <p className="section-label">Campaign run history</p>
+          <h2 id="benchmarks-heading">Benchmarks</h2>
+        </div>
+        {report && <span>{report.count} runs recorded</span>}
+      </div>
+      {report === null ? (
+        <p className="empty-state">Benchmark history is unavailable right now.</p>
+      ) : report.runs.length === 0 ? (
+        <p className="empty-state">No benchmark runs recorded yet.</p>
+      ) : (
+        <div className="feature-table" role="table" aria-label="Benchmark runs">
+          <div className="feature-row table-head" role="row">
+            <div className="feature-name" role="cell">Run</div>
+            <div role="cell">Model</div>
+            <div role="cell">Engine</div>
+            <div role="cell">Started</div>
+            <div role="cell">Status</div>
+          </div>
+          {report.runs.map((run) => (
+            <div className="feature-row" role="row" key={run.run_id}>
+              <div className="feature-name" role="cell">{run.run_id}</div>
+              <div role="cell">{String(run.identity.model_id)}</div>
+              <div role="cell">{String(run.identity.engine_id)} · {String(run.identity.quantization)}</div>
+              <div role="cell">{new Date(run.started_at).toLocaleString()}</div>
+              <div role="cell"><span className={`status status-${run.status === 'completed' ? 'available' : run.status === 'failed' ? 'unhealthy' : 'degraded'}`}>{humanName(run.status)}</span></div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
+function AnalyticsPage({ report }: { report: AnalyticsReport | null }) {
+  if (report === null) {
+    return (
+      <section className="diagnostics-section" aria-labelledby="analytics-heading">
+        <div className="section-heading">
+          <div>
+            <p className="section-label">Evidence comparisons</p>
+            <h2 id="analytics-heading">Analytics</h2>
+          </div>
+        </div>
+        <p className="empty-state">Analytics are unavailable right now.</p>
+      </section>
+    )
+  }
+  const usage = report.usage
+  return (
+    <section className="diagnostics-section" aria-labelledby="analytics-heading">
+      <div className="section-heading">
+        <div>
+          <p className="section-label">Evidence comparisons</p>
+          <h2 id="analytics-heading">Analytics</h2>
+        </div>
+        <span>{usage.window_days}-day window</span>
+      </div>
+      <div className="metrics-grid" aria-label="Usage summary">
+        <article className="metric-cell"><Activity aria-hidden="true" /><span>Requests</span><strong>{usage.requests.toLocaleString()}</strong></article>
+        <article className="metric-cell"><CheckCircle2 aria-hidden="true" /><span>Successes</span><strong>{usage.successes.toLocaleString()}</strong></article>
+        <article className="metric-cell"><AlertTriangle aria-hidden="true" /><span>Errors</span><strong>{usage.errors.toLocaleString()}</strong></article>
+        <article className="metric-cell"><Gauge aria-hidden="true" /><span>Tokens</span><strong>{(usage.prompt_tokens + usage.completion_tokens).toLocaleString()}</strong><small>{usage.prompt_tokens.toLocaleString()} prompt · {usage.completion_tokens.toLocaleString()} completion</small></article>
+      </div>
+      <div className="feature-table" role="table" aria-label="Run scorecards">
+        <div className="feature-row table-head" role="row">
+          <div className="feature-name" role="cell">Run</div>
+          <div role="cell">TTFT p50</div>
+          <div role="cell">Throughput p50</div>
+          <div role="cell">Samples</div>
+        </div>
+        {report.scorecards.map((card) => (
+          <div className="feature-row" role="row" key={card.run_id}>
+            <div className="feature-name" role="cell">{card.run_id}<small>{card.model_id} · {card.engine_id} · {card.quantization}</small></div>
+            <div role="cell">{card.ttft_seconds === null ? '—' : `${String(Math.round(card.ttft_seconds * 1000))} ms`}</div>
+            <div role="cell">{card.tokens_per_second === null ? '—' : `${String(Math.round(card.tokens_per_second))} tok/s`}</div>
+            <div role="cell">{card.sample_count}</div>
+          </div>
+        ))}
+      </div>
+      {report.comparisons.length > 0 && (
+        <div className="feature-table" role="table" aria-label="Run comparisons">
+          <div className="feature-row table-head" role="row">
+            <div className="feature-name" role="cell">Comparison</div>
+            <div role="cell">Metric</div>
+            <div role="cell">Baseline</div>
+            <div role="cell">Candidate</div>
+            <div role="cell">Change</div>
+          </div>
+          {report.comparisons.map((comparison, index) => (
+            <div className="feature-row" role="row" key={`${comparison.baseline_run_id}-${comparison.candidate_run_id}-${String(index)}`}>
+              <div className="feature-name" role="cell">{comparison.baseline_run_id} → {comparison.candidate_run_id}<small>{comparison.classification}{comparison.classification_note ? ` · ${comparison.classification_note}` : ''}</small></div>
+              <div role="cell">{humanName(comparison.metric)} ({comparison.statistic})</div>
+              <div role="cell">{formatMetric(comparison.baseline.value, comparison.metric === 'tokens_per_second' ? 'tokens' : 'count')}</div>
+              <div role="cell">{formatMetric(comparison.candidate.value, comparison.metric === 'tokens_per_second' ? 'tokens' : 'count')}</div>
+              <div role="cell">{comparison.percent_change === null ? '—' : `${comparison.percent_change > 0 ? '+' : ''}${String(Math.round(comparison.percent_change))}%`}</div>
+            </div>
+          ))}
+        </div>
+      )}
+      {report.regressions.length > 0 && (
+        <div className="feature-table" role="table" aria-label="Detected regressions">
+          <div className="feature-row table-head" role="row">
+            <div className="feature-name" role="cell">Regression</div>
+            <div role="cell">Baseline</div>
+            <div role="cell">Candidate</div>
+            <div role="cell">Change</div>
+          </div>
+          {report.regressions.map((regression, index) => (
+            <div className="feature-row" role="row" key={`${regression.metric}-${String(index)}`}>
+              <div className="feature-name" role="cell"><AlertTriangle size={16} aria-hidden="true" /> {humanName(regression.metric)}</div>
+              <div role="cell">{String(Math.round(regression.baseline_value))}</div>
+              <div role="cell">{String(Math.round(regression.candidate_value))}</div>
+              <div role="cell">{regression.change_pct > 0 ? '+' : ''}{String(Math.round(regression.change_pct))}%</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
 function WorkspacePage({
   view,
   overview,
   controls,
   recommendation,
   workspaces,
+  metrics,
+  trendSignal,
+  onTrendSignal,
+  events,
+  benchmarks,
+  analytics,
 }: {
   view: string
   overview: Overview | null
   controls: ControlsReport | null
   recommendation: RecommendationRecord | null | undefined
   workspaces: Workspace[]
+  metrics: MetricsTrend | null
+  trendSignal: string
+  onTrendSignal: (signal: string) => void
+  events: EventsReport | null
+  benchmarks: BenchmarksReport | null
+  analytics: AnalyticsReport | null
 }) {
   const workspace = workspaces.find((item) => item.id === view)
   switch (view) {
@@ -474,13 +778,50 @@ function WorkspacePage({
       return <RuntimePage controls={controls} />
     case 'hardware':
       return (
-        <HardwarePage
-          host={overview?.host ?? { status: 'unavailable', reason: 'runtime_agent_not_configured' }}
-        />
+        <div className="page-stack">
+          <HardwarePage
+            host={overview?.host ?? { status: 'unavailable', reason: 'runtime_agent_not_configured' }}
+          />
+          <MetricsPage trend={metrics} trendSignal={trendSignal} onTrendSignal={onTrendSignal} />
+        </div>
       )
+    case 'logs_events':
+      return <EventsPage report={events} />
+    case 'benchmarks':
+      return <BenchmarksPage report={benchmarks} />
+    case 'analytics':
+      return <AnalyticsPage report={analytics} />
     default:
       return workspace ? <EmptyWorkspacePage workspace={workspace} /> : null
   }
+}
+
+function useWorkspaceData<T>(
+  view: string,
+  target: string,
+  fetcher: (signal: AbortSignal) => Promise<T>,
+  setter: (value: T | null) => void,
+) {
+  const request = useRef<AbortController | null>(null)
+  useEffect(() => {
+    if (view !== target) return
+    const controller = new AbortController()
+    request.current?.abort()
+    request.current = controller
+    fetcher(controller.signal)
+      .then((value) => { setter(value) })
+      .catch((reason: unknown) => {
+        if (reason instanceof DOMException && reason.name === 'AbortError') return
+        setter(null)
+      })
+      .finally(() => {
+        if (request.current === controller) request.current = null
+      })
+    return () => {
+      request.current?.abort()
+      request.current = null
+    }
+  }, [view, target, fetcher, setter])
 }
 
 function Dashboard({ onLogout, onSessionExpired }: { onLogout: () => Promise<void>; onSessionExpired: () => void }) {
@@ -488,6 +829,11 @@ function Dashboard({ onLogout, onSessionExpired }: { onLogout: () => Promise<voi
   const [navigation, setNavigation] = useState<NavigationManifest | null>(null)
   const [controls, setControls] = useState<ControlsReport | null>(null)
   const [recommendation, setRecommendation] = useState<RecommendationRecord | null | undefined>(undefined)
+  const [metrics, setMetrics] = useState<MetricsTrend | null>(null)
+  const [events, setEvents] = useState<EventsReport | null>(null)
+  const [benchmarks, setBenchmarks] = useState<BenchmarksReport | null>(null)
+  const [analytics, setAnalytics] = useState<AnalyticsReport | null>(null)
+  const [trendSignal, setTrendSignal] = useState('gpu_cache_usage')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [view, setView] = useState('overview')
@@ -548,6 +894,17 @@ function Dashboard({ onLogout, onSessionExpired }: { onLogout: () => Promise<voi
     return () => { recommendationRequest.current?.abort() }
   }, [refreshRecommendation])
 
+  const fetchTrend = useCallback(
+    (signal: AbortSignal) => fetchMetricsTrend(signal, trendSignal),
+    [trendSignal],
+  )
+  const fetchEventLog = useCallback((signal: AbortSignal) => fetchEvents(200, signal), [])
+  const fetchRunHistory = useCallback((signal: AbortSignal) => fetchBenchmarks(20, signal), [])
+  useWorkspaceData(view, 'hardware', fetchTrend, setMetrics)
+  useWorkspaceData(view, 'logs_events', fetchEventLog, setEvents)
+  useWorkspaceData(view, 'benchmarks', fetchRunHistory, setBenchmarks)
+  useWorkspaceData(view, 'analytics', fetchAnalytics, setAnalytics)
+
   useEffect(() => {
     const interval = window.setInterval(() => {
       if (!document.hidden) void refresh()
@@ -598,6 +955,12 @@ function Dashboard({ onLogout, onSessionExpired }: { onLogout: () => Promise<voi
           controls={controls}
           recommendation={recommendation}
           workspaces={workspaces}
+          metrics={metrics}
+          trendSignal={trendSignal}
+          onTrendSignal={setTrendSignal}
+          events={events}
+          benchmarks={benchmarks}
+          analytics={analytics}
         />
       </main>
     </div>
@@ -625,3 +988,4 @@ export default function App() {
   }
   return signedIn ? <Dashboard onLogout={logout} onSessionExpired={sessionExpired} /> : <Login onLogin={login} />
 }
+

@@ -72,6 +72,10 @@ function mockFetch(
     navigation?: unknown
     controls?: unknown
     recommendation?: unknown
+    metrics?: unknown
+    events?: unknown
+    benchmarks?: unknown
+    analytics?: unknown
     rejectPaths?: string[]
   } = {},
 ) {
@@ -94,13 +98,93 @@ function mockFetch(
         status: responseStatus,
         headers: { 'Content-Type': 'application/json' },
       }))
-    if (path === '/api/v1/operations/navigation') return respond(navigationPayload, status)
+if (path === '/api/v1/operations/navigation') return respond(navigationPayload, status)
     if (path === '/api/v1/operations/controls') return respond(controlsPayload, status)
+    if (path === '/api/v1/operations/metrics') {
+      const signalName = new URL(url).searchParams.get('signal')
+      const trend = signalName !== null && signalName !== 'gpu_cache_usage'
+        ? { ...validMetrics(), signal: signalName, unit: 'bytes' }
+        : routes.metrics ?? validMetrics()
+      return respond(trend, status)
+    }
+    if (path === '/api/v1/operations/events') return respond(routes.events ?? validEvents(), status)
+    if (path === '/api/v1/operations/benchmarks') return respond(routes.benchmarks ?? validBenchmarks(), status)
+    if (path === '/api/v1/operations/analytics') return respond(routes.analytics ?? validAnalytics(), status)
     if (path === '/api/v1/recommendations/latest') {
       return respond(recommendationPayload, recommendationPayload === null ? 404 : 200)
     }
     return respond(payload, status)
   }))
+}
+
+function validMetrics() {
+  return {
+    schema_version: 1,
+    observed_at: '2026-08-01T12:00:00+00:00',
+    signal: 'gpu_cache_usage',
+    unit: 'percent',
+    freshness: { state: 'fresh', latest_observed_at: '2026-08-01T11:59:00+00:00', age_seconds: 60 },
+    sources: [
+      { source: 'engine', state: 'available', reason: null },
+      { source: 'host', state: 'available', reason: null },
+    ],
+    buckets: [
+      { start: '2026-08-01T10:00:00+00:00', end: '2026-08-01T11:00:00+00:00', count: 12, min: 20, max: 60, mean: 40, p50: 40, p95: 55 },
+      { start: '2026-08-01T11:00:00+00:00', end: '2026-08-01T12:00:00+00:00', count: 12, min: 40, max: 80, mean: 60, p50: 60, p95: 75 },
+    ],
+    gaps: [{ start: '2026-08-01T11:00:00+00:00', end: '2026-08-01T12:00:00+00:00' }],
+    sample_count: 24,
+  }
+}
+
+function validEvents() {
+  return {
+    schema_version: 1,
+    observed_at: '2026-08-01T12:00:00+00:00',
+    count: 2,
+    events: [
+      { recorded_at: '2026-08-01T11:00:00+00:00', source: 'api', severity: 'info', message: 'heartbeat', correlation_id: null, deployment_id: null, campaign_id: null },
+      { recorded_at: '2026-08-01T10:00:00+00:00', source: 'engine', severity: 'error', message: 'auth failed Bearer [REDACTED]', correlation_id: 'corr-9', deployment_id: null, campaign_id: null },
+    ],
+  }
+}
+
+function validBenchmarks() {
+  return {
+    schema_version: 1,
+    observed_at: '2026-08-01T12:00:00+00:00',
+    count: 1,
+    runs: [{
+      run_id: 'run-1',
+      declaration: { name: 'contract-campaign' },
+      identity: { model_id: 'qwen2.5-7b-instruct', engine_id: 'llama.cpp', quantization: 'q8_0' },
+      started_at: '2026-08-01T12:00:00+00:00',
+      ended_at: '2026-08-01T12:02:00+00:00',
+      status: 'completed',
+      errors: [],
+      checkpoint: [],
+    }],
+  }
+}
+
+function validAnalytics() {
+  return {
+    schema_version: 1,
+    observed_at: '2026-08-01T12:00:00+00:00',
+    usage: { requests: 120, successes: 118, cancellations: 1, errors: 1, prompt_tokens: 9000, completion_tokens: 12000, window_days: 30 },
+    scorecards: [
+      { run_id: 'run-1', model_id: 'm', engine_id: 'e', quantization: 'q8_0', statistic: 'p50', sample_count: 4, ttft_seconds: 0.2, tokens_per_second: 11.5 },
+      { run_id: 'run-2', model_id: 'm', engine_id: 'e', quantization: 'q8_0', statistic: 'p50', sample_count: 4, ttft_seconds: 0.3, tokens_per_second: 10.2 },
+    ],
+    comparisons: [{
+      baseline_run_id: 'run-1', candidate_run_id: 'run-2', classification: 'COMPARABLE', classification_note: '',
+      metric: 'ttft_seconds', statistic: 'p50',
+      baseline: { value: 0.2, sample_count: 4, run_variation: 0.05 },
+      candidate: { value: 0.3, sample_count: 4, run_variation: 0.06 },
+      percent_change: 50,
+    }],
+    regressions: [{ metric: 'ttft_seconds', baseline_value: 0.2, candidate_value: 0.3, threshold_pct: 5, change_pct: 50 }],
+  }
 }
 
 async function signIn() {
@@ -347,7 +431,7 @@ test('OUI-001 partial and ready workspaces and an unknown id stay honest', async
     ...navigation,
     workspaces: [
       ...navigation.workspaces.map((workspace) =>
-        workspace.id === 'engines' ? { ...workspace, state: 'partial' } : workspace.id === 'benchmarks' ? { ...workspace, state: 'ready' } : workspace,
+        workspace.id === 'engines' ? { ...workspace, state: 'partial' } : workspace.id === 'analytics' ? { ...workspace, state: 'ready' } : workspace,
       ),
       { id: 'bogus', label: 'Bogus', state: 'unavailable', query_model: null },
     ],
@@ -357,8 +441,8 @@ test('OUI-001 partial and ready workspaces and an unknown id stay honest', async
   await signIn()
   await userEvent.click(screen.getByRole('button', { name: 'Engines' }))
   expect(await screen.findByText(/Only partial evidence is available for Engines/)).toBeVisible()
-  await userEvent.click(screen.getByRole('button', { name: 'Benchmarks' }))
-  expect(await screen.findByText('Benchmarks is ready.')).toBeVisible()
+  await userEvent.click(screen.getByRole('button', { name: 'Analytics' }))
+  expect(await screen.findByText('30-day window')).toBeVisible()
   await userEvent.click(screen.getByRole('button', { name: 'Bogus' }))
   expect(await screen.findByText(/evidence source for Bogus is unavailable/)).toBeVisible()
 })
@@ -651,4 +735,98 @@ test.each([
   expect(await screen.findByRole('alert')).toHaveTextContent(message)
   expect(screen.getByLabelText('API access key')).toBeVisible()
   expect(sessionStorage.getItem('morpheus.session.active')).toBeNull()
+})
+
+test('OUI-002 hardware trends render units, normalized bars, gaps, and sources', async () => {
+  mockFetch()
+  render(<App />)
+  await signIn()
+  await screen.findByRole('heading', { name: 'System overview' })
+  await userEvent.click(screen.getByRole('button', { name: 'Hardware' }))
+  expect(await screen.findByRole('heading', { name: 'Hardware trends' })).toBeVisible()
+  expect(screen.getByText('Unit: percent')).toBeVisible()
+  expect(screen.getByText('Fresh evidence')).toBeVisible()
+  expect(screen.getByText('24 samples in window')).toBeVisible()
+  const bars = screen.getAllByRole('img', { name: /samples, mean 40%/ })
+  expect(bars).toHaveLength(1)
+  const firstBar = bars[0] as HTMLElement
+  expect(Number.parseFloat(firstBar.style.height)).toBeCloseTo(66.6667, 3)
+  expect(screen.getAllByRole('img', { name: 'Missing data interval' })).toHaveLength(1)
+  expect(screen.getByText(/Sources: engine available · host available/)).toBeVisible()
+})
+
+test('OUI-002 signal switch refetches and changes the trend label', async () => {
+  mockFetch()
+  render(<App />)
+  await signIn()
+  await screen.findByRole('heading', { name: 'System overview' })
+  await userEvent.click(screen.getByRole('button', { name: 'Hardware' }))
+  await screen.findByRole('heading', { name: 'Hardware trends' })
+  await userEvent.selectOptions(screen.getByLabelText('Signal'), 'free_bytes')
+  expect(await screen.findByText('Unit: bytes')).toBeVisible()
+})
+
+test('OUI-003 log and events workspace filters by severity and source', async () => {
+  mockFetch()
+  render(<App />)
+  await signIn()
+  await screen.findByRole('heading', { name: 'System overview' })
+  await userEvent.click(screen.getByRole('button', { name: 'Logs & Events' }))
+  expect(await screen.findByRole('heading', { name: 'Logs & events' })).toBeVisible()
+  expect(screen.getByText(/auth failed Bearer \[REDACTED\]/)).toBeVisible()
+  expect(screen.getByText(/corr-9/)).toBeVisible()
+  await userEvent.selectOptions(screen.getByLabelText('Severity'), 'info')
+  expect(screen.getByText('heartbeat')).toBeVisible()
+  expect(screen.queryByText(/auth failed/)).not.toBeInTheDocument()
+  await userEvent.selectOptions(screen.getByLabelText('Source'), 'api')
+  expect(screen.getByText('heartbeat')).toBeVisible()
+  expect(screen.queryByText(/auth failed/)).not.toBeInTheDocument()
+})
+
+test('OUI-003 event log shows the empty state when no events match', async () => {
+  mockFetch(overview, 200, { events: { schema_version: 1, observed_at: '2026-08-01T12:00:00+00:00', count: 0, events: [] } })
+  render(<App />)
+  await signIn()
+  await screen.findByRole('heading', { name: 'System overview' })
+  await userEvent.click(screen.getByRole('button', { name: 'Logs & Events' }))
+  expect(await screen.findByText(/No events match the filters/)).toBeVisible()
+})
+
+test('OUI-004 benchmarks workspace lists run history most recent first', async () => {
+  mockFetch()
+  render(<App />)
+  await signIn()
+  await screen.findByRole('heading', { name: 'System overview' })
+  await userEvent.click(screen.getByRole('button', { name: 'Benchmarks' }))
+  expect(await screen.findByRole('heading', { name: 'Benchmarks' })).toBeVisible()
+  expect(screen.getByText('run-1')).toBeVisible()
+  expect(screen.getByText('qwen2.5-7b-instruct')).toBeVisible()
+  expect(screen.getByText('Completed')).toBeVisible()
+})
+
+test('OUI-004 analytics workspace reports usage, scorecards, comparisons, and regressions', async () => {
+  mockFetch()
+  render(<App />)
+  await signIn()
+  await screen.findByRole('heading', { name: 'System overview' })
+  await userEvent.click(screen.getByRole('button', { name: 'Analytics' }))
+  expect(await screen.findByRole('heading', { name: 'Analytics' })).toBeVisible()
+  expect(screen.getByText('30-day window')).toBeVisible()
+  expect(screen.getByText('120')).toBeVisible()
+  expect(screen.getByText('118')).toBeVisible()
+  expect(screen.getByText('21,000')).toBeVisible()
+  expect(screen.getByText('200 ms')).toBeVisible()
+  expect(screen.getByText('12 tok/s')).toBeVisible()
+  expect(screen.getByText('run-1 → run-2')).toBeVisible()
+  expect(screen.getByText('COMPARABLE')).toBeVisible()
+  expect(screen.getAllByText('+50%')).toHaveLength(2)
+})
+
+test('OUI-002 failed metrics fetch keeps the workspace honest', async () => {
+  mockFetch(overview, 200, { rejectPaths: ['/api/v1/operations/metrics'] })
+  render(<App />)
+  await signIn()
+  await screen.findByRole('heading', { name: 'System overview' })
+  await userEvent.click(screen.getByRole('button', { name: 'Hardware' }))
+  expect(await screen.findByText('Trend data is unavailable right now.')).toBeVisible()
 })

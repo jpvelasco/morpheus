@@ -216,6 +216,83 @@ h2 { margin: 0; font-size: 20px; }
 .flag-on { color: #176846; background: #edf8f2; }
 .flag-off { color: #5c6663; background: #f5f7f6; }
 
+.status-fresh { color: #176846; background: #edf8f2; }
+.status-stale { color: #8a5a10; background: #fdf5e6; }
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 20px;
+  border-bottom: 1px solid #e2e7e5;
+}
+.toolbar label { color: #596662; font-size: 12px; font-weight: 700; }
+.toolbar select {
+  padding: 6px 10px;
+  border: 1px solid #ccd5d2;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.trend-meta { padding: 20px; }
+.trend-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 180px;
+  padding: 10px 0 0;
+  border-bottom: 1px solid #ccd5d2;
+}
+.trend-column { flex: 1; min-width: 4px; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; }
+.trend-bar {
+  flex: 0 0 auto;
+  width: 100%;
+  min-height: 2px;
+  background: #12634f;
+  border-radius: 2px 2px 0 0;
+}
+.trend-gap {
+  flex: 0 0 auto;
+  width: 100%;
+  height: 5px;
+  background: repeating-linear-gradient(45deg, #d8dfdd 0 4px, #fff 4px 8px);
+}
+.trend-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 10px;
+  color: #596662;
+  font-size: 12px;
+}
+
+.event-table .feature-row { grid-template-columns: 150px 90px 70px minmax(240px, 2fr); }
+.event-time { color: #596662; font-size: 12px; }
+.event-message { overflow-wrap: anywhere; }
+.severity {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.severity-info { color: #176846; background: #edf8f2; }
+.severity-warn { color: #8a5a10; background: #fdf5e6; }
+.severity-error { color: #852d2d; background: #fff0f0; }
+
+.feature-name small {
+  display: block;
+  margin-top: 2px;
+  color: #596662;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.table-head { color: #596662; font-size: 12px; font-weight: 700; }
+
 .empty-state {
   display: flex;
   align-items: center;

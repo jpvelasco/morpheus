@@ -1,10 +1,18 @@
 import {
   createSession,
   destroySession,
+  fetchAnalytics,
+  fetchBenchmarks,
   fetchControls,
+  fetchEvents,
+  fetchMetricsTrend,
   fetchNavigation,
   fetchOverview,
+  parseAnalyticsReport,
+  parseBenchmarksReport,
   parseControls,
+  parseEventsReport,
+  parseMetricsTrend,
   parseNavigation,
   parseOverview,
 } from '../src/api'
@@ -216,6 +224,180 @@ test('fetchNavigation and fetchControls use the session cookie', async () => {
   expect(fetchMock).toHaveBeenNthCalledWith(
     2,
     'http://127.0.0.1:7400/api/v1/operations/controls',
+    expect.objectContaining({ credentials: 'include' }),
+  )
+})
+
+function validMetricsTrend() {
+  return {
+    schema_version: 1,
+    observed_at: '2026-08-01T12:00:00+00:00',
+    signal: 'gpu_cache_usage',
+    unit: 'percent',
+    freshness: { state: 'stale', latest_observed_at: '2026-08-01T08:10:00+00:00', age_seconds: 13800 },
+    sources: [
+      { source: 'engine', state: 'unavailable', reason: 'metrics_url_not_configured' },
+      { source: 'host', state: 'available', reason: null },
+    ],
+    buckets: [
+      { start: '2026-08-01T08:00:00+00:00', end: '2026-08-01T09:00:00+00:00', count: 3, min: 10, max: 30, mean: 20, p50: 20, p95: 28 },
+    ],
+    gaps: [{ start: '2026-08-01T09:00:00+00:00', end: '2026-08-01T11:00:00+00:00' }],
+    sample_count: 3,
+  }
+}
+
+test('parses metrics trend with units, freshness, sources, and gaps', () => {
+  const result = parseMetricsTrend(validMetricsTrend())
+  expect(result.schema_version).toBe(1)
+  expect(result.unit).toBe('percent')
+  expect(result.freshness).toEqual({ state: 'stale', latest_observed_at: '2026-08-01T08:10:00+00:00', age_seconds: 13800 })
+  expect(result.sources[1]).toEqual({ source: 'host', state: 'available', reason: null })
+  expect(result.buckets[0]).toMatchObject({ count: 3, min: 10, max: 30, mean: 20 })
+  expect(result.gaps).toEqual([{ start: '2026-08-01T09:00:00+00:00', end: '2026-08-01T11:00:00+00:00' }])
+  expect(result.sample_count).toBe(3)
+})
+
+test.each([
+  [null, 'incompatible response'],
+  [[], 'incompatible response'],
+  [{ ...validMetricsTrend(), unit: 3 }, 'metrics unit'],
+  [{ ...validMetricsTrend(), freshness: { state: 'weird', latest_observed_at: null, age_seconds: null } }, 'freshness state'],
+  [{ ...validMetricsTrend(), sources: [{ source: 'engine', state: 'broken', reason: null }] }, 'source state'],
+  [{ ...validMetricsTrend(), buckets: [{ start: 'a', end: 'b', count: '3', min: 1, max: 2, mean: 1, p50: 1, p95: 2 }] }, 'bucket count'],
+  [{ ...validMetricsTrend(), gaps: [{ start: 3, end: 'x' }] }, 'gap start'],
+  [{ ...validMetricsTrend(), sample_count: '3' }, 'sample count'],
+])('rejects incompatible metrics trend shape %#', (payload, message) => {
+  expect(() => parseMetricsTrend(payload)).toThrow(message)
+})
+
+function validEventsReport() {
+  return {
+    schema_version: 1,
+    observed_at: '2026-08-01T12:00:00+00:00',
+    count: 2,
+    events: [
+      { recorded_at: '2026-08-01T11:00:00+00:00', source: 'api', severity: 'info', message: 'heartbeat', correlation_id: null, deployment_id: null, campaign_id: null },
+      { recorded_at: '2026-08-01T10:00:00+00:00', source: 'engine', severity: 'warn', message: 'latency spike', correlation_id: 'corr-9', deployment_id: null, campaign_id: null },
+    ],
+  }
+}
+
+test('parses the redacted events report', () => {
+  const result = parseEventsReport(validEventsReport())
+  expect(result.count).toBe(2)
+  expect(result.events[1]).toMatchObject({ severity: 'warn', correlation_id: 'corr-9' })
+})
+
+test.each([
+  [{ ...validEventsReport(), events: [{ ...validEventsReport().events[0], severity: 'fatal' }] }, 'event severity'],
+  [{ ...validEventsReport(), events: [{ ...validEventsReport().events[0], message: 3 }] }, 'event message'],
+  [{ ...validEventsReport(), events: [{ ...validEventsReport().events[0], recorded_at: 3 }] }, 'event timestamp'],
+  [{ ...validEventsReport(), count: '2' }, 'event count'],
+])('rejects incompatible events shape %#', (payload, message) => {
+  expect(() => parseEventsReport(payload)).toThrow(message)
+})
+
+function validBenchmarks() {
+  return {
+    schema_version: 1,
+    observed_at: '2026-08-01T12:00:00+00:00',
+    count: 1,
+    runs: [{
+      run_id: 'run-1',
+      declaration: { name: 'contract-campaign' },
+      identity: { model_id: 'qwen2.5-7b-instruct', engine_id: 'llama.cpp', quantization: 'q8_0' },
+      started_at: '2026-08-01T12:00:00+00:00',
+      ended_at: '2026-08-01T12:02:00+00:00',
+      status: 'completed',
+      errors: [],
+      checkpoint: [],
+    }],
+  }
+}
+
+test('parses benchmark run history', () => {
+  const result = parseBenchmarksReport(validBenchmarks())
+  expect(result.count).toBe(1)
+  expect(result.runs[0]).toMatchObject({ run_id: 'run-1', status: 'completed' })
+  expect(result.runs[0]?.identity.model_id).toBe('qwen2.5-7b-instruct')
+})
+
+test.each([
+  [{ ...validBenchmarks(), runs: [{ ...validBenchmarks().runs[0], status: 2 }] }, 'run status'],
+  [{ ...validBenchmarks(), runs: [{ ...validBenchmarks().runs[0], errors: 'nope' }] }, 'run errors'],
+  [{ ...validBenchmarks(), runs: [{ ...validBenchmarks().runs[0], started_at: 3 }] }, 'run start'],
+  [{ ...validBenchmarks(), count: '1' }, 'run count'],
+])('rejects incompatible benchmarks shape %#', (payload, message) => {
+  expect(() => parseBenchmarksReport(payload)).toThrow(message)
+})
+
+function validAnalytics() {
+  return {
+    schema_version: 1,
+    observed_at: '2026-08-01T12:00:00+00:00',
+    usage: { requests: 120, successes: 118, cancellations: 1, errors: 1, prompt_tokens: 9000, completion_tokens: 12000, window_days: 30 },
+    scorecards: [{ run_id: 'run-1', model_id: 'm', engine_id: 'e', quantization: 'q8_0', statistic: 'p50', sample_count: 4, ttft_seconds: 0.2, tokens_per_second: 11.5 }],
+    comparisons: [{
+      baseline_run_id: 'run-1', candidate_run_id: 'run-2', classification: 'COMPARABLE', classification_note: '',
+      metric: 'ttft_seconds', statistic: 'p50',
+      baseline: { value: 0.2, sample_count: 4, run_variation: 0.05 },
+      candidate: { value: 0.3, sample_count: 4, run_variation: 0.06 },
+      percent_change: 50,
+    }],
+    regressions: [{ metric: 'ttft_seconds', baseline_value: 0.2, candidate_value: 0.3, threshold_pct: 5, change_pct: 50 }],
+  }
+}
+
+test('parses analytics usage, scorecards, comparisons, and regressions', () => {
+  const result = parseAnalyticsReport(validAnalytics())
+  expect(result.usage).toMatchObject({ requests: 120, errors: 1 })
+  expect(result.scorecards[0]?.ttft_seconds).toBe(0.2)
+  expect(result.comparisons[0]?.classification).toBe('COMPARABLE')
+  expect(result.regressions[0]).toMatchObject({ metric: 'ttft_seconds', change_pct: 50 })
+})
+
+test.each([
+  [{ ...validAnalytics(), usage: { ...validAnalytics().usage, requests: '120' } }, 'usage requests'],
+  [{ ...validAnalytics(), scorecards: [{ ...validAnalytics().scorecards[0], sample_count: '4' }] }, 'scorecard samples'],
+  [{ ...validAnalytics(), comparisons: [{ ...validAnalytics().comparisons[0], percent_change: '50' }] }, 'percent change'],
+  [{ ...validAnalytics(), comparisons: [{ ...validAnalytics().comparisons[0], baseline: { value: '0.2', sample_count: 4, run_variation: 0.05 } }] }, 'baseline value'],
+  [{ ...validAnalytics(), regressions: [{ ...validAnalytics().regressions[0], change_pct: '50' }] }, 'regression change'],
+])('rejects incompatible analytics shape %#', (payload, message) => {
+  expect(() => parseAnalyticsReport(payload)).toThrow(message)
+})
+
+test('data fetchers pass query parameters and use the session cookie', async () => {
+  const fetchMock = vi.fn().mockImplementation((url: string) => {
+    const payload = url.includes('/operations/metrics') ? validMetricsTrend()
+      : url.includes('/operations/events') ? validEventsReport()
+      : url.includes('/operations/benchmarks') ? validBenchmarks()
+      : validAnalytics()
+    return Promise.resolve(new Response(JSON.stringify(payload), { status: 200 }))
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  await expect(fetchMetricsTrend(new AbortController().signal, 'gpu_cache_usage')).resolves.toMatchObject({ signal: 'gpu_cache_usage' })
+  await expect(fetchEvents()).resolves.toMatchObject({ count: 2 })
+  await expect(fetchBenchmarks()).resolves.toMatchObject({ count: 1 })
+  await expect(fetchAnalytics()).resolves.toMatchObject({ schema_version: 1 })
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    1,
+    'http://127.0.0.1:7400/api/v1/operations/metrics?signal=gpu_cache_usage&window_seconds=3600&hours=6',
+    expect.objectContaining({ credentials: 'include' }),
+  )
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    2,
+    'http://127.0.0.1:7400/api/v1/operations/events?limit=200',
+    expect.objectContaining({ credentials: 'include' }),
+  )
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    3,
+    'http://127.0.0.1:7400/api/v1/operations/benchmarks?limit=20',
+    expect.objectContaining({ credentials: 'include' }),
+  )
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    4,
+    'http://127.0.0.1:7400/api/v1/operations/analytics',
     expect.objectContaining({ credentials: 'include' }),
   )
 })
