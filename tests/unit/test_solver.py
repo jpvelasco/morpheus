@@ -21,6 +21,7 @@ from morpheus.core.solver import (
     estimate_resource_use,
     filter_viable,
 )
+from morpheus.core.workload import OperatorConstraints
 
 LLAMA = ModelCatalogEntry(
     id="llama-3.1-8b-instruct",
@@ -127,6 +128,7 @@ def context(
     model: ModelCatalogEntry = LLAMA,
     engine: EngineCatalogEntry = LLAMACPP,
     rule: EngineRule | None = None,
+    operator: OperatorConstraints | None = None,
 ):
     return {
         "candidate": cand or candidate(),
@@ -136,6 +138,7 @@ def context(
         "budget": budget or BUDGETS["ubuntu-nvidia"],
         "requirements": needs or requirements(),
         "trust_violations": violations,
+        "operator": operator,
     }
 
 
@@ -227,6 +230,71 @@ class TestDecisionTables:
         result = check_constraints(**context(cand))
         assert "estimate" in codes(result)
 
+    def test_operator_context_cap(self) -> None:
+        cand = candidate(context_window=16384)
+        result = check_constraints(**context(cand, operator=OperatorConstraints(max_context=8192)))
+        assert "operator-context" in codes(result)
+
+    def test_operator_concurrency_cap(self) -> None:
+        cand = candidate(concurrency=4)
+        result = check_constraints(**context(cand, operator=OperatorConstraints(max_concurrency=2)))
+        assert "operator-concurrency" in codes(result)
+
+    def test_operator_engine_allowlist(self) -> None:
+        cand = candidate(engine_id="vllm")
+        result = check_constraints(
+            **context(cand, operator=OperatorConstraints(allowed_engines=("llama.cpp",)))
+        )
+        assert "operator-engine" in codes(result)
+
+    def test_operator_quantization_allowlist(self) -> None:
+        cand = candidate(quantization="q4_0")
+        result = check_constraints(
+            **context(cand, operator=OperatorConstraints(allowed_quantizations=("q8_0",)))
+        )
+        assert "operator-quantization" in codes(result)
+
+    def test_operator_ram_cap(self) -> None:
+        cand = candidate(quantization="f16")
+        result = check_constraints(
+            **context(cand, operator=OperatorConstraints(max_ram_bytes=1_000_000_000))
+        )
+        assert "operator-ram" in codes(result)
+
+    def test_operator_storage_cap(self) -> None:
+        result = check_constraints(
+            **context(cand=candidate(), operator=OperatorConstraints(max_storage_bytes=1024))
+        )
+        assert "operator-storage" in codes(result)
+
+    def test_operator_caps_pass_when_roomy(self) -> None:
+        result = check_constraints(
+            **context(
+                cand=candidate(),
+                operator=OperatorConstraints(
+                    max_context=100_000,
+                    max_concurrency=16,
+                    allowed_engines=("llama.cpp",),
+                    allowed_quantizations=("q8_0",),
+                    max_ram_bytes=1_000_000_000_000,
+                    max_vram_bytes=1_000_000_000_000,
+                    max_storage_bytes=1_000_000_000_000,
+                ),
+            )
+        )
+        assert result == ()
+
+    def test_operator_vram_cap_applies_only_to_cuda(self) -> None:
+        cand = candidate(engine_id="vllm", quantization="f16", context_window=131072, concurrency=8)
+        result = check_constraints(
+            **context(
+                cand,
+                budget=BUDGETS["windows-nvidia"],
+                operator=OperatorConstraints(max_vram_bytes=4_000_000_000),
+            )
+        )
+        assert "operator-vram" in codes(result)
+
 
 class TestFilterViable:
     def test_rejected_cannot_enter_ranking(self) -> None:
@@ -313,6 +381,22 @@ class TestContracts:
             HardwareBudget(ram_bytes=0, storage_bytes=1)
         with pytest.raises(SolverError):
             HardwareBudget(ram_bytes=1, storage_bytes=1, accelerator="rocm")
+
+    def test_estimate_validates_confidence(self) -> None:
+        with pytest.raises(SolverError):
+            estimate_resource_use(LLAMA, candidate(), BUDGETS["ubuntu-nvidia"], confidence=0.0)
+        with pytest.raises(SolverError):
+            estimate_resource_use(LLAMA, candidate(), BUDGETS["ubuntu-nvidia"], confidence=1.5)
+
+    def test_estimate_round_trip(self) -> None:
+        estimate = estimate_resource_use(LLAMA, candidate(), BUDGETS["ubuntu-nvidia"])
+        assert ResourceEstimate(**estimate.to_dict()) == estimate
+
+    def test_estimate_honors_declared_confidence(self) -> None:
+        estimate = estimate_resource_use(
+            LLAMA, candidate(), BUDGETS["ubuntu-nvidia"], confidence=0.9
+        )
+        assert estimate.confidence == 0.9
 
     def test_violation_round_trip(self) -> None:
         violation = ConstraintViolation("trust", "missing sha256 digest")
