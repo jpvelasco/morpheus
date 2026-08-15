@@ -15,6 +15,7 @@ from morpheus.core.catalog import (
     ModelCatalogEntry,
     TrustViolation,
 )
+from morpheus.core.workload import OperatorConstraints
 
 ACCELERATORS = ("cpu", "cuda", "metal")
 
@@ -94,12 +95,19 @@ class EngineRule:
 
 @dataclass(frozen=True, slots=True)
 class ResourceEstimate:
-    """Deterministic resource use with a declared safety margin."""
+    """Deterministic resource use with a declared safety margin and confidence."""
 
     ram_bytes: int
     vram_bytes: int
     storage_bytes: int
     margin: float = _DEFAULT_MARGIN
+    confidence: float = 0.5
+
+    def __post_init__(self) -> None:
+        if self.margin < 1.0:
+            raise SolverError("margin must be at least 1.0")
+        if not 0 < self.confidence <= 1.0:
+            raise SolverError("confidence must be in (0, 1]")
 
     def ram_with_margin(self) -> int:
         return int(self.ram_bytes * self.margin)
@@ -113,6 +121,7 @@ class ResourceEstimate:
             "vram_bytes": self.vram_bytes,
             "storage_bytes": self.storage_bytes,
             "margin": self.margin,
+            "confidence": self.confidence,
         }
 
 
@@ -120,13 +129,16 @@ def estimate_resource_use(
     model: ModelCatalogEntry,
     candidate: Candidate,
     budget: HardwareBudget,
+    *,
+    margin: float = _DEFAULT_MARGIN,
+    confidence: float = 0.5,
 ) -> ResourceEstimate:
     """Estimate weights + KV cache + overhead for a candidate tuple.
 
     Weight bytes derive from the catalog artifact size (f16 reference) scaled
     by the quantization's bytes-per-parameter. The KV cache uses a documented
     per-token overhead per concurrent stream. Deterministic for identical
-    inputs.
+    inputs; margin and confidence are operator-declared.
     """
     if candidate.quantization not in _QUANT_BYTES_PER_PARAM:
         raise SolverError(f"unknown quantization: {candidate.quantization}")
@@ -141,6 +153,8 @@ def estimate_resource_use(
         ram_bytes=memory,
         vram_bytes=vram,
         storage_bytes=reference,
+        margin=margin,
+        confidence=confidence,
     )
 
 
@@ -162,9 +176,46 @@ def check_constraints(
     budget: HardwareBudget,
     requirements: WorkloadRequirements,
     trust_violations: tuple[TrustViolation, ...] = (),
+    operator: OperatorConstraints | None = None,
 ) -> tuple[ConstraintViolation, ...]:
     """Return every violated hard constraint in stable order."""
     violations: list[ConstraintViolation] = []
+    if operator is not None:
+        if operator.max_context is not None and candidate.context_window > operator.max_context:
+            violations.append(
+                ConstraintViolation(
+                    "operator-context",
+                    f"operator cap {operator.max_context} below candidate context "
+                    f"{candidate.context_window}",
+                )
+            )
+        if (
+            operator.max_concurrency is not None
+            and candidate.concurrency > operator.max_concurrency
+        ):
+            violations.append(
+                ConstraintViolation(
+                    "operator-concurrency",
+                    f"operator cap {operator.max_concurrency} below candidate "
+                    f"concurrency {candidate.concurrency}",
+                )
+            )
+        if operator.allowed_engines and candidate.engine_id not in operator.allowed_engines:
+            violations.append(
+                ConstraintViolation(
+                    "operator-engine", f"engine {candidate.engine_id} not allowed by operator"
+                )
+            )
+        if (
+            operator.allowed_quantizations
+            and candidate.quantization not in operator.allowed_quantizations
+        ):
+            violations.append(
+                ConstraintViolation(
+                    "operator-quantization",
+                    f"quantization {candidate.quantization} not allowed by operator",
+                )
+            )
     model_trust = next(
         (violation for violation in trust_violations if violation.entry_id == model.id), None
     )
@@ -265,6 +316,40 @@ def check_constraints(
                 f"artifact {estimate.storage_bytes} exceeds storage budget {budget.storage_bytes}",
             )
         )
+    if operator is not None:
+        if (
+            operator.max_ram_bytes is not None
+            and estimate.ram_with_margin() > operator.max_ram_bytes
+        ):
+            violations.append(
+                ConstraintViolation(
+                    "operator-ram",
+                    f"estimated ram {estimate.ram_with_margin()} exceeds operator cap "
+                    f"{operator.max_ram_bytes}",
+                )
+            )
+        if (
+            operator.max_vram_bytes is not None
+            and estimate.vram_with_margin() > operator.max_vram_bytes
+        ):
+            violations.append(
+                ConstraintViolation(
+                    "operator-vram",
+                    f"estimated vram {estimate.vram_with_margin()} exceeds operator cap "
+                    f"{operator.max_vram_bytes}",
+                )
+            )
+        if (
+            operator.max_storage_bytes is not None
+            and estimate.storage_bytes > operator.max_storage_bytes
+        ):
+            violations.append(
+                ConstraintViolation(
+                    "operator-storage",
+                    f"artifact {estimate.storage_bytes} exceeds operator cap "
+                    f"{operator.max_storage_bytes}",
+                )
+            )
     return tuple(violations)
 
 
@@ -277,6 +362,7 @@ def filter_viable(
     budget: HardwareBudget,
     requirements: WorkloadRequirements,
     trust_violations: tuple[TrustViolation, ...] = (),
+    operator: OperatorConstraints | None = None,
 ) -> tuple[tuple[Candidate, ...], tuple[tuple[Candidate, tuple[ConstraintViolation, ...]], ...]]:
     """Partition candidates into viable and rejected-with-reasons.
 
@@ -313,6 +399,7 @@ def filter_viable(
             budget=budget,
             requirements=requirements,
             trust_violations=trust_violations,
+            operator=operator,
         )
         if violations:
             rejected.append((candidate, violations))
