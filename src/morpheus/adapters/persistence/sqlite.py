@@ -2,16 +2,24 @@ from __future__ import annotations
 
 import asyncio
 import sqlite3
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, TypeVar
 
+from morpheus.core.events import (
+    EventRecord,
+    bounded_limit,
+    normalize_event,
+    validate_event_filter,
+)
+from morpheus.core.metrics_history import MetricSample
 from morpheus.core.paths import OwnedPathResolver
 from morpheus.core.telemetry import TelemetryEvent
 
 T = TypeVar("T")
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
+MAX_METRIC_SAMPLES = 10_000
 
 
 class SqliteStore:
@@ -60,6 +68,41 @@ class SqliteStore:
             )
             connection.execute(
                 "CREATE INDEX IF NOT EXISTS idx_telemetry_recorded_at ON telemetry(recorded_at)"
+            )
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS metric_samples (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    recorded_at TEXT NOT NULL,
+                    source TEXT NOT NULL,
+                    signal TEXT NOT NULL,
+                    value REAL NOT NULL
+                )
+                """
+            )
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS idx_metric_samples_signal_recorded "
+                "ON metric_samples(signal, recorded_at)"
+            )
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    recorded_at TEXT NOT NULL,
+                    source TEXT NOT NULL,
+                    severity TEXT NOT NULL,
+                    message TEXT NOT NULL,
+                    correlation_id TEXT,
+                    deployment_id TEXT,
+                    campaign_id TEXT
+                )
+                """
+            )
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS idx_events_recorded_at ON events(recorded_at)"
+            )
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS idx_events_correlation ON events(correlation_id)"
             )
 
         await self._run(migrate)
@@ -117,6 +160,185 @@ class SqliteStore:
             return cursor.rowcount
 
         return await self._run(prune)
+
+    async def record_metric_samples(self, samples: Sequence[MetricSample]) -> None:
+        values = [
+            (sample.observed_at, sample.source, sample.signal, float(sample.value))
+            for sample in samples
+        ]
+
+        def insert(connection: sqlite3.Connection) -> None:
+            connection.executemany(
+                """
+                INSERT INTO metric_samples (recorded_at, source, signal, value)
+                VALUES (?, ?, ?, ?)
+                """,
+                values,
+            )
+
+        await self._run(insert)
+
+    async def metric_samples(
+        self,
+        *,
+        signal: str,
+        start: str,
+        end: str,
+        limit: int,
+    ) -> list[MetricSample]:
+        bounded_limit = min(max(limit, 1), MAX_METRIC_SAMPLES)
+
+        def select(connection: sqlite3.Connection) -> list[MetricSample]:
+            rows = connection.execute(
+                """
+                SELECT recorded_at, source, signal, value
+                FROM metric_samples
+                WHERE signal = ? AND recorded_at >= ? AND recorded_at < ?
+                ORDER BY recorded_at ASC
+                LIMIT ?
+                """,
+                (signal, start, end, bounded_limit),
+            ).fetchall()
+            return [
+                MetricSample(
+                    observed_at=row["recorded_at"],
+                    source=row["source"],
+                    signal=row["signal"],
+                    value=row["value"],
+                )
+                for row in rows
+            ]
+
+        return await self._run(select)
+
+    async def prune_metrics(self, *, before: str) -> int:
+        def prune(connection: sqlite3.Connection) -> int:
+            cursor = connection.execute(
+                "DELETE FROM metric_samples WHERE recorded_at < ?", (before,)
+            )
+            return cursor.rowcount
+
+        return await self._run(prune)
+
+    async def record_event(
+        self,
+        *,
+        source: str,
+        severity: str,
+        message: str,
+        correlation_id: str | None = None,
+        deployment_id: str | None = None,
+        campaign_id: str | None = None,
+        recorded_at: str | None = None,
+    ) -> None:
+        event = normalize_event(
+            source=source,
+            severity=severity,
+            message=message,
+            correlation_id=correlation_id,
+            deployment_id=deployment_id,
+            campaign_id=campaign_id,
+            recorded_at=recorded_at,
+        )
+        values = (
+            event.recorded_at,
+            event.source,
+            event.severity,
+            event.message,
+            event.correlation_id,
+            event.deployment_id,
+            event.campaign_id,
+        )
+
+        def insert(connection: sqlite3.Connection) -> None:
+            connection.execute(
+                """
+                INSERT INTO events (
+                    recorded_at, source, severity, message,
+                    correlation_id, deployment_id, campaign_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                values,
+            )
+
+        await self._run(insert)
+
+    async def events(
+        self,
+        *,
+        source: str | None = None,
+        severity: str | None = None,
+        correlation_id: str | None = None,
+        since: str | None = None,
+        limit: int = 100,
+    ) -> list[EventRecord]:
+        validate_event_filter(
+            source=source, severity=severity, correlation_id=correlation_id, since=since
+        )
+        bounded = bounded_limit(limit)
+
+        def select(connection: sqlite3.Connection) -> list[EventRecord]:
+            rows = connection.execute(
+                """
+                SELECT recorded_at, source, severity, message,
+                       correlation_id, deployment_id, campaign_id
+                FROM events
+                WHERE (? IS NULL OR source = ?)
+                  AND (? IS NULL OR severity = ?)
+                  AND (? IS NULL OR correlation_id = ?)
+                  AND (? IS NULL OR recorded_at >= ?)
+                ORDER BY recorded_at DESC
+                LIMIT ?
+                """,
+                (
+                    source,
+                    source,
+                    severity,
+                    severity,
+                    correlation_id,
+                    correlation_id,
+                    since,
+                    since,
+                    bounded,
+                ),
+            ).fetchall()
+            return [
+                EventRecord(
+                    recorded_at=row["recorded_at"],
+                    source=row["source"],
+                    severity=row["severity"],
+                    message=row["message"],
+                    correlation_id=row["correlation_id"],
+                    deployment_id=row["deployment_id"],
+                    campaign_id=row["campaign_id"],
+                )
+                for row in rows
+            ]
+
+        return await self._run(select)
+
+    async def prune_events(self, *, before: str) -> int:
+        def prune(connection: sqlite3.Connection) -> int:
+            cursor = connection.execute("DELETE FROM events WHERE recorded_at < ?", (before,))
+            return cursor.rowcount
+
+        return await self._run(prune)
+
+    async def latest_metric_observed_at(self, *, signal: str | None = None) -> str | None:
+        def select(connection: sqlite3.Connection) -> str | None:
+            if signal is None:
+                row = connection.execute(
+                    "SELECT recorded_at FROM metric_samples ORDER BY recorded_at DESC LIMIT 1"
+                ).fetchone()
+            else:
+                row = connection.execute(
+                    "SELECT recorded_at FROM metric_samples WHERE signal = ? "
+                    "ORDER BY recorded_at DESC LIMIT 1",
+                    (signal,),
+                ).fetchone()
+            return row["recorded_at"] if row else None
+
+        return await self._run(select)
 
     async def backup(self, destination: Path) -> Path:
         destination = self._paths.resolve(destination)

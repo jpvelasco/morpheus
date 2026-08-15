@@ -114,6 +114,143 @@ export interface ControlsReport {
   controls: ControlStatus[]
 }
 
+export type MetricSourceState = 'available' | 'unavailable'
+
+export interface MetricSourceStatus {
+  source: string
+  state: MetricSourceState
+  reason: string | null
+}
+
+export interface MetricBucket {
+  start: string
+  end: string
+  count: number
+  min: number | null
+  max: number | null
+  mean: number | null
+  p50: number | null
+  p95: number | null
+}
+
+export interface MetricGap {
+  start: string
+  end: string
+}
+
+export type FreshnessState = 'fresh' | 'stale' | 'unavailable'
+
+export interface MetricsFreshness {
+  state: FreshnessState
+  latest_observed_at: string | null
+  age_seconds: number | null
+}
+
+export interface MetricsTrend {
+  schema_version: number
+  observed_at: string
+  signal: string
+  unit: string
+  freshness: MetricsFreshness
+  sources: MetricSourceStatus[]
+  buckets: MetricBucket[]
+  gaps: MetricGap[]
+  sample_count: number
+}
+
+export type EventSeverity = 'info' | 'warn' | 'error'
+
+export interface EventRecord {
+  recorded_at: string
+  source: string
+  severity: EventSeverity
+  message: string
+  correlation_id: string | null
+  deployment_id: string | null
+  campaign_id: string | null
+}
+
+export interface EventsReport {
+  schema_version: number
+  observed_at: string
+  count: number
+  events: EventRecord[]
+}
+
+export interface BenchmarkRun {
+  run_id: string
+  declaration: Record<string, unknown>
+  identity: Record<string, unknown>
+  started_at: string
+  ended_at: string | null
+  status: string
+  errors: string[]
+  checkpoint: unknown[]
+}
+
+export interface BenchmarksReport {
+  schema_version: number
+  observed_at: string
+  count: number
+  runs: BenchmarkRun[]
+}
+
+export interface UsageSummary {
+  requests: number
+  successes: number
+  cancellations: number
+  errors: number
+  prompt_tokens: number
+  completion_tokens: number
+  window_days: number
+}
+
+export interface Scorecard {
+  run_id: string
+  model_id: string
+  engine_id: string
+  quantization: string
+  statistic: string
+  sample_count: number
+  ttft_seconds: number | null
+  tokens_per_second: number | null
+}
+
+export interface ComparisonSide {
+  value: number | null
+  sample_count: number
+  run_variation: number | null
+}
+
+export interface Comparison {
+  baseline_run_id: string
+  candidate_run_id: string
+  classification: string
+  classification_note: string
+  metric: string
+  statistic: string
+  baseline: ComparisonSide
+  candidate: ComparisonSide
+  percent_change: number | null
+}
+
+export interface Regression {
+  metric: string
+  baseline_value: number
+  candidate_value: number
+  threshold_pct: number
+  change_pct: number
+}
+
+export interface AnalyticsReport {
+  schema_version: number
+  observed_at: string
+  usage: UsageSummary
+  scorecards: Scorecard[]
+  comparisons: Comparison[]
+  regressions: Regression[]
+}
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:7400'
 
 function record(value: unknown): Record<string, unknown> {
@@ -318,6 +455,212 @@ export function parseControls(value: unknown): ControlsReport {
   }
 }
 
+function parseSources(value: unknown): MetricSourceStatus[] {
+  if (!Array.isArray(value)) throw new Error('Invalid source list')
+  return value.map((candidate) => {
+    const item = record(candidate)
+    const state = string(item.state, 'source state')
+    if (state !== 'available' && state !== 'unavailable') {
+      throw new Error('Invalid source state')
+    }
+    return {
+      source: string(item.source, 'source name'),
+      state: state as MetricSourceState,
+      reason: item.reason === null ? null : string(item.reason, 'source reason'),
+    }
+  })
+}
+
+function parseBuckets(value: unknown): MetricBucket[] {
+  if (!Array.isArray(value)) throw new Error('Invalid bucket list')
+  return value.map((candidate) => {
+    const item = record(candidate)
+    return {
+      start: string(item.start, 'bucket start'),
+      end: string(item.end, 'bucket end'),
+      count: number(item.count, 'bucket count'),
+      min: numberOrNull(item.min, 'bucket minimum'),
+      max: numberOrNull(item.max, 'bucket maximum'),
+      mean: numberOrNull(item.mean, 'bucket mean'),
+      p50: numberOrNull(item.p50, 'bucket median'),
+      p95: numberOrNull(item.p95, 'bucket p95'),
+    }
+  })
+}
+
+function parseGaps(value: unknown): MetricGap[] {
+  if (!Array.isArray(value)) throw new Error('Invalid gap list')
+  return value.map((candidate) => {
+    const item = record(candidate)
+    return { start: string(item.start, 'gap start'), end: string(item.end, 'gap end') }
+  })
+}
+
+export function parseMetricsTrend(value: unknown): MetricsTrend {
+  const item = record(value)
+  const freshness = record(item.freshness)
+  const freshnessState = string(freshness.state, 'freshness state')
+  if (!['fresh', 'stale', 'unavailable'].includes(freshnessState)) {
+    throw new Error('Invalid freshness state')
+  }
+  return {
+    schema_version: number(item.schema_version, 'metrics schema version'),
+    observed_at: string(item.observed_at, 'metrics timestamp'),
+    signal: string(item.signal, 'metrics signal'),
+    unit: string(item.unit, 'metrics unit'),
+    freshness: {
+      state: freshnessState as FreshnessState,
+      latest_observed_at: freshness.latest_observed_at === null
+        ? null
+        : string(freshness.latest_observed_at, 'latest sample timestamp'),
+      age_seconds: numberOrNull(freshness.age_seconds, 'sample age'),
+    },
+    sources: parseSources(item.sources),
+    buckets: parseBuckets(item.buckets),
+    gaps: parseGaps(item.gaps),
+    sample_count: number(item.sample_count, 'sample count'),
+  }
+}
+
+function parseEvents(value: unknown): EventRecord[] {
+  if (!Array.isArray(value)) throw new Error('Invalid event list')
+  return value.map((candidate) => {
+    const item = record(candidate)
+    const severity = string(item.severity, 'event severity')
+    if (!['info', 'warn', 'error'].includes(severity)) throw new Error('Invalid event severity')
+    return {
+      recorded_at: string(item.recorded_at, 'event timestamp'),
+      source: string(item.source, 'event source'),
+      severity: severity as EventSeverity,
+      message: string(item.message, 'event message'),
+      correlation_id: item.correlation_id === null ? null : string(item.correlation_id, 'correlation id'),
+      deployment_id: item.deployment_id === null ? null : string(item.deployment_id, 'deployment id'),
+      campaign_id: item.campaign_id === null ? null : string(item.campaign_id, 'campaign id'),
+    }
+  })
+}
+
+export function parseEventsReport(value: unknown): EventsReport {
+  const item = record(value)
+  return {
+    schema_version: number(item.schema_version, 'events schema version'),
+    observed_at: string(item.observed_at, 'events timestamp'),
+    count: number(item.count, 'event count'),
+    events: parseEvents(item.events),
+  }
+}
+
+function parseRuns(value: unknown): BenchmarkRun[] {
+  if (!Array.isArray(value)) throw new Error('Invalid run list')
+  return value.map((candidate) => {
+    const item = record(candidate)
+    if (!Array.isArray(item.errors) || !item.errors.every((entry) => typeof entry === 'string')) {
+      throw new Error('Invalid run errors')
+    }
+    if (!Array.isArray(item.checkpoint)) throw new Error('Invalid run checkpoint')
+    return {
+      run_id: string(item.run_id, 'run id'),
+      declaration: record(item.declaration),
+      identity: record(item.identity),
+      started_at: string(item.started_at, 'run start'),
+      ended_at: item.ended_at === null ? null : string(item.ended_at, 'run end'),
+      status: string(item.status, 'run status'),
+      errors: item.errors,
+      checkpoint: item.checkpoint,
+    }
+  })
+}
+
+export function parseBenchmarksReport(value: unknown): BenchmarksReport {
+  const item = record(value)
+  return {
+    schema_version: number(item.schema_version, 'benchmarks schema version'),
+    observed_at: string(item.observed_at, 'benchmarks timestamp'),
+    count: number(item.count, 'run count'),
+    runs: parseRuns(item.runs),
+  }
+}
+
+function parseScorecards(value: unknown): Scorecard[] {
+  if (!Array.isArray(value)) throw new Error('Invalid scorecard list')
+  return value.map((candidate) => {
+    const item = record(candidate)
+    return {
+      run_id: string(item.run_id, 'scorecard run id'),
+      model_id: string(item.model_id, 'scorecard model'),
+      engine_id: string(item.engine_id, 'scorecard engine'),
+      quantization: string(item.quantization, 'scorecard quantization'),
+      statistic: string(item.statistic, 'scorecard statistic'),
+      sample_count: number(item.sample_count, 'scorecard samples'),
+      ttft_seconds: numberOrNull(item.ttft_seconds, 'scorecard ttft'),
+      tokens_per_second: numberOrNull(item.tokens_per_second, 'scorecard throughput'),
+    }
+  })
+}
+
+function parseComparisons(value: unknown): Comparison[] {
+  if (!Array.isArray(value)) throw new Error('Invalid comparison list')
+  return value.map((candidate) => {
+    const item = record(candidate)
+    const baseline = record(item.baseline)
+    const candidateSide = record(item.candidate)
+    return {
+      baseline_run_id: string(item.baseline_run_id, 'baseline run id'),
+      candidate_run_id: string(item.candidate_run_id, 'candidate run id'),
+      classification: string(item.classification, 'comparison classification'),
+      classification_note: string(item.classification_note, 'comparison note'),
+      metric: string(item.metric, 'comparison metric'),
+      statistic: string(item.statistic, 'comparison statistic'),
+      baseline: {
+        value: numberOrNull(baseline.value, 'baseline value'),
+        sample_count: number(baseline.sample_count, 'baseline samples'),
+        run_variation: numberOrNull(baseline.run_variation, 'baseline variation'),
+      },
+      candidate: {
+        value: numberOrNull(candidateSide.value, 'candidate value'),
+        sample_count: number(candidateSide.sample_count, 'candidate samples'),
+        run_variation: numberOrNull(candidateSide.run_variation, 'candidate variation'),
+      },
+      percent_change: numberOrNull(item.percent_change, 'percent change'),
+    }
+  })
+}
+
+function parseRegressions(value: unknown): Regression[] {
+  if (!Array.isArray(value)) throw new Error('Invalid regression list')
+  return value.map((candidate) => {
+    const item = record(candidate)
+    return {
+      metric: string(item.metric, 'regression metric'),
+      baseline_value: number(item.baseline_value, 'regression baseline'),
+      candidate_value: number(item.candidate_value, 'regression candidate'),
+      threshold_pct: number(item.threshold_pct, 'regression threshold'),
+      change_pct: number(item.change_pct, 'regression change'),
+    }
+  })
+}
+
+export function parseAnalyticsReport(value: unknown): AnalyticsReport {
+  const item = record(value)
+  const usage = record(item.usage)
+  return {
+    schema_version: number(item.schema_version, 'analytics schema version'),
+    observed_at: string(item.observed_at, 'analytics timestamp'),
+    usage: {
+      requests: number(usage.requests, 'usage requests'),
+      successes: number(usage.successes, 'usage successes'),
+      cancellations: number(usage.cancellations, 'usage cancellations'),
+      errors: number(usage.errors, 'usage errors'),
+      prompt_tokens: number(usage.prompt_tokens, 'usage prompt tokens'),
+      completion_tokens: number(usage.completion_tokens, 'usage completion tokens'),
+      window_days: number(usage.window_days, 'usage window'),
+    },
+    scorecards: parseScorecards(item.scorecards),
+    comparisons: parseComparisons(item.comparisons),
+    regressions: parseRegressions(item.regressions),
+  }
+}
+
 function csrfToken(): string {
   const item = document.cookie.split('; ').find((value) => value.startsWith('morpheus_csrf='))
   return item ? decodeURIComponent(item.slice('morpheus_csrf='.length)) : ''
@@ -372,6 +715,52 @@ export async function fetchControls(signal?: AbortSignal): Promise<ControlsRepor
   })
   requireSuccess(response)
   return parseControls(await response.json())
+}
+
+export async function fetchMetricsTrend(
+  signal: AbortSignal,
+  signalName: string,
+  windowSeconds = 3600,
+  hours = 6,
+): Promise<MetricsTrend> {
+  const query = new URLSearchParams({
+    signal: signalName,
+    window_seconds: String(windowSeconds),
+    hours: String(hours),
+  })
+  const response = await fetch(`${API_BASE}/api/v1/operations/metrics?${query.toString()}`, {
+    credentials: 'include',
+    signal,
+  })
+  requireSuccess(response)
+  return parseMetricsTrend(await response.json())
+}
+
+export async function fetchEvents(limit = 200, signal?: AbortSignal): Promise<EventsReport> {
+  const response = await fetch(`${API_BASE}/api/v1/operations/events?limit=${String(limit)}`, {
+    credentials: 'include',
+    signal,
+  })
+  requireSuccess(response)
+  return parseEventsReport(await response.json())
+}
+
+export async function fetchBenchmarks(limit = 20, signal?: AbortSignal): Promise<BenchmarksReport> {
+  const response = await fetch(`${API_BASE}/api/v1/operations/benchmarks?limit=${String(limit)}`, {
+    credentials: 'include',
+    signal,
+  })
+  requireSuccess(response)
+  return parseBenchmarksReport(await response.json())
+}
+
+export async function fetchAnalytics(signal?: AbortSignal): Promise<AnalyticsReport> {
+  const response = await fetch(`${API_BASE}/api/v1/operations/analytics`, {
+    credentials: 'include',
+    signal,
+  })
+  requireSuccess(response)
+  return parseAnalyticsReport(await response.json())
 }
 
 export interface RecommendationContribution {

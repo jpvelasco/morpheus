@@ -31,7 +31,7 @@ private request data, host addresses, or unredacted evidence.
   and refined on 2026-08-12 with an early vertical slice, bounded self-replan,
   smaller delivery subphases, and optional distribution signing; no v0.2 runtime
   implementation or target mutation has started.
-- **Implementation inventory:** 68 implemented, 17 planned, 12 deferred; see
+- **Implementation inventory:** 71 implemented, 14 planned, 12 deferred; see
   [`requirements.json`](../requirements.json) and the
   [implementation gap review](IMPLEMENTATION_GAP_REVIEW.md).
 - **Release posture:** not yet release-ready. A passing candidate does not
@@ -291,6 +291,22 @@ The optional search, voice, workflow, research, RAG, and image-generation suite
 is not on this critical path. Any product-source change after the existing v0.1
 freeze creates a distinct v0.2 candidate; existing artifacts retain their
 recorded identity.
+
+Phase 16.2 then delivered the three data workspaces behind the Phase 16.1
+operations navigation: OUI-002 bounded metrics rollups (per-signal units,
+freshness, gaps, retention, and a 240-bucket query bound), OUI-003 redacted
+logs and events (approved sources, normalized severity/correlation, redaction
+before persistence or display, bounded search and filtering), and OUI-004
+analytics and comparisons (benchmark run history, usage and reliability
+scorecards, directly-comparable before/after comparisons, and regressions).
+The complete non-live gate passes 1366 tests with 91 percent coverage; strict
+formatting, linting, Bandit, pip-audit, and offline package builds are green,
+and the pinned frontend gate passes 114 unit tests at 99.62 percent statement
+coverage with strict lint, typecheck, and production build. The browser lane
+adds a data-workspaces flow across Chromium, Firefox, WebKit, and mobile
+Chromium with 48 passing test instances (sequentially flaky only on this
+harness's chromium-mobile infra under sustained load; each instance passes
+standalone). This is DEV implementation evidence; no v0.2 candidate exists yet.
 
 Developer/source qualification uses checksummed, scanned, SBOM-backed native
 packages and never waits on public signing credentials. Windows signing, Apple

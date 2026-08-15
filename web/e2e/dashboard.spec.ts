@@ -194,10 +194,10 @@ test('BROW-002 core login, refresh, diagnostics, and logout flow', async ({ page
   await expect(page.locator('main').getByText('Usable')).toHaveCount(4)
   await expectNoBlockingAccessibilityViolations(page)
 
-  await page.getByRole('button', { name: 'Hardware' }).click()
-  await expect(page.getByRole('heading', { name: 'Hardware' })).toBeVisible()
-  await expect(page.getByText('12,000 MiB')).toBeVisible()
-  await expect(page.getByText('Available')).toBeVisible()
+await page.getByRole('button', { name: 'Hardware' }).click()
+  await expect(page.getByRole('heading', { name: 'Hardware', exact: true })).toBeVisible()
+await expect(page.getByText('12,000 MiB')).toBeVisible()
+  await expect(page.getByText('Available', { exact: true })).toBeVisible()
   await expect(page.getByText('All probes passed')).toBeVisible()
   await expectNoBlockingAccessibilityViolations(page)
 
@@ -371,4 +371,123 @@ test('BROW-006 URLs, console, and retained page text contain no credential', asy
       session: Object.values(sessionStorage),
     })),
   ).toEqual({ local: [], session: ['1'] })
+})
+
+const metricsTrend = {
+  schema_version: 1,
+  observed_at: '2026-07-17T08:00:00+00:00',
+  signal: 'gpu_cache_usage',
+  unit: 'percent',
+  freshness: { state: 'fresh', latest_observed_at: '2026-07-17T07:59:00+00:00', age_seconds: 60 },
+  sources: [
+    { source: 'engine', state: 'available', reason: null },
+    { source: 'host', state: 'available', reason: null },
+  ],
+  buckets: [
+    { start: '2026-07-17T06:00:00+00:00', end: '2026-07-17T07:00:00+00:00', count: 12, min: 20, max: 60, mean: 40, p50: 40, p95: 55 },
+    { start: '2026-07-17T07:00:00+00:00', end: '2026-07-17T08:00:00+00:00', count: 12, min: 40, max: 80, mean: 60, p50: 60, p95: 75 },
+  ],
+  gaps: [{ start: '2026-07-17T07:00:00+00:00', end: '2026-07-17T08:00:00+00:00' }],
+  sample_count: 24,
+}
+
+const eventsReport = {
+  schema_version: 1,
+  observed_at: '2026-07-17T08:00:00+00:00',
+  count: 2,
+  events: [
+    { recorded_at: '2026-07-17T07:00:00+00:00', source: 'api', severity: 'info', message: 'heartbeat', correlation_id: null, deployment_id: null, campaign_id: null },
+    { recorded_at: '2026-07-17T06:00:00+00:00', source: 'engine', severity: 'error', message: 'auth failed Bearer [REDACTED]', correlation_id: 'corr-9', deployment_id: null, campaign_id: null },
+  ],
+}
+
+const benchmarksReport = {
+  schema_version: 1,
+  observed_at: '2026-07-17T08:00:00+00:00',
+  count: 1,
+  runs: [{
+    run_id: 'run-1',
+    declaration: { name: 'contract-campaign' },
+    identity: { model_id: 'qwen2.5-7b-instruct', engine_id: 'llama.cpp', quantization: 'q8_0' },
+    started_at: '2026-07-17T07:00:00+00:00',
+    ended_at: '2026-07-17T07:02:00+00:00',
+    status: 'completed',
+    errors: [],
+    checkpoint: [],
+  }],
+}
+
+const analyticsReport = {
+  schema_version: 1,
+  observed_at: '2026-07-17T08:00:00+00:00',
+  usage: { requests: 120, successes: 118, cancellations: 1, errors: 1, prompt_tokens: 9000, completion_tokens: 12000, window_days: 30 },
+  scorecards: [
+    { run_id: 'run-1', model_id: 'm', engine_id: 'e', quantization: 'q8_0', statistic: 'p50', sample_count: 4, ttft_seconds: 0.2, tokens_per_second: 11.5 },
+    { run_id: 'run-2', model_id: 'm', engine_id: 'e', quantization: 'q8_0', statistic: 'p50', sample_count: 4, ttft_seconds: 0.3, tokens_per_second: 10.2 },
+  ],
+  comparisons: [{
+    baseline_run_id: 'run-1', candidate_run_id: 'run-2', classification: 'COMPARABLE', classification_note: '',
+    metric: 'ttft_seconds', statistic: 'p50',
+    baseline: { value: 0.2, sample_count: 4, run_variation: 0.05 },
+    candidate: { value: 0.3, sample_count: 4, run_variation: 0.06 },
+    percent_change: 50,
+  }],
+  regressions: [{ metric: 'ttft_seconds', baseline_value: 0.2, candidate_value: 0.3, threshold_pct: 5, change_pct: 50 }],
+}
+
+async function mockDataRoutes(page: Page): Promise<void> {
+  const respond = (body: unknown) => (route: Parameters<Parameters<Page['route']>[1]>[0]) =>
+    route.fulfill({ body: JSON.stringify(body), contentType: 'application/json', status: 200 })
+  await page.route(`${API}/api/v1/operations/metrics*`, async (route) => {
+    const signalName = new URL(route.request().url()).searchParams.get('signal')
+    const body = signalName !== null && signalName !== 'gpu_cache_usage'
+      ? { ...metricsTrend, signal: signalName, unit: 'bytes' }
+      : metricsTrend
+    await route.fulfill({ body: JSON.stringify(body), contentType: 'application/json', status: 200 })
+  })
+  await page.route(`${API}/api/v1/operations/events*`, respond(eventsReport))
+  await page.route(`${API}/api/v1/operations/benchmarks*`, respond(benchmarksReport))
+  await page.route(`${API}/api/v1/operations/analytics`, respond(analyticsReport))
+}
+
+test('OUI-002/003/004 data workspaces render trends, redacted events, history, and analytics', async ({ page }, testInfo) => {
+  await mockControl(page)
+  await mockDataRoutes(page)
+  await signIn(page)
+
+  await page.getByRole('button', { name: 'Hardware' }).click()
+  await expect(page.getByRole('heading', { name: 'Hardware trends' })).toBeVisible()
+  await expect(page.getByText('Unit: percent')).toBeVisible()
+  await expect(page.getByText('Fresh evidence')).toBeVisible()
+  await expect(page.getByText('24 samples in window')).toBeVisible()
+  await expect(page.getByRole('img', { name: /samples, mean 40%/ })).toBeVisible()
+  await expect(page.getByRole('img', { name: 'Missing data interval' })).toBeVisible()
+  await page.getByLabel('Signal').selectOption('free_bytes')
+  await expect(page.getByText('Unit: bytes')).toBeVisible()
+  await expectNoBlockingAccessibilityViolations(page)
+
+  await page.getByRole('button', { name: 'Logs & Events' }).click()
+  await expect(page.getByRole('heading', { name: 'Logs & events' })).toBeVisible()
+  await expect(page.getByText(/auth failed Bearer \[REDACTED\]/)).toBeVisible()
+  await expect(page.getByText(/corr-9/)).toBeVisible()
+  await page.getByLabel('Severity').selectOption('info')
+  await expect(page.getByText('heartbeat')).toBeVisible()
+  await expect(page.getByText(/auth failed/)).toHaveCount(0)
+  await expectNoBlockingAccessibilityViolations(page)
+
+  await page.getByRole('button', { name: 'Benchmarks' }).click()
+  await expect(page.getByRole('heading', { name: 'Benchmarks' })).toBeVisible()
+  await expect(page.getByText('run-1')).toBeVisible()
+  await expect(page.getByText('qwen2.5-7b-instruct')).toBeVisible()
+  await expect(page.getByText('Completed')).toBeVisible()
+  await expectNoBlockingAccessibilityViolations(page)
+
+  await page.getByRole('button', { name: 'Analytics' }).click()
+  await expect(page.getByRole('heading', { name: 'Analytics' })).toBeVisible()
+  await expect(page.getByText('30-day window')).toBeVisible()
+  await expect(page.getByText('120')).toBeVisible()
+  await expect(page.getByText('run-1 → run-2')).toBeVisible()
+  await expect(page.getByText('COMPARABLE')).toBeVisible()
+  await expectNoBlockingAccessibilityViolations(page)
+  await captureResponsiveEvidence(page, testInfo)
 })
