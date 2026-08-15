@@ -1,4 +1,6 @@
 import {
+  applySettings,
+  cancelWorkflow,
   createSession,
   destroySession,
   fetchAnalytics,
@@ -8,6 +10,9 @@ import {
   fetchMetricsTrend,
   fetchNavigation,
   fetchOverview,
+  fetchSettings,
+  fetchWorkflowSession,
+  fetchWorkflows,
   parseAnalyticsReport,
   parseBenchmarksReport,
   parseControls,
@@ -15,6 +20,12 @@ import {
   parseMetricsTrend,
   parseNavigation,
   parseOverview,
+  parseSettingsPayload,
+  parseSettingsPlan,
+  parseWorkflowsPayload,
+  planSettings,
+  rollbackSettings,
+  startWorkflow,
 } from '../src/api'
 
 function validOverview() {
@@ -400,4 +411,128 @@ test('data fetchers pass query parameters and use the session cookie', async () 
     'http://127.0.0.1:7400/api/v1/operations/analytics',
     expect.objectContaining({ credentials: 'include' }),
   )
+})
+
+function validSettingsPayload() {
+  return {
+    schema_version: 1,
+    observed_at: '2026-08-15T12:00:00+00:00',
+    settings: [
+      {
+        key: 'api_port', kind: 'port', label: 'API port', description: 'Port the control API binds',
+        current: 7400, configured: true, value_redacted: false, editable: true,
+        source: 'default', default: 7400, restart_required: true, validation: '1-65535',
+      },
+      {
+        key: 'api_key', kind: 'secret', label: 'API key', description: 'Operator access key',
+        current: null, configured: true, value_redacted: true, editable: false,
+        source: 'env_file', default: null, restart_required: true, validation: '',
+      },
+    ],
+    restart_required: true,
+    journal: { applied_at: null, applied: [], rollback_available: false },
+  }
+}
+
+function validWorkflowsPayload() {
+  return {
+    schema_version: 1,
+    observed_at: '2026-08-15T12:00:00+00:00',
+    workflows: [{
+      workflow_id: 'benchmark', label: 'Benchmark', description: 'Run a benchmark campaign',
+      steps: [{
+        id: 'preflight', label: 'Preflight', description: 'Check evidence', preflight: 'Store owned',
+        recovery: 'Resolve issues', confirm_required: false,
+      }],
+    }],
+    sessions: [{
+      schema_version: 1, session_id: 's1', workflow_id: 'benchmark', label: 'Benchmark',
+      state: 'failed', current_step_id: 'preflight', current_step_label: 'Preflight',
+      progress_percent: 33, cancel_requested: false, error: 'no lifecycle executor',
+      recovery_instruction: 'Use a lifecycle-backed runtime', started_at: '2026-08-15T12:00:00+00:00',
+      steps: [{ id: 'preflight', label: 'Preflight', description: 'Check evidence', preflight: 'Store owned', recovery: 'Resolve issues', confirm_required: false, outcome: 'failed' }],
+    }],
+    audit_events: [{ recorded_at: '2026-08-15T12:00:00+00:00', session_id: 's1', workflow_id: 'benchmark', event: 'started', step_id: null, message: null }],
+  }
+}
+
+test('parses settings catalog with secret redaction and journal state', () => {
+  const result = parseSettingsPayload(validSettingsPayload())
+  expect(result.settings[0]).toMatchObject({ key: 'api_port', kind: 'port', editable: true })
+  expect(result.settings[1]).toMatchObject({ kind: 'secret', editable: false, value_redacted: true })
+  expect(result.journal).toEqual({ applied_at: null, applied: [], rollback_available: false })
+})
+
+test.each([
+  [{ ...validSettingsPayload(), settings: 'nope' }, 'settings list'],
+  [{ ...validSettingsPayload(), settings: [{ ...validSettingsPayload().settings[0], kind: 'weird' }] }, 'settings kind'],
+  [{ ...validSettingsPayload(), settings: [{ ...validSettingsPayload().settings[0], editable: 'yes' }] }, 'settings editable'],
+  [{ ...validSettingsPayload(), journal: { applied_at: null, applied: 7, rollback_available: false } }, 'settings journal'],
+  [{ ...validSettingsPayload(), journal: { applied_at: null, applied: [], rollback_available: 'no' } }, 'settings rollback available'],
+])('rejects incompatible settings shape %#', (payload, message) => {
+  expect(() => parseSettingsPayload(payload)).toThrow(message)
+})
+
+test('parses settings plans with a valid diff and validation issues', () => {
+  const valid = parseSettingsPlan({ schema_version: 1, valid: true, changes: [{ key: 'api_port', before: 7400, after: 7411, restart_required: true, kind: 'port' }], issues: [], restart_required: true, description: 'Review the diff' })
+  expect(valid.changes[0]).toMatchObject({ key: 'api_port', after: 7411 })
+  const invalid = parseSettingsPlan({ schema_version: 1, valid: false, changes: [], issues: [{ key: 'api_port', code: 'validation_failed', message: 'too high' }], restart_required: false, description: 'Review issues' })
+  expect(invalid.valid).toBe(false)
+  expect(invalid.issues[0]?.code).toBe('validation_failed')
+})
+
+test('parses workflows payload with definitions, sessions, and audit trail', () => {
+  const result = parseWorkflowsPayload(validWorkflowsPayload())
+  expect(result.workflows[0]?.workflow_id).toBe('benchmark')
+  expect(result.sessions[0]).toMatchObject({ state: 'failed', progress_percent: 33 })
+  expect(result.sessions[0]?.steps[0]?.outcome).toBe('failed')
+  expect(result.audit_events[0]).toMatchObject({ event: 'started', step_id: null })
+})
+
+test.each([
+  [{ ...validWorkflowsPayload(), sessions: [{ ...validWorkflowsPayload().sessions[0], state: 'weird' }] }, 'workflow state'],
+  [{ ...validWorkflowsPayload(), sessions: [{ ...validWorkflowsPayload().sessions[0], steps: [{ ...validWorkflowsPayload().sessions[0]?.steps[0], outcome: 'odd' }] }] }, 'step outcome'],
+  [{ ...validWorkflowsPayload(), workflows: [{ ...validWorkflowsPayload().workflows[0], steps: 'nope' }] }, 'workflow steps'],
+])('rejects incompatible workflows shape %#', (payload, message) => {
+  expect(() => parseWorkflowsPayload(payload)).toThrow(message)
+})
+
+test('settings and workflow fetchers send the CSRF token and parse responses', async () => {
+  document.cookie = 'morpheus_csrf=csrf-token; path=/'
+  const fetchMock = vi.fn().mockImplementation((url: string) => {
+    const route = String(url)
+    if (route.endsWith('/operations/settings')) return Promise.resolve(new Response(JSON.stringify(validSettingsPayload()), { status: 200 }))
+    if (route.endsWith('/operations/settings/plan')) return Promise.resolve(new Response(JSON.stringify({ schema_version: 1, valid: true, changes: [], issues: [], restart_required: false, description: 'x' }), { status: 200 }))
+    if (route.endsWith('/settings/apply')) return Promise.resolve(new Response(JSON.stringify({ schema_version: 1, applied: { api_port: '7411' }, restart_required: true }), { status: 200 }))
+    if (route.endsWith('/settings/rollback')) return Promise.resolve(new Response(JSON.stringify({ schema_version: 1, rolled_back: true }), { status: 200 }))
+    if (route.includes('/operations/workflows/benchmark/session')) return Promise.resolve(new Response(JSON.stringify({ schema_version: 1, session: validWorkflowsPayload().sessions[0] }), { status: 200 }))
+    if (route.endsWith('/operations/workflows/benchmark/cancel')) return Promise.resolve(new Response(JSON.stringify({ schema_version: 1, cancelled: true }), { status: 200 }))
+    if (route.endsWith('/operations/workflows/benchmark/start')) return Promise.resolve(new Response(JSON.stringify({ schema_version: 1, started: true, session: validWorkflowsPayload().sessions[0] }), { status: 200 }))
+    if (route.includes('/operations/workflows')) return Promise.resolve(new Response(JSON.stringify(validWorkflowsPayload()), { status: 200 }))
+    throw new Error(`unhandled route ${route}`)
+  })
+  vi.stubGlobal('fetch', fetchMock)
+
+  await expect(fetchSettings()).resolves.toMatchObject({ schema_version: 1 })
+  await expect(planSettings({ api_port: 7411 })).resolves.toMatchObject({ valid: true })
+  await expect(applySettings({ api_port: '7411' })).resolves.toMatchObject({ applied: { api_port: '7411' } })
+  await expect(rollbackSettings()).resolves.toMatchObject({ rolled_back: true })
+  await expect(fetchWorkflows()).resolves.toMatchObject({ schema_version: 1 })
+  await expect(startWorkflow('benchmark', true)).resolves.toMatchObject({ started: true })
+  await expect(cancelWorkflow('benchmark')).resolves.toMatchObject({ cancelled: true })
+  await expect(fetchWorkflowSession('benchmark')).resolves.toMatchObject({ session_id: 's1' })
+
+  const postRoutes = ['/settings/plan', '/settings/apply', '/settings/rollback', '/workflows/benchmark/start', '/workflows/benchmark/cancel']
+  for (const call of fetchMock.mock.calls) {
+    const route = String(call[0])
+    if (postRoutes.some((suffix) => route.includes(suffix))) {
+      const headers = (call[1] as RequestInit).headers as Record<string, string>
+      expect(headers['X-CSRF-Token']).toBe('csrf-token')
+    }
+  }
+})
+
+test('workflow session endpoint returns null when no session exists', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('{}', { status: 400 })))
+  await expect(fetchWorkflowSession('benchmark')).resolves.toBeNull()
 })

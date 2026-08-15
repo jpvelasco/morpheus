@@ -18,7 +18,7 @@ from morpheus.core.paths import OwnedPathResolver
 from morpheus.core.telemetry import TelemetryEvent
 
 T = TypeVar("T")
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 MAX_METRIC_SAMPLES = 10_000
 
 
@@ -46,8 +46,11 @@ class SqliteStore:
     async def initialize(self) -> None:
         def migrate(connection: sqlite3.Connection) -> None:
             connection.execute("CREATE TABLE IF NOT EXISTS schema_meta (version INTEGER NOT NULL)")
-            if connection.execute("SELECT COUNT(*) FROM schema_meta").fetchone()[0] == 0:
+            row = connection.execute("SELECT version FROM schema_meta").fetchone()
+            if row is None:
                 connection.execute("INSERT INTO schema_meta(version) VALUES (?)", (SCHEMA_VERSION,))
+            elif int(row[0]) != SCHEMA_VERSION:
+                connection.execute("UPDATE schema_meta SET version = ?", (SCHEMA_VERSION,))
             connection.execute(
                 """
                 CREATE TABLE IF NOT EXISTS telemetry (
@@ -103,6 +106,27 @@ class SqliteStore:
             )
             connection.execute(
                 "CREATE INDEX IF NOT EXISTS idx_events_correlation ON events(correlation_id)"
+            )
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS workflow_audit (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    recorded_at TEXT NOT NULL,
+                    session_id TEXT NOT NULL,
+                    workflow_id TEXT NOT NULL,
+                    event TEXT NOT NULL,
+                    step_id TEXT,
+                    message TEXT
+                )
+                """
+            )
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS idx_workflow_audit_recorded "
+                "ON workflow_audit(recorded_at)"
+            )
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS idx_workflow_audit_session "
+                "ON workflow_audit(session_id)"
             )
 
         await self._run(migrate)
@@ -337,6 +361,55 @@ class SqliteStore:
                     (signal,),
                 ).fetchone()
             return row["recorded_at"] if row else None
+
+        return await self._run(select)
+
+    async def record_workflow_audit(
+        self,
+        *,
+        recorded_at: str,
+        session_id: str,
+        workflow_id: str,
+        event: str,
+        step_id: str | None = None,
+        message: str | None = None,
+    ) -> None:
+        def insert(connection: sqlite3.Connection) -> None:
+            connection.execute(
+                """
+                INSERT INTO workflow_audit (
+                    recorded_at, session_id, workflow_id, event, step_id, message
+                ) VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (recorded_at, session_id, workflow_id, event, step_id, message),
+            )
+
+        await self._run(insert)
+
+    async def workflow_audit_events(self, *, limit: int = 100) -> list[dict[str, Any]]:
+        bounded = min(max(limit, 1), 200)
+
+        def select(connection: sqlite3.Connection) -> list[dict[str, Any]]:
+            rows = connection.execute(
+                """
+                SELECT recorded_at, session_id, workflow_id, event, step_id, message
+                FROM workflow_audit
+                ORDER BY recorded_at DESC
+                LIMIT ?
+                """,
+                (bounded,),
+            ).fetchall()
+            return [
+                {
+                    "recorded_at": row["recorded_at"],
+                    "session_id": row["session_id"],
+                    "workflow_id": row["workflow_id"],
+                    "event": row["event"],
+                    "step_id": row["step_id"],
+                    "message": row["message"],
+                }
+                for row in rows
+            ]
 
         return await self._run(select)
 

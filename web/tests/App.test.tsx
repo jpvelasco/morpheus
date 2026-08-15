@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 import App from '../src/App'
@@ -65,6 +65,84 @@ const controls = {
   ],
 }
 
+function validSettings() {
+  return {
+    schema_version: 1,
+    observed_at: '2026-08-15T12:00:00+00:00',
+    settings: [
+      {
+        key: 'api_port', kind: 'port', label: 'API port', description: 'Port the control API binds',
+        current: 7400, configured: true, value_redacted: false, editable: true,
+        source: 'default', default: 7400, restart_required: true, validation: '1-65535',
+      },
+      {
+        key: 'llm_base_url', kind: 'url', label: 'Inference base URL', description: 'Upstream OpenAI-compatible endpoint',
+        current: 'http://127.0.0.1:8000/v1', configured: true, value_redacted: false, editable: true,
+        source: 'environment', default: '', restart_required: true, validation: '',
+      },
+      {
+        key: 'enable_search', kind: 'bool', label: 'Enable search', description: 'Turns the search control on',
+        current: false, configured: true, value_redacted: false, editable: true,
+        source: 'env_file', default: false, restart_required: true, validation: '',
+      },
+      {
+        key: 'api_key', kind: 'secret', label: 'API key', description: 'Operator access key',
+        current: null, configured: true, value_redacted: true, editable: false,
+        source: 'env_file', default: null, restart_required: true, validation: '',
+      },
+    ],
+    restart_required: true,
+    journal: { applied_at: null, applied: [], rollback_available: false },
+  }
+}
+
+function validWorkflows() {
+  return {
+    schema_version: 1,
+    observed_at: '2026-08-15T12:00:00+00:00',
+    workflows: [
+      {
+        workflow_id: 'benchmark', label: 'Benchmark', description: 'Run a benchmark campaign',
+        steps: [{
+          id: 'preflight', label: 'Preflight', description: 'Check evidence', preflight: 'Store owned',
+          recovery: 'Resolve issues', confirm_required: false,
+        }],
+      },
+      {
+        workflow_id: 'remove', label: 'Remove', description: 'Remove a model from the store',
+        steps: [{
+          id: 'confirm', label: 'Confirmation', description: 'Explicit removal consent', preflight: '',
+          recovery: '', confirm_required: true,
+        }],
+      },
+    ],
+    sessions: [{
+      schema_version: 1, session_id: 's1', workflow_id: 'benchmark', label: 'Benchmark',
+      state: 'running', current_step_id: 'preflight', current_step_label: 'Preflight',
+      progress_percent: 40, cancel_requested: false, error: null,
+      recovery_instruction: null, started_at: '2026-08-15T12:00:00+00:00',
+      steps: [{ id: 'preflight', label: 'Preflight', description: 'Check evidence', preflight: 'Store owned', recovery: 'Resolve issues', confirm_required: false, outcome: null }],
+    }],
+    audit_events: [
+      { recorded_at: '2026-08-15T12:00:00+00:00', session_id: 's1', workflow_id: 'benchmark', event: 'started', step_id: null, message: null },
+    ],
+  }
+}
+
+function validPlan(valid: boolean) {
+  return valid
+    ? {
+        schema_version: 1, valid: true, restart_required: true, description: 'Review the diff',
+        changes: [{ key: 'api_port', before: 7400, after: 7411, restart_required: true, kind: 'port' }],
+        issues: [],
+      }
+    : {
+        schema_version: 1, valid: false, restart_required: false, description: 'Review the issues',
+        changes: [],
+        issues: [{ key: 'api_port', code: 'validation_failed', message: 'Port out of range' }],
+      }
+}
+
 function mockFetch(
   payload: unknown = overview,
   status = 200,
@@ -76,29 +154,31 @@ function mockFetch(
     events?: unknown
     benchmarks?: unknown
     analytics?: unknown
+    settings?: unknown
+    workflows?: unknown
+    plan?: unknown
     rejectPaths?: string[]
   } = {},
 ) {
   const navigationPayload = routes.navigation ?? navigation
   const controlsPayload = routes.controls ?? controls
   const recommendationPayload = routes.recommendation === undefined ? null : routes.recommendation
+  const settingsPayload = routes.settings ?? validSettings()
+  const workflowsPayload = (routes.workflows ?? validWorkflows()) as ReturnType<typeof validWorkflows>
   const rejectPaths = new Set(routes.rejectPaths ?? [])
   vi.stubGlobal('fetch', vi.fn().mockImplementation(async (url: string, options?: RequestInit) => {
-    const sessionRequest = options?.method === 'POST' || options?.method === 'DELETE'
-    if (sessionRequest) {
-      return new Response(JSON.stringify({ status: 'authenticated' }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
     const path = new URL(url).pathname
+    const method = options?.method ?? 'GET'
     if (rejectPaths.has(path)) throw new DOMException('network unreachable', 'NetworkError')
     const respond = (body: unknown, responseStatus: number) =>
       Promise.resolve(new Response(JSON.stringify(body), {
         status: responseStatus,
         headers: { 'Content-Type': 'application/json' },
       }))
-if (path === '/api/v1/operations/navigation') return respond(navigationPayload, status)
+    if (path === '/api/v1/session' && method !== 'GET') {
+      return respond({ status: 'authenticated' }, 200)
+    }
+    if (path === '/api/v1/operations/navigation') return respond(navigationPayload, status)
     if (path === '/api/v1/operations/controls') return respond(controlsPayload, status)
     if (path === '/api/v1/operations/metrics') {
       const signalName = new URL(url).searchParams.get('signal')
@@ -112,6 +192,24 @@ if (path === '/api/v1/operations/navigation') return respond(navigationPayload, 
     if (path === '/api/v1/operations/analytics') return respond(routes.analytics ?? validAnalytics(), status)
     if (path === '/api/v1/recommendations/latest') {
       return respond(recommendationPayload, recommendationPayload === null ? 404 : 200)
+    }
+    if (path === '/api/v1/operations/settings' && method === 'GET') return respond(settingsPayload, status)
+    if (path === '/api/v1/operations/settings/plan') return respond(routes.plan ?? validPlan(true), 200)
+    if (path === '/api/v1/operations/settings/apply') {
+      return respond({ schema_version: 1, applied: { api_port: '7411' }, restart_required: true }, 200)
+    }
+    if (path === '/api/v1/operations/settings/rollback') {
+      return respond({ schema_version: 1, rolled_back: true }, 200)
+    }
+    if (path === '/api/v1/operations/workflows' && method === 'GET') return respond(workflowsPayload, status)
+    if (path.endsWith('/operations/workflows/remove/start')) {
+      return respond({ schema_version: 1, started: true, session: workflowsPayload.sessions[0] }, 200)
+    }
+    if (path.endsWith('/operations/workflows/benchmark/cancel')) {
+      return respond({ schema_version: 1, cancelled: true }, 200)
+    }
+    if (path.includes('/operations/workflows/') && method === 'POST') {
+      return respond({ schema_version: 1, cancelled: true }, 200)
     }
     return respond(payload, status)
   }))
@@ -829,4 +927,87 @@ test('OUI-002 failed metrics fetch keeps the workspace honest', async () => {
   await screen.findByRole('heading', { name: 'System overview' })
   await userEvent.click(screen.getByRole('button', { name: 'Hardware' }))
   expect(await screen.findByText('Trend data is unavailable right now.')).toBeVisible()
+})
+
+test('OUI-005 settings workspace renders catalog, previews a plan, and applies changes', async () => {
+  mockFetch()
+  render(<App />)
+  await signIn()
+  await screen.findByRole('heading', { name: 'System overview' })
+  await userEvent.click(screen.getByRole('button', { name: 'Settings' }))
+  expect(await screen.findByRole('heading', { name: 'Settings' })).toBeVisible()
+  expect(screen.getByText('API port')).toBeVisible()
+  expect(screen.getByText(/not editable here/i)).toBeVisible()
+  expect(screen.getByText('Default')).toBeVisible()
+  expect(screen.getByText('Environment')).toBeVisible()
+
+  const input = screen.getByLabelText('New value for API port')
+  await userEvent.clear(input)
+  await userEvent.type(input, '7411')
+  await userEvent.click(screen.getByRole('button', { name: 'Preview plan' }))
+  expect(await screen.findByText('Plan is valid')).toBeVisible()
+  expect(screen.getByText('Restart required')).toBeVisible()
+  expect(screen.getByText('7400 → 7411')).toBeVisible()
+
+  await userEvent.click(screen.getByRole('button', { name: 'Apply changes' }))
+  expect(await screen.findByText('Applied 1 change; restart required for them to take effect.')).toBeVisible()
+  expect(screen.getByText('No pending overrides. The runtime uses its configured layers with defaults.')).toBeVisible()
+})
+
+test('OUI-005 invalid plans surface validation issues instead of applying', async () => {
+  mockFetch(overview, 200, { plan: validPlan(false) })
+  render(<App />)
+  await signIn()
+  await screen.findByRole('heading', { name: 'System overview' })
+  await userEvent.click(screen.getByRole('button', { name: 'Settings' }))
+  const input = await screen.findByLabelText('New value for API port')
+  await userEvent.clear(input)
+  await userEvent.type(input, '99999')
+  await userEvent.click(screen.getByRole('button', { name: 'Preview plan' }))
+  expect(await screen.findByText('Plan needs review')).toBeVisible()
+  expect(screen.getByText('api_port: Port out of range')).toBeVisible()
+  const applyButton = screen.getByRole('button', { name: 'Apply changes' })
+  expect((applyButton as HTMLButtonElement).disabled).toBe(true)
+})
+
+test('OUI-005 pending overrides offer a working rollback', async () => {
+  mockFetch(overview, 200, {
+    settings: {
+      ...validSettings(),
+      journal: { applied_at: '2026-08-15T11:00:00+00:00', applied: { api_port: '7411' }, rollback_available: true },
+    },
+  })
+  render(<App />)
+  await signIn()
+  await screen.findByRole('heading', { name: 'System overview' })
+  await userEvent.click(screen.getByRole('button', { name: 'Settings' }))
+  expect(await screen.findByText(/Pending overrides applied/)).toBeVisible()
+  await userEvent.click(screen.getByRole('button', { name: 'Roll back' }))
+  expect(await screen.findByText('Rolled back to the previous settings snapshot; restart required.')).toBeVisible()
+})
+
+test('OUI-006 recovery workspace starts a confirmed workflow and cancels a running session', async () => {
+  mockFetch()
+  render(<App />)
+  await signIn()
+  await screen.findByRole('heading', { name: 'System overview' })
+  await userEvent.click(screen.getByRole('button', { name: 'Recovery' }))
+  expect(await screen.findByRole('heading', { name: 'Recovery & workflows' })).toBeVisible()
+  expect(screen.getAllByText('Benchmark').length).toBeGreaterThan(0)
+  expect(screen.getAllByText('Remove').length).toBeGreaterThan(0)
+  expect(screen.getByText('2 workflows · 1 session')).toBeVisible()
+  expect(screen.getAllByText('Running').length).toBeGreaterThan(0)
+  expect(screen.getByText('40%')).toBeVisible()
+  expect(screen.getByText('Step: Preflight')).toBeVisible()
+  expect(screen.getByText('started')).toBeVisible()
+
+  const removeCard = screen.getAllByText('Remove')[0]?.closest('article')
+  if (removeCard === null || removeCard === undefined) throw new Error('Remove workflow card is missing')
+  await userEvent.click(within(removeCard).getByRole('button', { name: 'Start workflow' }))
+  expect(within(removeCard).getByText('This workflow requires explicit confirmation.')).toBeVisible()
+  await userEvent.click(within(removeCard).getByRole('button', { name: 'Confirm start' }))
+  expect(await screen.findByText('Remove started; watch the session notes for step progress.')).toBeVisible()
+
+  await userEvent.click(screen.getByRole('button', { name: 'Request cancellation' }))
+  expect(await screen.findByText('Cancellation requested for the active session.')).toBeVisible()
 })

@@ -491,3 +491,142 @@ test('OUI-002/003/004 data workspaces render trends, redacted events, history, a
   await expectNoBlockingAccessibilityViolations(page)
   await captureResponsiveEvidence(page, testInfo)
 })
+
+const settingsReport = {
+  schema_version: 1,
+  observed_at: '2026-07-17T08:00:00+00:00',
+  settings: [
+    {
+      key: 'api_port', kind: 'port', label: 'API port', description: 'Port the control API binds',
+      current: 7400, configured: true, value_redacted: false, editable: true,
+      source: 'default', default: 7400, restart_required: true, validation: '1-65535',
+    },
+    {
+      key: 'enable_search', kind: 'bool', label: 'Enable search', description: 'Turns the search control on',
+      current: false, configured: true, value_redacted: false, editable: true,
+      source: 'env_file', default: false, restart_required: true, validation: '',
+    },
+    {
+      key: 'api_key', kind: 'secret', label: 'API key', description: 'Operator access key',
+      current: null, configured: true, value_redacted: true, editable: false,
+      source: 'env_file', default: null, restart_required: true, validation: '',
+    },
+  ],
+  restart_required: true,
+  journal: { applied_at: null, applied: [], rollback_available: false },
+}
+
+const settingsJournalApplied = {
+  ...settingsReport,
+  journal: {
+    applied_at: '2026-07-17T08:01:00+00:00',
+    applied: { api_port: '7411' },
+    rollback_available: true,
+  },
+}
+
+const workflowsReport = {
+  schema_version: 1,
+  observed_at: '2026-07-17T08:00:00+00:00',
+  workflows: [
+    {
+      workflow_id: 'benchmark', label: 'Benchmark', description: 'Run a benchmark campaign',
+      steps: [{ id: 'preflight', label: 'Preflight', description: 'Check evidence', preflight: 'Store owned', recovery: 'Resolve issues', confirm_required: false }],
+    },
+    {
+      workflow_id: 'remove', label: 'Remove', description: 'Remove a model from the store',
+      steps: [{ id: 'confirm', label: 'Confirmation', description: 'Explicit removal consent', preflight: '', recovery: '', confirm_required: true }],
+    },
+  ],
+  sessions: [{
+    schema_version: 1, session_id: 's1', workflow_id: 'benchmark', label: 'Benchmark',
+    state: 'running', current_step_id: 'preflight', current_step_label: 'Preflight',
+    progress_percent: 40, cancel_requested: false, error: null, recovery_instruction: null,
+    started_at: '2026-07-17T08:00:00+00:00',
+    steps: [{ id: 'preflight', label: 'Preflight', description: 'Check evidence', preflight: 'Store owned', recovery: 'Resolve issues', confirm_required: false, outcome: null }],
+  }],
+  audit_events: [
+    { recorded_at: '2026-07-17T08:00:00+00:00', session_id: 's1', workflow_id: 'benchmark', event: 'started', step_id: null, message: null },
+  ],
+}
+
+async function mockSettingsWorkflowRoutes(page: Page): Promise<void> {
+  let journalApplied = false
+  const respond = (body: unknown, status = 200) => (route: Parameters<Parameters<Page['route']>[1]>[0]) =>
+    route.fulfill({ body: JSON.stringify(body), contentType: 'application/json', status })
+  await page.route(`${API}/api/v1/operations/settings`, async (route) => {
+    await route.fulfill({
+      body: JSON.stringify(journalApplied ? settingsJournalApplied : settingsReport),
+      contentType: 'application/json',
+      status: 200,
+    })
+  })
+  await page.route(`${API}/api/v1/operations/settings/plan`, respond({
+    schema_version: 1, valid: true, restart_required: true, description: 'Review the diff',
+    changes: [{ key: 'api_port', before: 7400, after: 7411, restart_required: true, kind: 'port' }],
+    issues: [],
+  }))
+  await page.route(`${API}/api/v1/operations/settings/apply`, async (route) => {
+    journalApplied = true
+    await route.fulfill({ body: JSON.stringify({ schema_version: 1, applied: { api_port: '7411' }, restart_required: true }), contentType: 'application/json', status: 200 })
+  })
+  await page.route(`${API}/api/v1/operations/settings/rollback`, async (route) => {
+    journalApplied = false
+    await route.fulfill({ body: JSON.stringify({ schema_version: 1, rolled_back: true }), contentType: 'application/json', status: 200 })
+  })
+  await page.route(`${API}/api/v1/operations/workflows`, respond(workflowsReport))
+  await page.route(`${API}/api/v1/operations/workflows/remove/start`, respond({
+    schema_version: 1, started: true,
+    session: {
+      schema_version: 1, session_id: 's2', workflow_id: 'remove', label: 'Remove',
+      state: 'failed', current_step_id: 'confirm', current_step_label: 'Confirmation',
+      progress_percent: 50, cancel_requested: false,
+      error: 'Remove requires a lifecycle-backed executor; no mutation was performed',
+      recovery_instruction: 'Use a lifecycle-backed runtime for removal',
+      started_at: '2026-07-17T08:02:00+00:00',
+      steps: [{ id: 'confirm', label: 'Confirmation', description: 'Explicit removal consent', preflight: '', recovery: '', confirm_required: true, outcome: 'failed' }],
+    },
+  }))
+  await page.route(`${API}/api/v1/operations/workflows/benchmark/cancel`, respond({ schema_version: 1, cancelled: true }))
+  await page.route(`${API}/api/v1/operations/workflows/remove/cancel`, respond({ schema_version: 1, cancelled: true }))
+}
+
+test('OUI-005/006 settings plans, applies, rolls back, and runs confirmed workflows', async ({ page }, testInfo) => {
+  await mockControl(page)
+  await mockSettingsWorkflowRoutes(page)
+  await signIn(page)
+
+  await page.getByRole('button', { name: 'Settings' }).click()
+  await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible()
+  await expect(page.getByText('API port')).toBeVisible()
+  await expect(page.getByText('Configured', { exact: true })).toBeVisible()
+  await expect(page.getByText('No pending overrides. The runtime uses its configured layers with defaults.')).toBeVisible()
+  await page.getByLabel('New value for API port').fill('7411')
+  await page.getByRole('button', { name: 'Preview plan' }).click()
+  await expect(page.getByText('Plan is valid')).toBeVisible()
+  await expect(page.getByText('7400 → 7411')).toBeVisible()
+  await expect(page.getByText('Restart required')).toBeVisible()
+  await page.getByRole('button', { name: 'Apply changes' }).click()
+  await expect(page.getByText('Applied 1 change; restart required for them to take effect.')).toBeVisible()
+  await expect(page.getByText(/Pending overrides applied/)).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Roll back' })).toBeVisible()
+  await page.getByRole('button', { name: 'Roll back' }).click()
+  await expect(page.getByText('Rolled back to the previous settings snapshot; restart required.')).toBeVisible()
+  await expectNoBlockingAccessibilityViolations(page)
+
+  await page.getByRole('button', { name: 'Recovery' }).click()
+  await expect(page.getByRole('heading', { name: 'Recovery & workflows' })).toBeVisible()
+  await expect(page.getByText('2 workflows · 1 session')).toBeVisible()
+  await expect(page.getByText('Step: Preflight')).toBeVisible()
+  await expect(page.getByText('40%')).toBeVisible()
+  await expect(page.getByText('started')).toBeVisible()
+  const removeCard = page.locator('article', { hasText: 'Remove a model from the store' })
+  await removeCard.getByRole('button', { name: 'Start workflow' }).click()
+  await expect(removeCard.getByText('This workflow requires explicit confirmation.')).toBeVisible()
+  await removeCard.getByRole('button', { name: 'Confirm start' }).click()
+  await expect(page.getByText('Remove started; watch the session notes for step progress.')).toBeVisible()
+  await page.getByRole('button', { name: 'Request cancellation' }).click()
+  await expect(page.getByText('Cancellation requested for the active session.')).toBeVisible()
+  await expectNoBlockingAccessibilityViolations(page)
+  await captureResponsiveEvidence(page, testInfo)
+})

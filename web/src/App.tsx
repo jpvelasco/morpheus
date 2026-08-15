@@ -15,6 +15,7 @@ import {
   Image as ImageIcon,
   LifeBuoy,
   LogOut,
+  Play,
   RefreshCw,
   ScrollText,
   Search,
@@ -28,6 +29,8 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 
 import {
+  applySettings,
+  cancelWorkflow,
   createSession,
   destroySession,
   fetchAnalytics,
@@ -38,6 +41,11 @@ import {
   fetchMetricsTrend,
   fetchNavigation,
   fetchOverview,
+  fetchSettings,
+  fetchWorkflows,
+  planSettings,
+  rollbackSettings,
+  startWorkflow,
   type AnalyticsReport,
   type BenchmarksReport,
   type CapabilityState,
@@ -54,6 +62,11 @@ import {
   type NavigationManifest,
   type Overview,
   type RecommendationRecord,
+  type SettingsEntry,
+  type SettingsPayload,
+  type SettingsPlan,
+  type WorkflowDefinition,
+  type WorkflowsPayload,
   type Workspace,
   type WorkspaceState,
 } from './api'
@@ -741,6 +754,375 @@ function AnalyticsPage({ report }: { report: AnalyticsReport | null }) {
   )
 }
 
+function SettingsPage({
+  payload,
+  onChanged,
+  onSessionExpired,
+}: {
+  payload: SettingsPayload | null
+  onChanged: () => void
+  onSessionExpired: () => void
+}) {
+  const [draft, setDraft] = useState<Record<string, unknown>>({})
+  const [pending, setPending] = useState<{ changes: Record<string, unknown>; plan: SettingsPlan } | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const entries = payload?.settings ?? []
+  const journal = payload?.journal
+
+  function currentValue(entry: SettingsEntry): unknown {
+    if (entry.key in draft) return draft[entry.key]
+    return entry.current ?? entry.default ?? ''
+  }
+  function update(entry: SettingsEntry, raw: unknown) {
+    setDraft((existing) => ({ ...existing, [entry.key]: raw }))
+    setPending(null)
+  }
+  function changes(): Record<string, unknown> {
+    const changed: Record<string, unknown> = {}
+    for (const entry of entries) {
+      if (!entry.editable || !(entry.key in draft)) continue
+      const value = draft[entry.key]
+      if (entry.kind === 'bool') {
+        changed[entry.key] = value === true
+      } else {
+        changed[entry.key] = value
+      }
+    }
+    return changed
+  }
+  async function preview() {
+    const proposed = changes()
+    setBusy(true)
+    setMessage(null)
+    try {
+      setPending({ changes: proposed, plan: await planSettings(proposed) })
+    } catch (reason) {
+      if (reason instanceof Error && reason.message === 'Authentication failed') onSessionExpired()
+      else setMessage(reason instanceof Error ? reason.message : 'Plan preview failed')
+    } finally {
+      setBusy(false)
+    }
+  }
+  async function apply() {
+    if (pending === null || !pending.plan.valid) return
+    setBusy(true)
+    setMessage(null)
+    try {
+      const result = await applySettings(pending.changes)
+      const count = Object.keys(result.applied).length
+      setDraft({})
+      setPending(null)
+      setMessage(`Applied ${String(count)} change${count === 1 ? '' : 's'}; restart required for them to take effect.`)
+      onChanged()
+    } catch (reason) {
+      if (reason instanceof Error && reason.message === 'Authentication failed') onSessionExpired()
+      else setMessage(reason instanceof Error ? reason.message : 'Apply failed')
+    } finally {
+      setBusy(false)
+    }
+  }
+  async function rollback() {
+    setBusy(true)
+    setMessage(null)
+    try {
+      await rollbackSettings()
+      setDraft({})
+      setPending(null)
+      setMessage('Rolled back to the previous settings snapshot; restart required.')
+      onChanged()
+    } catch (reason) {
+      if (reason instanceof Error && reason.message === 'Authentication failed') onSessionExpired()
+      else setMessage(reason instanceof Error ? reason.message : 'Rollback failed')
+    } finally {
+      setBusy(false)
+    }
+  }
+  function formatted(value: unknown): string {
+    if (value === null || value === undefined) return '—'
+    if (typeof value === 'boolean') return value ? 'On' : 'Off'
+    if (typeof value === 'object') return JSON.stringify(value)
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'bigint') {
+      return String(value)
+    }
+    return '—'
+  }
+  function inputValue(entry: SettingsEntry): string {
+    const value = currentValue(entry)
+    if (value === null || value === undefined || typeof value === 'object') return ''
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'bigint') {
+      return String(value)
+    }
+    return ''
+  }
+  const hasDraft = Object.keys(draft).length > 0
+  return (
+    <section className="diagnostics-section" aria-labelledby="settings-heading">
+      <div className="section-heading">
+        <div>
+          <p className="section-label">Validated operator configuration</p>
+          <h2 id="settings-heading">Settings</h2>
+        </div>
+        <span>Changes take effect after a restart</span>
+      </div>
+      {journal && (
+        <p className="empty-state settings-journal">
+          {journal.rollback_available
+            ? `Pending overrides applied ${new Date(journal.applied_at ?? '').toLocaleString()}. A previous snapshot is available for rollback.`
+            : 'No pending overrides. The runtime uses its configured layers with defaults.'}
+        </p>
+      )}
+      {payload === null ? (
+        <p className="empty-state">Settings are unavailable right now.</p>
+      ) : (
+        <div className="feature-table settings-table" role="table" aria-label="Operator settings">
+          <div className="feature-row table-head" role="row">
+            <div className="feature-name" role="cell">Setting</div>
+            <div role="cell">Current</div>
+            <div role="cell">New value</div>
+            <div role="cell">Source</div>
+          </div>
+          {entries.map((entry) => (
+            <div className="feature-row settings-row" role="row" key={entry.key}>
+              <div className="feature-name" role="cell">
+                {entry.label}
+                <small>{entry.description}{entry.validation ? ` · ${entry.validation}` : ''}</small>
+              </div>
+              <div role="cell">{entry.kind === 'secret' ? (entry.configured ? 'Configured' : 'Not configured') : formatted(entry.current)}</div>
+              <div className="settings-control" role="cell">
+                {entry.editable ? (
+                  entry.kind === 'bool' ? (
+                    <label className="settings-toggle">
+                      <input
+                        type="checkbox"
+                        checked={currentValue(entry) === true}
+                        onChange={(event) => { update(entry, event.target.checked) }}
+                        aria-label={`New value for ${entry.label}`}
+                      />
+                      {currentValue(entry) === true ? 'On' : 'Off'}
+                    </label>
+                  ) : (
+                    <input
+                      type={entry.kind === 'int' || entry.kind === 'port' || entry.kind === 'float' ? 'number' : 'text'}
+                      step={entry.kind === 'float' ? 'any' : undefined}
+                      value={inputValue(entry)}
+                      onChange={(event) => { update(entry, event.target.value) }}
+                      aria-label={`New value for ${entry.label}`}
+                    />
+                  )
+                ) : (
+                  <span className="settings-locked">Secret or build identity — not editable here</span>
+                )}
+              </div>
+              <div role="cell"><span className="settings-source">{humanName(entry.source)}</span></div>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="settings-actions">
+        <button className="primary-command" type="button" onClick={() => { void preview() }} disabled={!hasDraft || busy}>
+          <RefreshCw size={16} /> Preview plan
+        </button>
+        <button className="icon-command" type="button" onClick={() => { void apply() }} disabled={pending === null || !pending.plan.valid || busy}>
+          Apply changes
+        </button>
+        {journal?.rollback_available && (
+          <button className="icon-command" type="button" onClick={() => { void rollback() }} disabled={busy}>
+            Roll back
+          </button>
+        )}
+      </div>
+      {pending && (
+        <div className="plan-preview" aria-label="Settings plan preview">
+          <div className="plan-title">
+            <span>{pending.plan.valid ? 'Plan is valid' : 'Plan needs review'}</span>
+            {pending.plan.restart_required && <span className="status status-degraded">Restart required</span>}
+          </div>
+          {pending.plan.valid ? (
+            <div className="feature-table" role="table" aria-label="Planned changes">
+              {pending.plan.changes.map((change) => (
+                <div className="feature-row" role="row" key={change.key}>
+                  <div className="feature-name" role="cell">{change.key}</div>
+                  <div role="cell">{formatted(change.before)} → {formatted(change.after)}</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <ul className="plan-issues">
+              {pending.plan.issues.map((issue) => (
+                <li key={`${issue.key}-${issue.code}`}>{issue.key}: {issue.message}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+      {message && <p className="settings-message" role="status">{message}</p>}
+    </section>
+  )
+}
+
+function WorkflowsPage({
+  payload,
+  onChanged,
+  onSessionExpired,
+}: {
+  payload: WorkflowsPayload | null
+  onChanged: () => void
+  onSessionExpired: () => void
+}) {
+  const [confirming, setConfirming] = useState<string | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const definitions = payload?.workflows ?? []
+  const sessions = payload?.sessions ?? []
+  const audit = payload?.audit_events ?? []
+  const sessionFor = (workflowId: string) => sessions.find((session) => session.workflow_id === workflowId)
+  const needsConfirmation = (workflow: WorkflowDefinition) => workflow.steps.some((step) => step.confirm_required)
+
+  async function run(action: () => Promise<void>) {
+    setBusy(true)
+    setMessage(null)
+    try {
+      await action()
+      onChanged()
+    } catch (reason) {
+      if (reason instanceof Error && reason.message === 'Authentication failed') onSessionExpired()
+      else setMessage(reason instanceof Error ? reason.message : 'Workflow operation failed')
+    } finally {
+      setBusy(false)
+    }
+  }
+  function start(workflow: WorkflowDefinition) {
+    void run(async () => {
+      const result = await startWorkflow(workflow.workflow_id, true)
+      setMessage(result.started
+        ? `${workflow.label} started; watch the session notes for step progress.`
+        : `${workflow.label} could not be started; review the session notes.`)
+      setConfirming(null)
+    })
+  }
+  function cancel(workflowId: string) {
+    void run(async () => {
+      await cancelWorkflow(workflowId)
+      setMessage('Cancellation requested for the active session.')
+    })
+  }
+  function sessionStatus(state: string) {
+    if (state === 'succeeded') return 'available'
+    if (state === 'failed') return 'unhealthy'
+    if (state === 'cancelled') return 'disabled'
+    if (state === 'running') return 'running'
+    return 'starting'
+  }
+  const activeSession = (workflowId: string) => {
+    const session = sessionFor(workflowId)
+    return session && (session.state === 'pending' || session.state === 'running') ? session : null
+  }
+  return (
+    <section className="diagnostics-section" aria-labelledby="workflows-heading">
+      <div className="section-heading">
+        <div>
+          <p className="section-label">Managed operator workflows</p>
+          <h2 id="workflows-heading">Recovery & workflows</h2>
+        </div>
+        <span>{definitions.length} workflows · {sessions.length} session{sessions.length === 1 ? '' : 's'}</span>
+      </div>
+      {payload === null ? (
+        <p className="empty-state">Workflows are unavailable right now.</p>
+      ) : (
+        <div className="workflow-list">
+          {definitions.map((workflow) => {
+            const session = sessionFor(workflow.workflow_id)
+            const active = activeSession(workflow.workflow_id)
+            return (
+              <article className="workflow-card" key={workflow.workflow_id}>
+                <div className="workflow-title">
+                  <div>
+                    <h3>{workflow.label}</h3>
+                    <p>{workflow.description}</p>
+                  </div>
+                  {session && <Status state={sessionStatus(session.state)} />}
+                </div>
+                <ol className="step-list">
+                  {workflow.steps.map((step) => (
+                    <li key={step.id}>
+                      <span className="step-name">{step.label}</span>
+                      <small>{step.description}</small>
+                      {step.preflight && <small className="step-note">Preflight: {step.preflight}</small>}
+                      {step.recovery && <small className="step-note">Recovery: {step.recovery}</small>}
+                    </li>
+                  ))}
+                </ol>
+                {session && (
+                  <div className="session-panel">
+                    <div className="progress-track" aria-hidden="true">
+                      <div className="progress-fill" style={{ width: `${String(session.progress_percent)}%` }} />
+                    </div>
+                    <div className="session-notes">
+                      <span>{session.current_step_id === null ? 'Waiting for start' : `Step: ${session.current_step_label}`}</span>
+                      <span>{String(session.progress_percent)}%</span>
+                    </div>
+                    {session.error && <p className="session-error">{session.error}</p>}
+                    {session.recovery_instruction && <p className="session-recovery">Recovery: {session.recovery_instruction}</p>}
+                  </div>
+                )}
+                <div className="workflow-actions">
+                  {confirming === workflow.workflow_id ? (
+                    <span className="confirm-panel">
+                      {needsConfirmation(workflow) ? 'This workflow requires explicit confirmation.' : 'Start this workflow now?'}
+                      <button className="primary-command" type="button" onClick={() => { start(workflow) }} disabled={busy}>
+                        Confirm start
+                      </button>
+                      <button className="icon-command" type="button" onClick={() => { setConfirming(null) }} disabled={busy}>
+                        Keep reviewing
+                      </button>
+                    </span>
+                  ) : (
+                    <button
+                      className="primary-command"
+                      type="button"
+                      onClick={() => { setConfirming(workflow.workflow_id) }}
+                      disabled={active !== null || busy}
+                    >
+                      <Play size={15} /> {active ? 'Running' : session ? 'Restart workflow' : 'Start workflow'}
+                    </button>
+                  )}
+                  {active && (
+                    <button className="icon-command" type="button" onClick={() => { cancel(workflow.workflow_id) }} disabled={busy}>
+                      Request cancellation
+                    </button>
+                  )}
+                </div>
+              </article>
+            )
+          })}
+        </div>
+      )}
+      {audit.length > 0 && (
+        <div className="feature-table audit-table" role="table" aria-label="Workflow audit trail">
+          <div className="feature-row table-head" role="row">
+            <div role="cell">Recorded</div>
+            <div className="feature-name" role="cell">Workflow</div>
+            <div role="cell">Event</div>
+            <div role="cell">Step</div>
+            <div role="cell">Message</div>
+          </div>
+          {audit.map((event) => (
+            <div className="feature-row" role="row" key={`${event.recorded_at}-${event.session_id}-${event.event}`}>
+              <div role="cell">{new Date(event.recorded_at).toLocaleString()}</div>
+              <div className="feature-name" role="cell">{humanName(event.workflow_id)}</div>
+              <div role="cell">{event.event}</div>
+              <div role="cell">{event.step_id ?? '—'}</div>
+              <div className="event-message" role="cell">{event.message ?? '—'}</div>
+            </div>
+          ))}
+        </div>
+      )}
+      {message && <p className="settings-message" role="status">{message}</p>}
+    </section>
+  )
+}
+
 function WorkspacePage({
   view,
   overview,
@@ -753,6 +1135,11 @@ function WorkspacePage({
   events,
   benchmarks,
   analytics,
+  settings,
+  workflows,
+  reloadSettings,
+  reloadWorkflows,
+  onSessionExpired,
 }: {
   view: string
   overview: Overview | null
@@ -765,6 +1152,11 @@ function WorkspacePage({
   events: EventsReport | null
   benchmarks: BenchmarksReport | null
   analytics: AnalyticsReport | null
+  settings: SettingsPayload | null
+  workflows: WorkflowsPayload | null
+  reloadSettings: () => void
+  reloadWorkflows: () => void
+  onSessionExpired: () => void
 }) {
   const workspace = workspaces.find((item) => item.id === view)
   switch (view) {
@@ -791,6 +1183,10 @@ function WorkspacePage({
       return <BenchmarksPage report={benchmarks} />
     case 'analytics':
       return <AnalyticsPage report={analytics} />
+    case 'settings':
+      return <SettingsPage payload={settings} onChanged={reloadSettings} onSessionExpired={onSessionExpired} />
+    case 'recovery':
+      return <WorkflowsPage payload={workflows} onChanged={reloadWorkflows} onSessionExpired={onSessionExpired} />
     default:
       return workspace ? <EmptyWorkspacePage workspace={workspace} /> : null
   }
@@ -801,6 +1197,7 @@ function useWorkspaceData<T>(
   target: string,
   fetcher: (signal: AbortSignal) => Promise<T>,
   setter: (value: T | null) => void,
+  revision = 0,
 ) {
   const request = useRef<AbortController | null>(null)
   useEffect(() => {
@@ -821,7 +1218,7 @@ function useWorkspaceData<T>(
       request.current?.abort()
       request.current = null
     }
-  }, [view, target, fetcher, setter])
+  }, [view, target, fetcher, setter, revision])
 }
 
 function Dashboard({ onLogout, onSessionExpired }: { onLogout: () => Promise<void>; onSessionExpired: () => void }) {
@@ -833,6 +1230,10 @@ function Dashboard({ onLogout, onSessionExpired }: { onLogout: () => Promise<voi
   const [events, setEvents] = useState<EventsReport | null>(null)
   const [benchmarks, setBenchmarks] = useState<BenchmarksReport | null>(null)
   const [analytics, setAnalytics] = useState<AnalyticsReport | null>(null)
+  const [settings, setSettings] = useState<SettingsPayload | null>(null)
+  const [workflows, setWorkflows] = useState<WorkflowsPayload | null>(null)
+  const [settingsRefresh, setSettingsRefresh] = useState(0)
+  const [workflowsRefresh, setWorkflowsRefresh] = useState(0)
   const [trendSignal, setTrendSignal] = useState('gpu_cache_usage')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -900,10 +1301,16 @@ function Dashboard({ onLogout, onSessionExpired }: { onLogout: () => Promise<voi
   )
   const fetchEventLog = useCallback((signal: AbortSignal) => fetchEvents(200, signal), [])
   const fetchRunHistory = useCallback((signal: AbortSignal) => fetchBenchmarks(20, signal), [])
+  const fetchSettingsData = useCallback((signal: AbortSignal) => fetchSettings(signal), [])
+  const fetchWorkflowsData = useCallback((signal: AbortSignal) => fetchWorkflows(signal), [])
+  const reloadSettings = useCallback(() => { setSettingsRefresh((value) => value + 1) }, [])
+  const reloadWorkflows = useCallback(() => { setWorkflowsRefresh((value) => value + 1) }, [])
   useWorkspaceData(view, 'hardware', fetchTrend, setMetrics)
   useWorkspaceData(view, 'logs_events', fetchEventLog, setEvents)
   useWorkspaceData(view, 'benchmarks', fetchRunHistory, setBenchmarks)
   useWorkspaceData(view, 'analytics', fetchAnalytics, setAnalytics)
+  useWorkspaceData(view, 'settings', fetchSettingsData, setSettings, settingsRefresh)
+  useWorkspaceData(view, 'recovery', fetchWorkflowsData, setWorkflows, workflowsRefresh)
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -961,6 +1368,11 @@ function Dashboard({ onLogout, onSessionExpired }: { onLogout: () => Promise<voi
           events={events}
           benchmarks={benchmarks}
           analytics={analytics}
+          settings={settings}
+          workflows={workflows}
+          reloadSettings={reloadSettings}
+          reloadWorkflows={reloadWorkflows}
+          onSessionExpired={onSessionExpired}
         />
       </main>
     </div>

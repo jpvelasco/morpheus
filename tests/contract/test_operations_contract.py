@@ -96,14 +96,14 @@ WORKSPACE_IDS = [
 
 EMPTY_WORKSPACES = {
     "engines",
-    "settings",
-    "recovery",
 }
 
 DATA_WORKSPACES = {
     "benchmarks": {"schema": "benchmarks", "version": 1},
     "analytics": {"schema": "analytics", "version": 1},
     "logs_events": {"schema": "events", "version": 1},
+    "settings": {"schema": "settings", "version": 1},
+    "recovery": {"schema": "recovery", "version": 1},
 }
 
 READY_EVIDENCE = Evidence(
@@ -187,6 +187,9 @@ def degraded_evidence(reason_code: str) -> Evidence:
         "/api/v1/operations/events",
         "/api/v1/operations/benchmarks",
         "/api/v1/operations/analytics",
+        "/api/v1/operations/settings",
+        "/api/v1/operations/workflows",
+        "/api/v1/operations/workflows/benchmark/session",
     ],
 )
 def test_OUI_001_operations_routes_require_authentication(path: str) -> None:
@@ -220,8 +223,9 @@ def test_OUI_001_navigation_manifest_is_versioned_and_complete() -> None:
     for workspace_id in EMPTY_WORKSPACES:
         assert by_id[workspace_id]["state"] == "empty"
         assert by_id[workspace_id]["query_model"] is None
+    assert by_id["settings"]["state"] == "ready"
+    assert by_id["recovery"]["state"] == "empty"
     for workspace_id, query_model in DATA_WORKSPACES.items():
-        assert by_id[workspace_id]["state"] == "empty"
         assert by_id[workspace_id]["query_model"] == query_model
 
 
@@ -635,3 +639,242 @@ def test_OUI_001_navigation_reports_data_workspace_states_from_stores(tmp_path) 
     assert by_id["benchmarks"]["state"] == "ready"
     assert by_id["analytics"]["state"] == "ready"
     assert by_id["logs_events"]["state"] == "ready"
+
+
+def _signed_in_client(tmp_path) -> tuple[TestClient, dict[str, str]]:
+    test_client = client(
+        settings=MorpheusSettings(
+            api_key="test-api-key",
+            session_secret="session-test-secret",
+            data_dir=tmp_path,
+            enable_workflows=True,
+            enable_lifecycle=True,
+            lifecycle_deployment_root=tmp_path / "deploy",
+        )
+    )
+    response = test_client.post(
+        "/api/v1/session",
+        json={"api_key": "test-api-key"},
+        headers={"Content-Type": "application/json"},
+    )
+    assert response.status_code == 200
+    csrf = test_client.cookies.get("morpheus_csrf", "")
+    return test_client, {"X-CSRF-Token": csrf}
+
+
+def test_OUI_005_settings_payload_reports_catalog_sources_and_journal(tmp_path) -> None:
+    test_client = client(
+        settings=MorpheusSettings(
+            api_key="test-api-key", session_secret="session-test-secret", data_dir=tmp_path
+        )
+    )
+    response = test_client.get(
+        "/api/v1/operations/settings", headers={"Authorization": "Bearer test-api-key"}
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["schema_version"] == 1
+    assert payload["restart_required"] is True
+    assert payload["journal"]["rollback_available"] is False
+    by_key = {entry["key"]: entry for entry in payload["settings"]}
+    assert by_key["api_port"]["kind"] == "port"
+    assert by_key["api_port"]["editable"] is True
+    assert by_key["api_key"]["kind"] == "secret"
+    assert by_key["api_key"]["editable"] is False
+    assert by_key["api_key"]["current"] is None
+    assert by_key["api_port"]["source"] == "default"
+
+
+def test_OUI_005_settings_plan_validates_and_requires_csrf(tmp_path) -> None:
+    test_client, csrf = _signed_in_client(tmp_path)
+    without_csrf = test_client.post(
+        "/api/v1/operations/settings/plan",
+        json={"changes": {"api_port": 7411}},
+    )
+    assert without_csrf.status_code == 403
+    assert without_csrf.json()["error"]["code"] == "csrf_validation_failed"
+    valid = test_client.post(
+        "/api/v1/operations/settings/plan",
+        json={"changes": {"api_port": 7411}},
+        headers=csrf,
+    )
+    assert valid.status_code == 200
+    plan = valid.json()
+    assert plan["valid"] is True
+    assert plan["changes"] == [
+        {
+            "key": "api_port",
+            "before": 7400,
+            "after": 7411,
+            "restart_required": True,
+            "kind": "port",
+        }
+    ]
+    invalid = test_client.post(
+        "/api/v1/operations/settings/plan",
+        json={"changes": {"api_port": 99_999}},
+        headers=csrf,
+    )
+    assert invalid.status_code == 200
+    assert invalid.json()["valid"] is False
+    assert invalid.json()["issues"][0]["key"] == "api_port"
+    secret = test_client.post(
+        "/api/v1/operations/settings/plan",
+        json={"changes": {"api_key": "tampered"}},
+        headers=csrf,
+    )
+    assert secret.json()["valid"] is False
+    assert secret.json()["issues"][0]["code"] == "secret_not_editable"
+
+
+def test_OUI_005_settings_apply_persists_journal_and_rollback_restores(tmp_path) -> None:
+    test_client, csrf = _signed_in_client(tmp_path)
+    applied = test_client.post(
+        "/api/v1/operations/settings/apply",
+        json={"changes": {"api_port": 7411, "llm_model": "qwen-test"}},
+        headers=csrf,
+    )
+    assert applied.status_code == 200
+    assert applied.json()["applied"] == {"api_port": "7411", "llm_model": "qwen-test"}
+    assert applied.json()["restart_required"] is True
+    first_journal = test_client.get(
+        "/api/v1/operations/settings", headers={"Authorization": "Bearer test-api-key"}
+    ).json()["journal"]
+    assert first_journal["rollback_available"] is False
+    assert first_journal["applied"]["api_port"] == "7411"
+    assert "api_key" not in str(first_journal)
+    overrides = (tmp_path / "settings" / "overrides.env").read_text(encoding="utf-8")
+    assert "API_PORT=7411" in overrides
+    applied_twice = test_client.post(
+        "/api/v1/operations/settings/apply",
+        json={"changes": {"api_port": 7412}},
+        headers=csrf,
+    )
+    assert applied_twice.status_code == 200
+    journal = test_client.get(
+        "/api/v1/operations/settings", headers={"Authorization": "Bearer test-api-key"}
+    ).json()["journal"]
+    assert journal["rollback_available"] is True
+    assert journal["applied"]["api_port"] == "7412"
+    rolled_back = test_client.post("/api/v1/operations/settings/rollback", headers=csrf)
+    assert rolled_back.status_code == 200
+    assert rolled_back.json()["rolled_back"] is True
+    restored = (tmp_path / "settings" / "overrides.env").read_text(encoding="utf-8")
+    assert "API_PORT=7411" in restored
+    assert "LLM_MODEL=qwen-test" in restored
+    empty_journal = test_client.get(
+        "/api/v1/operations/settings", headers={"Authorization": "Bearer test-api-key"}
+    ).json()["journal"]
+    assert empty_journal["rollback_available"] is False
+
+
+def test_OUI_005_settings_apply_rejects_invalid_plans(tmp_path) -> None:
+    test_client, csrf = _signed_in_client(tmp_path)
+    response = test_client.post(
+        "/api/v1/operations/settings/apply",
+        json={"changes": {"api_port": 99_999}},
+        headers=csrf,
+    )
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "operations_data_error"
+    assert not (tmp_path / "settings" / "overrides.env").exists()
+
+
+def test_OUI_006_workflows_payload_lists_definitions_and_sessions(tmp_path) -> None:
+    test_client = client(
+        settings=MorpheusSettings(
+            api_key="test-api-key", session_secret="session-test-secret", data_dir=tmp_path
+        )
+    )
+    response = test_client.get(
+        "/api/v1/operations/workflows", headers={"Authorization": "Bearer test-api-key"}
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["schema_version"] == 1
+    workflow_ids = [workflow["workflow_id"] for workflow in payload["workflows"]]
+    assert workflow_ids == [
+        "model_acquire",
+        "engine_install",
+        "engine_configure",
+        "benchmark",
+        "promote",
+        "rollback",
+        "remove",
+    ]
+    remove = next(
+        workflow for workflow in payload["workflows"] if workflow["workflow_id"] == "remove"
+    )
+    assert any(step["confirm_required"] for step in remove["steps"])
+    assert payload["sessions"] == []
+    assert payload["audit_events"] == []
+
+
+def test_OUI_006_workflow_start_requires_confirmation_and_csrf(tmp_path) -> None:
+    test_client, csrf = _signed_in_client(tmp_path)
+    without_csrf = test_client.post(
+        "/api/v1/operations/workflows/remove/start", json={"confirmed": True}
+    )
+    assert without_csrf.status_code == 403
+    assert without_csrf.json()["error"]["code"] == "csrf_validation_failed"
+    unconfirmed = test_client.post(
+        "/api/v1/operations/workflows/remove/start",
+        json={"confirmed": False},
+        headers=csrf,
+    )
+    assert unconfirmed.status_code == 400
+    assert "confirmation" in unconfirmed.json()["error"]["message"]
+    started = test_client.post(
+        "/api/v1/operations/workflows/remove/start",
+        json={"confirmed": True},
+        headers=csrf,
+    )
+    assert started.status_code == 200
+    assert started.json()["started"] is True
+    session = started.json()["session"]
+    assert session["workflow_id"] == "remove"
+    assert session["state"] == "failed"
+    assert "lifecycle-backed executor" in session["error"]
+    assert session["recovery_instruction"]
+
+
+def test_OUI_006_benchmark_workflow_runs_and_audits_every_step(tmp_path) -> None:
+    test_client, csrf = _signed_in_client(tmp_path)
+    started = test_client.post(
+        "/api/v1/operations/workflows/benchmark/start",
+        json={"confirmed": True},
+        headers=csrf,
+    )
+    assert started.status_code == 200
+    session = started.json()["session"]
+    assert session["state"] == "failed"
+    assert session["progress_percent"] > 0
+    listed = test_client.get(
+        "/api/v1/operations/workflows", headers={"Authorization": "Bearer test-api-key"}
+    ).json()
+    assert [item["workflow_id"] for item in listed["sessions"]] == ["benchmark"]
+    assert any(event["event"] == "started" for event in listed["audit_events"])
+    assert any(event["event"] == "failed" for event in listed["audit_events"])
+    session_response = test_client.get(
+        "/api/v1/operations/workflows/benchmark/session",
+        headers={"Authorization": "Bearer test-api-key"},
+    )
+    assert session_response.status_code == 200
+    assert session_response.json()["session"]["session_id"] == session["session_id"]
+
+
+def test_OUI_006_workflow_unknown_id_and_missing_session_are_bounded(tmp_path) -> None:
+    test_client, csrf = _signed_in_client(tmp_path)
+    unknown = test_client.post(
+        "/api/v1/operations/workflows/not-a-workflow/start",
+        json={"confirmed": True},
+        headers=csrf,
+    )
+    assert unknown.status_code == 400
+    assert "unknown workflow" in unknown.json()["error"]["message"]
+    missing = test_client.get(
+        "/api/v1/operations/workflows/benchmark/session",
+        headers={"Authorization": "Bearer test-api-key"},
+    )
+    assert missing.status_code == 400
+    assert "no workflow session" in missing.json()["error"]["message"]
