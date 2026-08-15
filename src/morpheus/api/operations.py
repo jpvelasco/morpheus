@@ -8,7 +8,7 @@ evidence for the core control, never a control itself.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 from morpheus.config import MorpheusSettings
@@ -38,6 +38,8 @@ QUERY_MODELS: dict[str, dict[str, str | int]] = {
     "analytics": {"schema": "analytics", "version": 1},
     "logs_events": {"schema": "events", "version": 1},
     "diagnostics": {"schema": "diagnostics", "version": 1},
+    "settings": {"schema": "settings", "version": 1},
+    "recovery": {"schema": "recovery", "version": 1},
 }
 
 #: Owned container components backing each optional feature control.
@@ -147,6 +149,8 @@ def _workspace_state(
     if workspace_id == "models":
         return models_state
     if workspace_id in {"benchmarks", "analytics", "logs_events"}:
+        return data_state
+    if workspace_id in {"settings", "recovery"}:
         return data_state
     return "empty"
 
@@ -305,4 +309,55 @@ def analytics_payload(
         "scorecards": report["scorecards"],
         "comparisons": report["comparisons"],
         "regressions": report["regressions"],
+    }
+
+
+def settings_payload(
+    *,
+    observed_at: str,
+    entries: Sequence[dict[str, Any]],
+    journal: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Versioned settings catalog with journal state; secrets stay redacted."""
+    return {
+        "schema_version": 1,
+        "observed_at": observed_at,
+        "settings": list(entries),
+        "restart_required": True,
+        "journal": journal or {"applied_at": None, "applied": [], "rollback_available": False},
+    }
+
+
+def workflows_payload(
+    *,
+    observed_at: str,
+    definitions: Sequence[Any],
+    sessions: Mapping[str, Any],
+    audit_events: Sequence[dict[str, Any]],
+) -> dict[str, Any]:
+    """Versioned workflows payload: definitions, active sessions, audit trail."""
+    return {
+        "schema_version": 1,
+        "observed_at": observed_at,
+        "workflows": [
+            {
+                "workflow_id": definition.workflow_id.value,
+                "label": definition.label,
+                "description": definition.description,
+                "steps": [
+                    {
+                        "id": step.id,
+                        "label": step.label,
+                        "description": step.description,
+                        "preflight": step.preflight,
+                        "recovery": step.recovery,
+                        "confirm_required": step.confirm_required,
+                    }
+                    for step in definition.steps
+                ],
+            }
+            for definition in definitions
+        ],
+        "sessions": [session.to_dict() for session in sessions.values()],
+        "audit_events": list(audit_events),
     }

@@ -1657,8 +1657,15 @@
     {
       "id": "OUI-005",
       "phase": 16,
-      "status": "planned",
-      "owning_tests": [],
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_settings_catalog.py",
+        "tests/unit/test_settings_journal.py",
+        "tests/contract/test_operations_contract.py",
+        "web/tests/App.test.tsx",
+        "web/tests/api.test.ts",
+        "web/e2e/dashboard.spec.ts"
+      ],
       "risk": "critical",
       "required_environments": [
         "DEV",
@@ -1666,17 +1673,23 @@
       ],
       "requires_live_evidence": false,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": [
-        "IMP-OUI-005-01"
-      ]
+      "implementation_tasks": []
     },
     {
       "id": "OUI-006",
       "phase": 16,
-      "status": "planned",
-      "owning_tests": [],
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_workflows.py",
+        "tests/unit/test_workflow_runner.py",
+        "tests/integration/test_sqlite_store.py",
+        "tests/contract/test_operations_contract.py",
+        "web/tests/App.test.tsx",
+        "web/tests/api.test.ts",
+        "web/e2e/dashboard.spec.ts"
+      ],
       "risk": "critical",
       "required_environments": [
         "DEV",
@@ -1685,11 +1698,9 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": true,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": [
-        "IMP-OUI-006-01"
-      ]
+      "implementation_tasks": []
     },
     {
       "id": "DESK-001",

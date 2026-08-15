@@ -254,3 +254,78 @@ async def test_OUI_003_store_rejects_unapproved_sources_and_severities(tmp_path:
         await store.record_event(source="api", severity="fatal", message="x")
     with pytest.raises(ValueError):
         await store.events(source="bogus", limit=10)
+
+
+@pytest.mark.asyncio
+async def test_OUI_006_workflow_audit_persists_and_round_trips(tmp_path: Path) -> None:
+    store = SqliteStore(tmp_path / "morpheus.sqlite3")
+    await store.initialize()
+    await store.record_workflow_audit(
+        recorded_at="2026-08-15T10:00:00+00:00",
+        session_id="session-1",
+        workflow_id="benchmark",
+        event="started",
+    )
+    await store.record_workflow_audit(
+        recorded_at="2026-08-15T10:00:05+00:00",
+        session_id="session-1",
+        workflow_id="benchmark",
+        event="step_succeeded",
+        step_id="preflight",
+    )
+    await store.record_workflow_audit(
+        recorded_at="2026-08-15T10:00:10+00:00",
+        session_id="session-2",
+        workflow_id="remove",
+        event="failed",
+        message="not owned",
+    )
+    events = await store.workflow_audit_events()
+    assert len(events) == 3
+    assert events[0]["session_id"] == "session-2"
+    assert events[0]["event"] == "failed"
+    assert events[1]["step_id"] == "preflight"
+    assert events[2]["workflow_id"] == "benchmark"
+
+
+@pytest.mark.asyncio
+async def test_OUI_006_workflow_audit_bounds_the_result_size(tmp_path: Path) -> None:
+    store = SqliteStore(tmp_path / "morpheus.sqlite3")
+    await store.initialize()
+    for index in range(5):
+        await store.record_workflow_audit(
+            recorded_at=f"2026-08-15T10:00:0{index}+00:00",
+            session_id=f"session-{index}",
+            workflow_id="benchmark",
+            event="started",
+        )
+    assert len(await store.workflow_audit_events(limit=2)) == 2
+    assert len(await store.workflow_audit_events(limit=0)) == 1
+    assert len(await store.workflow_audit_events(limit=500)) == 5
+
+
+@pytest.mark.asyncio
+async def test_schema_v3_migrates_an_existing_v2_database(tmp_path: Path) -> None:
+    import sqlite3
+
+    database = tmp_path / "morpheus.sqlite3"
+    with sqlite3.connect(database) as connection:
+        connection.execute("CREATE TABLE schema_meta (version INTEGER NOT NULL)")
+        connection.execute("INSERT INTO schema_meta(version) VALUES (2)")
+        connection.execute(
+            "CREATE TABLE telemetry (id INTEGER PRIMARY KEY AUTOINCREMENT, "
+            "recorded_at TEXT NOT NULL, correlation_id TEXT NOT NULL UNIQUE, "
+            "model_requested TEXT NOT NULL, model_reported TEXT, started_at REAL NOT NULL, "
+            "first_byte_seconds REAL, completed_seconds REAL, prompt_tokens INTEGER, "
+            "completion_tokens INTEGER, finish_reason TEXT, outcome TEXT NOT NULL)"
+        )
+    store = SqliteStore(database)
+    await store.initialize()
+    assert await store.schema_version() == 3
+    await store.record_workflow_audit(
+        recorded_at="2026-08-15T10:00:00+00:00",
+        session_id="session-1",
+        workflow_id="benchmark",
+        event="started",
+    )
+    assert len(await store.workflow_audit_events()) == 1
