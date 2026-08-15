@@ -60,6 +60,25 @@ def models(as_json: Annotated[bool, typer.Option("--json")] = False) -> None:
 
 
 @app.command()
+def recommend(as_json: Annotated[bool, typer.Option("--json")] = False) -> None:
+    """Show the latest model recommendation with exclusion explanations."""
+    try:
+        payload = _request("/api/v1/recommendations/latest")
+    except httpx.HTTPError as error:
+        _emit(
+            {
+                "status": "unavailable",
+                "error": type(error).__name__,
+                "hint": "Generate one via the dashboard or the POST "
+                "/api/v1/recommendations endpoint",
+            },
+            as_json=as_json,
+        )
+        raise typer.Exit(2) from None
+    _emit(payload, as_json=as_json)
+
+
+@app.command()
 def doctor(as_json: Annotated[bool, typer.Option("--json")] = False) -> None:
     """Run read-only configuration and dependency diagnostics."""
     checks: list[dict[str, Any]] = []

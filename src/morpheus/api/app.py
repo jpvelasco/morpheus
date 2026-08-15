@@ -21,8 +21,17 @@ from morpheus.api.runtime import runtime_services_snapshot, runtime_snapshot
 from morpheus.api.session import BrowserSession, SessionCodec, SessionValidationError
 from morpheus.config import MorpheusSettings, load_settings
 from morpheus.core.capabilities import Capability, evaluate_capabilities
+from morpheus.core.catalog import SEED_CATALOG
 from morpheus.core.concurrency import ConcurrencyLimiter, FixedWindowRateLimiter, RetryPolicy
 from morpheus.core.health import Evidence, HealthState
+from morpheus.core.recommendation import (
+    RecommendationError,
+    RecommendationStore,
+    budget_from_host,
+    build_recommendation,
+    recommend_for_host,
+)
+from morpheus.core.workload import SEED_PROFILES, OperatorConstraints
 from morpheus.ports.protocols import Clock, InferencePort, RuntimeAgentPort
 
 
@@ -42,6 +51,13 @@ class SessionLogin(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     api_key: str = Field(min_length=1, max_length=512)
+
+
+class RecommendationRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    profile: str = Field(min_length=1, max_length=128)
+    operator: dict[str, Any] | None = None
 
 
 _SESSION_COOKIE = "morpheus_session"
@@ -229,6 +245,19 @@ def create_app(
             },
         )
 
+    @app.exception_handler(RecommendationError)
+    async def recommendation_error(request: Request, error: RecommendationError) -> JSONResponse:
+        del request
+        return JSONResponse(
+            status_code=404 if "no recommendation record" in str(error) else 422,
+            content={
+                "error": {
+                    "code": "recommendation_unavailable",
+                    "message": str(error),
+                }
+            },
+        )
+
     def browser_session(request: Request) -> BrowserSession:
         if session_codec is None:
             raise AuthenticationRequired
@@ -397,6 +426,57 @@ def create_app(
             "host": host,
             "configuration": settings.public_dict(),
         }
+
+    def _store() -> RecommendationStore:
+        store = RecommendationStore(settings.data_dir / "recommendations")
+        store.initialize()
+        return store
+
+    @app.get("/api/v1/recommendations/latest", dependencies=[Depends(require_api_key)])
+    async def latest_recommendation() -> dict[str, Any]:
+        store = _store()
+        record = store.latest()
+        if record is None:
+            raise RecommendationError("no recommendation record stored yet")
+        return {"recommendation": record.to_dict()}
+
+    @app.post("/api/v1/recommendations", dependencies=[Depends(require_api_key)])
+    async def generate_recommendation(body: RecommendationRequest) -> dict[str, Any]:
+        profile = next(
+            (candidate for candidate in SEED_PROFILES if candidate.id == body.profile),
+            None,
+        )
+        if profile is None:
+            raise RecommendationError(f"unknown workload profile: {body.profile}")
+        host = await runtime_snapshot(runtime_agent, clock=clock)
+        budget = budget_from_host(host)
+        if budget is None:
+            raise RecommendationError(
+                "host budget unavailable: runtime agent memory/disk evidence missing"
+            )
+        operator = OperatorConstraints(**body.operator) if body.operator else None
+        ranked, excluded = recommend_for_host(
+            profile=profile,
+            budget=budget,
+            catalog=SEED_CATALOG,
+            operator=operator,
+            reference_machine_id=host.get("observed_at", "local"),
+        )
+        record = build_recommendation(
+            profile=profile,
+            operator=operator,
+            reference_machine_id=host.get("observed_at", "local"),
+            budget={
+                "ram_bytes": budget.ram_bytes,
+                "vram_bytes": budget.vram_bytes,
+                "storage_bytes": budget.storage_bytes,
+                "accelerator": budget.accelerator,
+            },
+            ranked=ranked,
+            excluded=excluded,
+        )
+        _store().store_record(record)
+        return {"recommendation": record.to_dict()}
 
     return app
 

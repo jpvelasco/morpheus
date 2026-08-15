@@ -71,6 +71,30 @@ class ServicesRuntimeAgent:
         )
 
 
+class RecommendationRuntimeAgent:
+    async def inspect(self, operation: AgentOperation) -> AgentResponse:
+        if operation is AgentOperation.HOST_SUMMARY:
+            result = {
+                "memory": {"total_bytes": 64 * 1024**3, "available_bytes": 32 * 1024**3},
+                "disk": {
+                    "total_bytes": 500 * 1024**3,
+                    "used_bytes": 100 * 1024**3,
+                    "free_bytes": 400 * 1024**3,
+                },
+                "process": {"load_average_1m": 0.2, "uptime_seconds": 60},
+                "clock": {"observed_at": NOW.isoformat()},
+            }
+        elif operation is AgentOperation.GPU_SUMMARY:
+            result = {
+                "gpus": [
+                    {"index": 0, "name": "fixture", "memory_total_mib": 49152, "memory_used_mib": 0}
+                ]
+            }
+        else:
+            result = {"containers": []}
+        return AgentResponse(request_id="fixture", operation=operation, result=result)
+
+
 def client(
     *,
     runtime_agent: PartialRuntimeAgent | FullRuntimeAgent | None = None,
@@ -374,3 +398,62 @@ def test_RUN_006_image_pin_check_matches_every_running_service_to_candidate() ->
     assert response.json()["status"] == "ready"
     assert checks["image_pin"]["status"] == "pass"
     assert checks["image_pin"]["next_action"] is None
+
+
+def test_REC_001_latest_recommendation_requires_authentication() -> None:
+    response = client().get("/api/v1/recommendations/latest")
+    assert response.status_code == 401
+
+
+def test_REC_002_latest_recommendation_empty_store_is_404(tmp_path) -> None:
+    settings = MorpheusSettings(api_key="test-api-key", data_dir=tmp_path)
+    response = client(settings=settings).get(
+        "/api/v1/recommendations/latest",
+        headers={"Authorization": "Bearer test-api-key"},
+    )
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "recommendation_unavailable"
+
+
+def test_REC_003_generate_and_read_latest_recommendation(tmp_path) -> None:
+    settings = MorpheusSettings(api_key="test-api-key", data_dir=tmp_path)
+    test_client = client(settings=settings, runtime_agent=RecommendationRuntimeAgent())
+    generated = test_client.post(
+        "/api/v1/recommendations",
+        headers={"Authorization": "Bearer test-api-key"},
+        json={"profile": "developer-default"},
+    )
+    assert generated.status_code == 200
+    payload = generated.json()["recommendation"]
+    assert payload["record_id"]
+    assert payload["ranked"]
+    assert payload["excluded"]
+    assert payload["summary"].startswith("top:")
+    latest = test_client.get(
+        "/api/v1/recommendations/latest",
+        headers={"Authorization": "Bearer test-api-key"},
+    )
+    assert latest.status_code == 200
+    assert latest.json()["recommendation"] == payload
+
+
+def test_REC_004_unknown_profile_is_rejected(tmp_path) -> None:
+    settings = MorpheusSettings(api_key="test-api-key", data_dir=tmp_path)
+    response = client(settings=settings, runtime_agent=RecommendationRuntimeAgent()).post(
+        "/api/v1/recommendations",
+        headers={"Authorization": "Bearer test-api-key"},
+        json={"profile": "no-such-profile"},
+    )
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "recommendation_unavailable"
+
+
+def test_REC_005_generate_without_runtime_agent_is_rejected(tmp_path) -> None:
+    settings = MorpheusSettings(api_key="test-api-key", data_dir=tmp_path)
+    response = client(settings=settings).post(
+        "/api/v1/recommendations",
+        headers={"Authorization": "Bearer test-api-key"},
+        json={"profile": "developer-default"},
+    )
+    assert response.status_code == 422
+    assert "runtime agent" in response.json()["error"]["message"]
