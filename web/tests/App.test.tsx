@@ -167,3 +167,42 @@ test('missing model and stale evidence remain explicit', async () => {
   expect(await screen.findByText('Stale evidence')).toBeVisible()
   expect(screen.getByText('Unhealthy')).toBeVisible()
 })
+
+test('REC-001 recommendations tab shows exclusions and tradeoffs', async () => {
+  const recommendation = {
+    recommendation: {
+      record_id: 'a'.repeat(64),
+      created_at: '2026-08-01T12:00:00+00:00',
+      profile: { id: 'developer-default', version: '2026.2', name: 'Developer default' },
+      reference_machine_id: 'ubuntu-1',
+      ranked: [{
+        candidate: { model_id: 'qwen2.5-7b-instruct', quantization: 'awq', engine_id: 'vllm', context_window: 8192, concurrency: 1 },
+        score: 0.42,
+        contributions: [
+          { metric: 'memory_headroom', weight: 0.05, calibrated: 0.9, effective_confidence: 0.5, contribution: 0.45, comparability: 'comparable' },
+        ],
+        summary: 'strongest: memory_headroom',
+      }],
+      excluded: [{
+        candidate: { model_id: 'llama-3.1-8b-instruct', quantization: 'q4_k_m', engine_id: 'llama.cpp', context_window: 8192, concurrency: 1 },
+        violations: [{ code: 'accelerator', detail: 'engine llama.cpp requires cpu' }],
+      }],
+      summary: 'top: qwen2.5-7b-instruct/awq vllm (score 0.420); excluded: 1 tuples',
+    },
+  }
+  mockFetch(recommendation)
+  render(<App />)
+  await signIn()
+  await userEvent.click(screen.getByRole('button', { name: 'Recommendations' }))
+  expect(await screen.findByText(/Developer default/)).toBeVisible()
+  expect(screen.getByText(/qwen2.5-7b-instruct · awq · vllm/)).toBeVisible()
+  expect(screen.getByText(/Accelerator: engine llama.cpp requires cpu/)).toBeVisible()
+})
+
+test('REC-002 recommendations tab without a record shows empty state', async () => {
+  mockFetch({ error: { code: 'recommendation_unavailable' } }, 404)
+  render(<App />)
+  await signIn()
+  await userEvent.click(screen.getByRole('button', { name: 'Recommendations' }))
+  expect(await screen.findByText(/No recommendation recorded yet/)).toBeVisible()
+})

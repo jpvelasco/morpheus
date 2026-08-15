@@ -233,3 +233,53 @@ export async function fetchOverview(signal?: AbortSignal): Promise<Overview> {
   requireSuccess(response)
   return parseOverview(await response.json())
 }
+
+export interface RecommendationContribution {
+  metric: string
+  weight: number
+  calibrated: number
+  effective_confidence: number
+  contribution: number
+  comparability: 'comparable' | 'incomparable' | 'missing'
+}
+
+export interface RecommendationTuple {
+  candidate: {
+    model_id: string
+    quantization: string
+    engine_id: string
+    context_window: number
+    concurrency: number
+  }
+  score: number
+  contributions: RecommendationContribution[]
+  summary: string
+}
+
+export interface RecommendationRecord {
+  record_id: string
+  created_at: string
+  profile: { id: string; version: string; name: string }
+  reference_machine_id: string
+  ranked: RecommendationTuple[]
+  excluded: Array<{
+    candidate: RecommendationTuple['candidate']
+    violations: Array<{ code: string; detail: string }>
+  }>
+  summary: string
+}
+
+export interface RecommendationPayload {
+  recommendation: RecommendationRecord
+}
+
+export async function fetchLatestRecommendation(signal?: AbortSignal): Promise<RecommendationRecord | null> {
+  const response = await fetch(`${API_BASE}/api/v1/recommendations/latest`, {
+    credentials: 'include',
+    signal,
+  })
+  if (response.status === 404) return null
+  requireSuccess(response)
+  const payload = (await response.json()) as RecommendationPayload
+  return payload.recommendation
+}
