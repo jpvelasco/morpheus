@@ -1,15 +1,19 @@
 from __future__ import annotations
 
 import hmac
+import os
 import re
 import secrets
 from collections.abc import Awaitable, Callable
 from dataclasses import asdict
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 import httpx
 import uvicorn
+import yaml
+from dotenv import dotenv_values
 from fastapi import Depends, FastAPI, Header, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -18,8 +22,11 @@ from pydantic import BaseModel, ConfigDict, Field
 from morpheus.adapters.inference.openai import OpenAIInferenceAdapter
 from morpheus.adapters.metrics.collector import collect_metrics
 from morpheus.adapters.metrics.vllm import VllmMetricsAdapter
+from morpheus.adapters.persistence.settings import SettingsJournal, SettingsJournalError
 from morpheus.adapters.persistence.sqlite import SqliteStore
 from morpheus.adapters.runtime.agent import RuntimeAgentClient
+from morpheus.adapters.workflows.dev_executor import DevWorkflowExecutor
+from morpheus.adapters.workflows.runner import LazyAuditStore, WorkflowRunner, WorkflowRunnerError
 from morpheus.api.body_limit import BodyLimitMiddleware
 from morpheus.api.operations import (
     COMPONENT_MAPPING,
@@ -30,9 +37,12 @@ from morpheus.api.operations import (
     metrics_payload,
     navigation_payload,
     observed_component_health,
+    settings_payload,
+    workflows_payload,
 )
 from morpheus.api.runtime import runtime_services_snapshot, runtime_snapshot
 from morpheus.api.session import BrowserSession, SessionCodec, SessionValidationError
+from morpheus.api.settings_plan import plan_settings
 from morpheus.config import MorpheusSettings, load_settings
 from morpheus.core.analytics import analytics_report
 from morpheus.core.benchmark import BenchmarkSummary
@@ -58,6 +68,8 @@ from morpheus.core.recommendation import (
     build_recommendation,
     recommend_for_host,
 )
+from morpheus.core.settings_catalog import detect_sources, settings_catalog
+from morpheus.core.workflows import WorkflowId, workflow_definitions
 from morpheus.core.workload import SEED_PROFILES, OperatorConstraints
 from morpheus.ports.protocols import Clock, InferencePort, RuntimeAgentPort
 
@@ -91,8 +103,32 @@ class RecommendationRequest(BaseModel):
     operator: dict[str, Any] | None = None
 
 
+class SettingsChanges(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    changes: dict[str, Any] = Field(default_factory=dict, max_length=64)
+
+
+class WorkflowStart(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    confirmed: bool = False
+
+
 _SESSION_COOKIE = "morpheus_session"
 _CSRF_COOKIE = "morpheus_csrf"
+
+
+def _layer_values(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {}
+    try:
+        if path.suffix in {".yaml", ".yml"}:
+            data = yaml.safe_load(path.read_text(encoding="utf-8"))
+            return data if isinstance(data, dict) else {}
+        return dict(dotenv_values(path))
+    except (OSError, yaml.YAMLError):
+        return {}
 
 
 def _evidence_json(evidence: Evidence) -> dict[str, Any]:
@@ -125,6 +161,12 @@ def create_app(
     )
     request_limiter = ConcurrencyLimiter(settings.max_concurrent_requests)
     rate_limiter = FixedWindowRateLimiter(settings.max_requests_per_minute)
+    workflow_runner = WorkflowRunner(
+        executor=DevWorkflowExecutor(settings),
+        audit=LazyAuditStore(
+            SqliteStore(settings.data_dir / "morpheus.sqlite3", owned_root=settings.data_dir)
+        ),
+    )
     allowed_origins = [
         f"http://127.0.0.1:{settings.dashboard_port}",
         f"http://localhost:{settings.dashboard_port}",
@@ -307,6 +349,18 @@ def create_app(
             return
         browser_session(request)
 
+    def require_csrf(request: Request) -> None:
+        require_api_key(request)
+        session = browser_session(request)
+        token = request.headers.get("X-CSRF-Token", "")
+        if not token or not hmac.compare_digest(token, session.csrf_token):
+            raise CsrfValidationError
+
+    def settings_journal() -> SettingsJournal:
+        return SettingsJournal(
+            settings.data_dir / "settings" / "overrides.env", owned_root=settings.data_dir
+        )
+
     def set_session_cookies(response: Response, *, token: str, session: BrowserSession) -> None:
         response.set_cookie(
             _SESSION_COOKIE,
@@ -432,6 +486,8 @@ def create_app(
             "benchmarks": "ready" if runs else "empty",
             "analytics": "ready" if completed >= 2 else "partial" if completed == 1 else "empty",
             "logs_events": "ready" if events else "empty",
+            "settings": "ready",
+            "recovery": "ready" if settings_journal().rollback_available() else "empty",
         }
         return navigation_payload(
             discovered=discovered,
@@ -571,6 +627,117 @@ def create_app(
             window_days=settings.telemetry_retention_days,
         )
         return analytics_payload(observed_at=observed_at, report=report)
+
+    @app.get("/api/v1/operations/settings", dependencies=[Depends(require_api_key)])
+    async def operations_settings() -> dict[str, Any]:
+        observed_at = clock.utc_now().isoformat()
+        journal = settings_journal()
+        sources = detect_sources(
+            environ=os.environ,
+            env_file=_layer_values(Path(".env")),
+            config_file=_layer_values(Path("deploy/config/morpheus.yaml")),
+            overrides=journal.current(),
+        )
+        last_applied = journal.last_applied()
+        return settings_payload(
+            observed_at=observed_at,
+            entries=settings_catalog(settings, sources=sources),
+            journal={
+                "applied_at": last_applied["applied_at"] if last_applied else None,
+                "applied": last_applied["applied"] if last_applied else [],
+                "rollback_available": journal.rollback_available(),
+            },
+        )
+
+    @app.post("/api/v1/operations/settings/plan", dependencies=[Depends(require_csrf)])
+    async def operations_settings_plan(body: SettingsChanges) -> dict[str, Any]:
+        return plan_settings(settings, changes=body.changes)
+
+    @app.post("/api/v1/operations/settings/apply", dependencies=[Depends(require_csrf)])
+    async def operations_settings_apply(body: SettingsChanges) -> dict[str, Any]:
+        plan = plan_settings(settings, changes=body.changes)
+        if not plan["valid"]:
+            raise OperationsDataError("settings plan is invalid; review the issues first")
+        journal = settings_journal()
+        try:
+            result = journal.apply({key: str(value) for key, value in body.changes.items()})
+        except SettingsJournalError as error:
+            raise OperationsDataError(str(error)) from error
+        return {"schema_version": 1, "applied": result["applied"], "restart_required": True}
+
+    @app.post("/api/v1/operations/settings/rollback", dependencies=[Depends(require_csrf)])
+    async def operations_settings_rollback() -> dict[str, Any]:
+        journal = settings_journal()
+        try:
+            journal.rollback()
+        except SettingsJournalError as error:
+            raise OperationsDataError(str(error)) from error
+        return {"schema_version": 1, "rolled_back": True}
+
+    @app.get("/api/v1/operations/workflows", dependencies=[Depends(require_api_key)])
+    async def operations_workflows() -> dict[str, Any]:
+        observed_at = clock.utc_now().isoformat()
+        store = SqliteStore(settings.data_dir / "morpheus.sqlite3", owned_root=settings.data_dir)
+        await store.initialize()
+        audit_events = await store.workflow_audit_events(limit=50)
+        sessions = {
+            workflow_id.value: session
+            for workflow_id in WorkflowId
+            if (session := await workflow_runner.session(workflow_id)) is not None
+        }
+        return workflows_payload(
+            observed_at=observed_at,
+            definitions=workflow_definitions(),
+            sessions=sessions,
+            audit_events=audit_events,
+        )
+
+    @app.post(
+        "/api/v1/operations/workflows/{workflow_id}/start", dependencies=[Depends(require_csrf)]
+    )
+    async def operations_workflow_start(workflow_id: str, body: WorkflowStart) -> dict[str, Any]:
+        try:
+            workflow = WorkflowId(workflow_id)
+        except ValueError:
+            raise OperationsDataError("unknown workflow id") from None
+        try:
+            result = await workflow_runner.start(
+                workflow,
+                confirmed=body.confirmed,
+                session_id=secrets.token_urlsafe(16),
+                observed_at=clock.utc_now().isoformat(),
+            )
+        except WorkflowRunnerError as error:
+            raise OperationsDataError(str(error)) from error
+        return {"schema_version": 1, "started": result["started"], "session": result["session"]}
+
+    @app.post(
+        "/api/v1/operations/workflows/{workflow_id}/cancel", dependencies=[Depends(require_csrf)]
+    )
+    async def operations_workflow_cancel(workflow_id: str) -> dict[str, Any]:
+        try:
+            workflow = WorkflowId(workflow_id)
+        except ValueError:
+            raise OperationsDataError("unknown workflow id") from None
+        try:
+            await workflow_runner.cancel(workflow, observed_at=clock.utc_now().isoformat())
+        except WorkflowRunnerError as error:
+            raise OperationsDataError(str(error)) from error
+        return {"schema_version": 1, "cancelled": True}
+
+    @app.get(
+        "/api/v1/operations/workflows/{workflow_id}/session",
+        dependencies=[Depends(require_api_key)],
+    )
+    async def operations_workflow_session(workflow_id: str) -> dict[str, Any]:
+        try:
+            workflow = WorkflowId(workflow_id)
+        except ValueError:
+            raise OperationsDataError("unknown workflow id") from None
+        session = await workflow_runner.session(workflow)
+        if session is None:
+            raise OperationsDataError("no workflow session exists for this id")
+        return {"schema_version": 1, "session": session.to_dict()}
 
     @app.get("/api/v1/overview", dependencies=[Depends(require_api_key)])
     async def overview() -> dict[str, Any]:

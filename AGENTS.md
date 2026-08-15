@@ -2,25 +2,26 @@
 
 ## Where We Left Off (2026-08-15)
 
-**Phase 16.2 (OUI-002 bounded metrics rollups + OUI-003 redacted logs/events +
-OUI-004 analytics and comparisons) is implemented and merged.** Backend
-(`core/metrics_history.py` rollups, gaps, freshness, units, 240-bucket bound;
-`core/events.py` redaction and bounded filtering; `core/analytics.py` scorecards,
-comparisons, regressions; `api/operations.py` metrics/events/benchmarks/analytics
-routes plus navigation `data_states`), contract tests
-(`test_operations_contract.py`), and the frontend workspace SPA (trend charts,
-event log with filters, benchmark history, analytics views) are green: 892 unit,
-428 contract, 29 integration, 26 acceptance, 114 vitest (99.62% statements),
-48 Playwright e2e instances. OUI-002, OUI-003, and OUI-004 are flipped to
-`implemented` at 0.2.0 in `requirements.json` (71 implemented, 14 planned,
+**Phase 16.3 (OUI-005 validated settings + OUI-006 managed workflows) is
+implemented and merged.** Backend (pydantic-free `core/settings_catalog.py`,
+plan/apply/rollback via `api/settings_plan.py` + `adapters/persistence/
+settings.py` atomic overrides journal, `core/workflows.py` +
+`adapters/workflows/` runner and dev executor, SqliteStore v3 `workflow_audit`
+table, CSRF-protected settings/workflow routes in `api/app.py`), contract tests
+(`test_operations_contract.py`, 31 operations tests), and the frontend workspace
+SPA (settings catalog with plan preview/apply/rollback, workflows page with
+confirmation, session progress, cancellation, and audit trail) are green:
+929 unit, 439 contract, 32 integration, 26 acceptance, 131 vitest (99.01%
+statements), 48 Playwright e2e instances. OUI-005 and OUI-006 are flipped to
+`implemented` at 0.2.0 in `requirements.json` (73 implemented, 12 planned,
 12 deferred).
 
 The v0.2 product direction paragraph below remains the standing context:
 focused developer-inference appliance, Phase 11 onward plan, ADR-0005 through
 ADR-0009, evidence-ranked selection, managed runtime, benchmark history, Tauri
 desktop, operations, and bounded diagnosis. The standing continuation for
-v0.2 work stays in force; the active product queue now starts with Phase 16.3
-(OUI-005 settings, OUI-006 managed workflows) in dependency order.
+v0.2 work stays in force; the active product queue now starts with Phase 17
+(managed runtime bring-up in dependency order).
 
 The deployed v0.1 Morpheus remains a **read-only operator surface**; planning
 language must not be mistaken for deployed behavior.

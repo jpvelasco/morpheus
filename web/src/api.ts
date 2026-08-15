@@ -251,6 +251,131 @@ export interface AnalyticsReport {
   regressions: Regression[]
 }
 
+export type SettingsKind = 'str' | 'int' | 'float' | 'bool' | 'path' | 'url' | 'port' | 'secret'
+
+export interface SettingsEntry {
+  key: string
+  kind: SettingsKind
+  label: string
+  description: string
+  current: unknown
+  configured: boolean
+  value_redacted: boolean
+  editable: boolean
+  source: string
+  default: unknown
+  restart_required: boolean
+  validation: string
+}
+
+export interface SettingsJournal {
+  applied_at: string | null
+  applied: Record<string, string> | never[]
+  rollback_available: boolean
+}
+
+export interface SettingsPayload {
+  schema_version: number
+  observed_at: string
+  settings: SettingsEntry[]
+  restart_required: boolean
+  journal: SettingsJournal
+}
+
+export interface SettingsPlanIssue {
+  key: string
+  code: string
+  message: string
+}
+
+export interface SettingsPlanChange {
+  key: string
+  before: unknown
+  after: unknown
+  restart_required: boolean
+  kind: SettingsKind
+}
+
+export interface SettingsPlan {
+  schema_version: number
+  valid: boolean
+  changes: SettingsPlanChange[]
+  issues: SettingsPlanIssue[]
+  restart_required: boolean
+  description: string
+}
+
+export interface SettingsApplyResult {
+  schema_version: number
+  applied: Record<string, string>
+  restart_required: boolean
+}
+
+export interface WorkflowStep {
+  id: string
+  label: string
+  description: string
+  preflight: string
+  recovery: string
+  confirm_required: boolean
+}
+
+export interface WorkflowDefinition {
+  workflow_id: string
+  label: string
+  description: string
+  steps: WorkflowStep[]
+}
+
+export type WorkflowState = 'pending' | 'running' | 'succeeded' | 'failed' | 'cancelled'
+
+export interface WorkflowSessionStep extends WorkflowStep {
+  outcome: 'succeeded' | 'failed' | 'skipped' | 'cancelled' | null
+}
+
+export interface WorkflowSession {
+  session_id: string
+  workflow_id: string
+  label: string
+  state: WorkflowState
+  current_step_id: string | null
+  current_step_label: string
+  progress_percent: number
+  cancel_requested: boolean
+  error: string | null
+  recovery_instruction: string | null
+  started_at: string
+  steps: WorkflowSessionStep[]
+}
+
+export interface WorkflowAuditEvent {
+  recorded_at: string
+  session_id: string
+  workflow_id: string
+  event: string
+  step_id: string | null
+  message: string | null
+}
+
+export interface WorkflowsPayload {
+  schema_version: number
+  observed_at: string
+  workflows: WorkflowDefinition[]
+  sessions: WorkflowSession[]
+  audit_events: WorkflowAuditEvent[]
+}
+
+export interface WorkflowStartResult {
+  schema_version: number
+  started: boolean
+  session: WorkflowSession
+}
+
+export interface WorkflowSessionResult {
+  schema_version: number
+  session: WorkflowSession
+}
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:7400'
 
 function record(value: unknown): Record<string, unknown> {
@@ -666,6 +791,171 @@ function csrfToken(): string {
   return item ? decodeURIComponent(item.slice('morpheus_csrf='.length)) : ''
 }
 
+function boolean(value: unknown, field: string): boolean {
+  if (typeof value !== 'boolean') throw new Error(`Invalid ${field}`)
+  return value
+}
+
+const SETTINGS_KINDS = ['str', 'int', 'float', 'bool', 'path', 'url', 'port', 'secret']
+
+export function parseSettingsPayload(value: unknown): SettingsPayload {
+  const item = record(value)
+  if (!Array.isArray(item.settings)) throw new Error('Invalid settings list')
+  const journal = record(item.journal)
+  const applied = journal.applied
+  if (!Array.isArray(applied) && (typeof applied !== 'object' || applied === null)) {
+    throw new Error('Invalid settings journal')
+  }
+  return {
+    schema_version: number(item.schema_version, 'settings schema version'),
+    observed_at: string(item.observed_at, 'settings timestamp'),
+    settings: item.settings.map((candidate): SettingsEntry => {
+      const entry = record(candidate)
+      const kind = string(entry.kind, 'settings kind')
+      if (!SETTINGS_KINDS.includes(kind)) throw new Error('Invalid settings kind')
+      return {
+        key: string(entry.key, 'settings key'),
+        kind: kind as SettingsKind,
+        label: string(entry.label, 'settings label'),
+        description: string(entry.description, 'settings description'),
+        current: entry.current,
+        configured: boolean(entry.configured, 'settings configured'),
+        value_redacted: boolean(entry.value_redacted, 'settings redaction'),
+        editable: boolean(entry.editable, 'settings editable'),
+        source: string(entry.source, 'settings source'),
+        default: entry.default,
+        restart_required: boolean(entry.restart_required, 'settings restart'),
+        validation: string(entry.validation, 'settings validation'),
+      }
+    }),
+    restart_required: boolean(item.restart_required, 'settings restart required'),
+    journal: {
+      applied_at: journal.applied_at === null ? null : string(journal.applied_at, 'settings applied at'),
+      applied: applied as Record<string, string> | never[],
+      rollback_available: boolean(journal.rollback_available, 'settings rollback available'),
+    },
+  }
+}
+
+export function parseSettingsPlan(value: unknown): SettingsPlan {
+  const item = record(value)
+  const parseIssue = (candidate: unknown): SettingsPlanIssue => {
+    const issue = record(candidate)
+    return {
+      key: string(issue.key, 'plan issue key'),
+      code: string(issue.code, 'plan issue code'),
+      message: string(issue.message, 'plan issue message'),
+    }
+  }
+  if (!Array.isArray(item.issues) || !Array.isArray(item.changes)) {
+    throw new Error('Invalid settings plan')
+  }
+  return {
+    schema_version: number(item.schema_version, 'plan schema version'),
+    valid: boolean(item.valid, 'plan validity'),
+    changes: item.changes.map((candidate): SettingsPlanChange => {
+      const change = record(candidate)
+      const kind = string(change.kind, 'change kind')
+      if (!SETTINGS_KINDS.includes(kind)) throw new Error('Invalid change kind')
+      return {
+        key: string(change.key, 'change key'),
+        before: change.before,
+        after: change.after,
+        restart_required: boolean(change.restart_required, 'change restart'),
+        kind: kind as SettingsKind,
+      }
+    }),
+    issues: item.issues.map(parseIssue),
+    restart_required: boolean(item.restart_required, 'plan restart'),
+    description: string(item.description, 'plan description'),
+  }
+}
+
+const WORKFLOW_STATES = ['pending', 'running', 'succeeded', 'failed', 'cancelled']
+const STEP_OUTCOMES = ['succeeded', 'failed', 'skipped', 'cancelled']
+
+function parseWorkflowSteps(value: unknown): WorkflowSessionStep[] {
+  if (!Array.isArray(value)) throw new Error('Invalid workflow steps')
+  return value.map((candidate) => {
+    const step = record(candidate)
+    const outcome = step.outcome ?? null
+    if (outcome !== null && (typeof outcome !== 'string' || !STEP_OUTCOMES.includes(outcome))) {
+      throw new Error('Invalid step outcome')
+    }
+    return {
+      id: string(step.id, 'step id'),
+      label: string(step.label, 'step label'),
+      description: string(step.description, 'step description'),
+      preflight: string(step.preflight, 'step preflight'),
+      recovery: string(step.recovery, 'step recovery'),
+      confirm_required: boolean(step.confirm_required, 'step confirmation'),
+      outcome: outcome === null ? null : (outcome as WorkflowSessionStep['outcome']),
+    }
+  })
+}
+
+function parseWorkflowSession(value: unknown): WorkflowSession {
+  const item = record(value)
+  const state = string(item.state, 'workflow state')
+  if (!WORKFLOW_STATES.includes(state)) throw new Error('Invalid workflow state')
+  return {
+    session_id: string(item.session_id, 'session id'),
+    workflow_id: string(item.workflow_id, 'workflow id'),
+    label: string(item.label, 'workflow label'),
+    state: state as WorkflowState,
+    current_step_id: item.current_step_id === null ? null : string(item.current_step_id, 'current step'),
+    current_step_label: string(item.current_step_label, 'current step label'),
+    progress_percent: number(item.progress_percent, 'workflow progress'),
+    cancel_requested: boolean(item.cancel_requested, 'cancel requested'),
+    error: item.error === null ? null : string(item.error, 'workflow error'),
+    recovery_instruction: item.recovery_instruction === null
+      ? null
+      : string(item.recovery_instruction, 'recovery instruction'),
+    started_at: string(item.started_at, 'workflow start'),
+    steps: parseWorkflowSteps(item.steps),
+  }
+}
+
+function parseWorkflowDefinitions(value: unknown): WorkflowDefinition[] {
+  if (!Array.isArray(value)) throw new Error('Invalid workflow list')
+  return value.map((candidate) => {
+    const item = record(candidate)
+    return {
+      workflow_id: string(item.workflow_id, 'workflow id'),
+      label: string(item.label, 'workflow label'),
+      description: string(item.description, 'workflow description'),
+      steps: parseWorkflowSteps(item.steps),
+    }
+  })
+}
+
+function parseAuditEvents(value: unknown): WorkflowAuditEvent[] {
+  if (!Array.isArray(value)) throw new Error('Invalid audit list')
+  return value.map((candidate) => {
+    const item = record(candidate)
+    return {
+      recorded_at: string(item.recorded_at, 'audit timestamp'),
+      session_id: string(item.session_id, 'audit session'),
+      workflow_id: string(item.workflow_id, 'audit workflow'),
+      event: string(item.event, 'audit event'),
+      step_id: item.step_id === null ? null : string(item.step_id, 'audit step'),
+      message: item.message === null ? null : string(item.message, 'audit message'),
+    }
+  })
+}
+
+export function parseWorkflowsPayload(value: unknown): WorkflowsPayload {
+  const item = record(value)
+  if (!Array.isArray(item.sessions)) throw new Error('Invalid workflow session list')
+  return {
+    schema_version: number(item.schema_version, 'workflows schema version'),
+    observed_at: string(item.observed_at, 'workflows timestamp'),
+    workflows: parseWorkflowDefinitions(item.workflows),
+    sessions: item.sessions.map(parseWorkflowSession),
+    audit_events: parseAuditEvents(item.audit_events),
+  }
+}
+
 function requireSuccess(response: Response): void {
   if (response.status === 401) throw new Error('Authentication failed')
   if (!response.ok) throw new Error(`Control API failed with HTTP ${String(response.status)}`)
@@ -811,4 +1101,94 @@ export async function fetchLatestRecommendation(signal?: AbortSignal): Promise<R
   requireSuccess(response)
   const payload = (await response.json()) as RecommendationPayload
   return payload.recommendation
+}
+
+export async function fetchSettings(signal?: AbortSignal): Promise<SettingsPayload> {
+  const response = await fetch(`${API_BASE}/api/v1/operations/settings`, {
+    credentials: 'include',
+    signal,
+  })
+  requireSuccess(response)
+  return parseSettingsPayload(await response.json())
+}
+
+export async function planSettings(changes: Record<string, unknown>): Promise<SettingsPlan> {
+  const response = await fetch(`${API_BASE}/api/v1/operations/settings/plan`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken() },
+    body: JSON.stringify({ changes }),
+  })
+  requireSuccess(response)
+  return parseSettingsPlan(await response.json())
+}
+
+export async function applySettings(changes: Record<string, unknown>): Promise<SettingsApplyResult> {
+  const response = await fetch(`${API_BASE}/api/v1/operations/settings/apply`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken() },
+    body: JSON.stringify({ changes }),
+  })
+  requireSuccess(response)
+  return (await response.json()) as SettingsApplyResult
+}
+
+export async function rollbackSettings(): Promise<{ rolled_back: boolean }> {
+  const response = await fetch(`${API_BASE}/api/v1/operations/settings/rollback`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'X-CSRF-Token': csrfToken() },
+  })
+  requireSuccess(response)
+  return (await response.json()) as { rolled_back: boolean }
+}
+
+export async function fetchWorkflows(signal?: AbortSignal): Promise<WorkflowsPayload> {
+  const response = await fetch(`${API_BASE}/api/v1/operations/workflows`, {
+    credentials: 'include',
+    signal,
+  })
+  requireSuccess(response)
+  return parseWorkflowsPayload(await response.json())
+}
+
+export async function startWorkflow(workflowId: string, confirmed: boolean): Promise<WorkflowStartResult> {
+  const response = await fetch(`${API_BASE}/api/v1/operations/workflows/${workflowId}/start`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken() },
+    body: JSON.stringify({ confirmed }),
+  })
+  requireSuccess(response)
+  const payload = record(await response.json())
+  return {
+    schema_version: number(payload.schema_version, 'workflow start schema version'),
+    started: boolean(payload.started, 'workflow started'),
+    session: parseWorkflowSession(payload.session),
+  }
+}
+
+export async function cancelWorkflow(workflowId: string): Promise<{ cancelled: boolean }> {
+  const response = await fetch(`${API_BASE}/api/v1/operations/workflows/${workflowId}/cancel`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'X-CSRF-Token': csrfToken() },
+  })
+  requireSuccess(response)
+  return (await response.json()) as { cancelled: boolean }
+}
+
+export async function fetchWorkflowSession(
+  workflowId: string,
+  signal?: AbortSignal,
+): Promise<WorkflowSession | null> {
+  const response = await fetch(`${API_BASE}/api/v1/operations/workflows/${workflowId}/session`, {
+    credentials: 'include',
+    signal,
+  })
+  if (response.status === 400) return null
+  requireSuccess(response)
+  const payload = record(await response.json())
+  return parseWorkflowSession(payload.session)
 }
