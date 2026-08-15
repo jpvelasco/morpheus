@@ -1175,8 +1175,11 @@
     {
       "id": "SEL-002",
       "phase": 14,
-      "status": "planned",
-      "owning_tests": [],
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_solver.py",
+        "tests/contract/test_solver_contract.py"
+      ],
       "risk": "critical",
       "required_environments": [
         "DEV",
@@ -1185,34 +1188,38 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": true,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": [
-        "IMP-SEL-002-01"
-      ]
+      "implementation_tasks": []
     },
     {
       "id": "SEL-003",
       "phase": 14,
-      "status": "planned",
-      "owning_tests": [],
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_workload.py",
+        "tests/contract/test_workload_contract.py"
+      ],
       "risk": "medium",
       "required_environments": [
         "DEV"
       ],
       "requires_live_evidence": false,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": [
-        "IMP-SEL-003-01"
-      ]
+      "implementation_tasks": []
     },
     {
       "id": "SEL-004",
       "phase": 14,
-      "status": "planned",
-      "owning_tests": [],
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_ranking.py",
+        "tests/contract/test_ranking_contract.py",
+        "tests/unit/test_recommendation.py",
+        "tests/contract/test_recommendation_contract.py"
+      ],
       "risk": "high",
       "required_environments": [
         "DEV",
@@ -1221,17 +1228,19 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": true,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": [
-        "IMP-SEL-004-01"
-      ]
+      "implementation_tasks": []
     },
     {
       "id": "SEL-005",
       "phase": 14,
-      "status": "planned",
-      "owning_tests": [],
+      "status": "implemented",
+      "owning_tests": [
+        "tests/contract/test_control_api.py",
+        "tests/contract/test_recommendation_contract.py",
+        "tests/unit/test_recommendation.py"
+      ],
       "risk": "high",
       "required_environments": [
         "DEV",
@@ -1239,11 +1248,9 @@
       ],
       "requires_live_evidence": false,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": [
-        "IMP-SEL-005-01"
-      ]
+      "implementation_tasks": []
     },
     {
       "id": "RUNM-001",
