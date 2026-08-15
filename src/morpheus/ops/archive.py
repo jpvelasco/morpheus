@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+from morpheus.core.durable import fsync_directory, fsync_file, write_durable
 from morpheus.core.paths import OwnedPathResolver
 
 
@@ -80,9 +81,9 @@ class BackupManager:
                 bundle.writestr("manifest.json", manifest)
                 for relative, data in contents.items():
                     bundle.writestr(f"files/{relative}", data)
-            _fsync_file(temporary)
+            fsync_file(temporary)
             os.replace(temporary, destination)
-            _fsync_directory(destination.parent)
+            fsync_directory(destination.parent)
         finally:
             temporary.unlink(missing_ok=True)
         return destination
@@ -110,24 +111,24 @@ class BackupManager:
             for relative, data in verified.items():
                 target = staging / _safe_name(relative)
                 target.parent.mkdir(parents=True, exist_ok=True)
-                _write_durable(target, data)
-            _fsync_directory(staging)
+                write_durable(target, data)
+            fsync_directory(staging)
             if previous.exists():
                 shutil.rmtree(previous)
             if self._root.exists():
                 os.replace(self._root, previous)
-                _fsync_directory(parent)
+                fsync_directory(parent)
             try:
                 os.replace(staging, self._root)
-                _fsync_directory(parent)
+                fsync_directory(parent)
             except OSError:
                 if previous.exists():
                     os.replace(previous, self._root)
-                    _fsync_directory(parent)
+                    fsync_directory(parent)
                 raise
             if previous.exists():
                 shutil.rmtree(previous)
-                _fsync_directory(parent)
+                fsync_directory(parent)
         finally:
             if staging.exists():
                 shutil.rmtree(staging)
@@ -172,31 +173,3 @@ class BackupManager:
             _safe_name(name)
             result[name] = digest
         return result, schema_version
-
-
-def _write_durable(destination: Path, data: bytes) -> None:
-    with destination.open("xb") as stream:
-        stream.write(data)
-        stream.flush()
-        os.fsync(stream.fileno())
-
-
-def _fsync_file(path: Path) -> None:
-    if os.name == "nt":
-        # Windows cannot fsync a read-only file handle; its write path already
-        # flushes file data, so directory-level durability has no counterpart.
-        return
-    with path.open("rb") as stream:
-        os.fsync(stream.fileno())
-
-
-def _fsync_directory(path: Path) -> None:
-    if os.name == "nt":
-        # Windows flushes directory metadata through file fsync; the POSIX
-        # O_DIRECTORY descriptor protocol does not exist there.
-        return
-    descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
-    try:
-        os.fsync(descriptor)
-    finally:
-        os.close(descriptor)
