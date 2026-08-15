@@ -5,32 +5,52 @@ import re
 import secrets
 from collections.abc import Awaitable, Callable
 from dataclasses import asdict
+from datetime import datetime, timedelta
 from typing import Any
 
 import httpx
 import uvicorn
-from fastapi import Depends, FastAPI, Header, Request, Response
+from fastapi import Depends, FastAPI, Header, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from morpheus.adapters.inference.openai import OpenAIInferenceAdapter
+from morpheus.adapters.metrics.collector import collect_metrics
+from morpheus.adapters.metrics.vllm import VllmMetricsAdapter
+from morpheus.adapters.persistence.sqlite import SqliteStore
 from morpheus.adapters.runtime.agent import RuntimeAgentClient
 from morpheus.api.body_limit import BodyLimitMiddleware
 from morpheus.api.operations import (
     COMPONENT_MAPPING,
+    analytics_payload,
+    benchmarks_payload,
     controls_payload,
+    events_payload,
+    metrics_payload,
     navigation_payload,
     observed_component_health,
 )
 from morpheus.api.runtime import runtime_services_snapshot, runtime_snapshot
 from morpheus.api.session import BrowserSession, SessionCodec, SessionValidationError
 from morpheus.config import MorpheusSettings, load_settings
+from morpheus.core.analytics import analytics_report
+from morpheus.core.benchmark import BenchmarkSummary
+from morpheus.core.benchstore import BenchmarkStore
 from morpheus.core.capabilities import Capability, evaluate_capabilities
 from morpheus.core.catalog import SEED_CATALOG
 from morpheus.core.concurrency import ConcurrencyLimiter, FixedWindowRateLimiter, RetryPolicy
 from morpheus.core.controls import ComponentHealth
+from morpheus.core.events import EventsError
 from morpheus.core.health import Evidence, HealthState
+from morpheus.core.metrics_history import (
+    MetricsHistoryError,
+    freshness_state,
+    gaps,
+    retention_cutoff,
+    rollup,
+    unit_for_signal,
+)
 from morpheus.core.recommendation import (
     RecommendationError,
     RecommendationStore,
@@ -52,6 +72,10 @@ class CsrfValidationError(Exception):
 
 class SessionUnavailable(Exception):
     pass
+
+
+class OperationsDataError(Exception):
+    """An operations query was rejected at the bounded data boundary."""
 
 
 class SessionLogin(BaseModel):
@@ -254,6 +278,19 @@ def create_app(
             },
         )
 
+    @app.exception_handler(OperationsDataError)
+    async def operations_data_error(request: Request, error: OperationsDataError) -> JSONResponse:
+        del request
+        return JSONResponse(
+            status_code=400,
+            content={
+                "error": {
+                    "code": "operations_data_error",
+                    "message": str(error),
+                }
+            },
+        )
+
     def browser_session(request: Request) -> BrowserSession:
         if session_codec is None:
             raise AuthenticationRequired
@@ -384,10 +421,23 @@ def create_app(
             discovered = await inference.models()
         except (httpx.HTTPError, OSError, ValueError):
             discovered = None
+        store = SqliteStore(settings.data_dir / "morpheus.sqlite3", owned_root=settings.data_dir)
+        await store.initialize()
+        events = await store.events(limit=1)
+        benchmark_store = BenchmarkStore(settings.data_dir / "benchmarks")
+        benchmark_store.initialize()
+        runs = benchmark_store.list_runs(limit=100)
+        completed = sum(1 for run in runs if run.status == "completed")
+        data_states = {
+            "benchmarks": "ready" if runs else "empty",
+            "analytics": "ready" if completed >= 2 else "partial" if completed == 1 else "empty",
+            "logs_events": "ready" if events else "empty",
+        }
         return navigation_payload(
             discovered=discovered,
             host=host,
             observed_at=clock.utc_now().isoformat(),
+            data_states=data_states,
         )
 
     @app.get("/api/v1/operations/controls", dependencies=[Depends(require_api_key)])
@@ -400,6 +450,127 @@ def create_app(
             service_evidence=service_evidence,
             observed_at=clock.utc_now().isoformat(),
         )
+
+    @app.get("/api/v1/operations/metrics", dependencies=[Depends(require_api_key)])
+    async def operations_metrics(
+        signal: str = Query(...),
+        window_seconds: int = Query(300, ge=60, le=86_400),
+        hours: float = Query(6, gt=0, le=24),
+    ) -> dict[str, Any]:
+        observed_at = clock.utc_now().isoformat()
+        host = await runtime_snapshot(runtime_agent, clock=clock)
+        engine = (
+            VllmMetricsAdapter(metrics_url=settings.vllm_metrics_url)
+            if settings.vllm_metrics_url
+            else None
+        )
+        samples, sources = await collect_metrics(engine=engine, host=host, observed_at=observed_at)
+        store = SqliteStore(settings.data_dir / "morpheus.sqlite3", owned_root=settings.data_dir)
+        await store.initialize()
+        if samples:
+            await store.record_metric_samples(samples)
+        await store.prune_metrics(
+            before=retention_cutoff(observed_at, retention_days=settings.metrics_retention_days)
+        )
+        start = (clock.utc_now() - timedelta(hours=hours)).isoformat()
+        try:
+            stored = await store.metric_samples(
+                signal=signal, start=start, end=observed_at, limit=10_000
+            )
+            buckets = rollup(stored, window_seconds=window_seconds, start=start, end=observed_at)
+            missing = gaps(stored, window_seconds=window_seconds, start=start, end=observed_at)
+        except MetricsHistoryError as error:
+            raise OperationsDataError(str(error)) from error
+        latest = await store.latest_metric_observed_at(signal=signal)
+        age_seconds: float | None = None
+        if latest is not None:
+            age_seconds = (clock.utc_now() - datetime.fromisoformat(latest)).total_seconds()
+        return metrics_payload(
+            observed_at=observed_at,
+            signal=signal,
+            unit=unit_for_signal(signal),
+            freshness={
+                "state": freshness_state(
+                    latest,
+                    now=observed_at,
+                    grace_seconds=2 * settings.metrics_collection_interval_seconds,
+                ),
+                "latest_observed_at": latest,
+                "age_seconds": age_seconds,
+            },
+            sources=sources,
+            buckets=buckets,
+            gaps=missing,
+            sample_count=len(stored),
+        )
+
+    @app.get("/api/v1/operations/events", dependencies=[Depends(require_api_key)])
+    async def operations_events(
+        limit: int = Query(100, ge=1, le=200),
+        source: str | None = Query(None),
+        severity: str | None = Query(None),
+        correlation_id: str | None = Query(None),
+        since: str | None = Query(None),
+    ) -> dict[str, Any]:
+        observed_at = clock.utc_now().isoformat()
+        store = SqliteStore(settings.data_dir / "morpheus.sqlite3", owned_root=settings.data_dir)
+        await store.initialize()
+        try:
+            events = await store.events(
+                source=source,
+                severity=severity,
+                correlation_id=correlation_id,
+                since=since,
+                limit=limit,
+            )
+        except EventsError as error:
+            raise OperationsDataError(str(error)) from error
+        await store.prune_events(
+            before=retention_cutoff(observed_at, retention_days=settings.events_retention_days)
+        )
+        return events_payload(observed_at=observed_at, events=events)
+
+    @app.get("/api/v1/operations/benchmarks", dependencies=[Depends(require_api_key)])
+    async def operations_benchmarks(
+        limit: int = Query(20, ge=1, le=100),
+    ) -> dict[str, Any]:
+        observed_at = clock.utc_now().isoformat()
+        store = BenchmarkStore(settings.data_dir / "benchmarks")
+        store.initialize()
+        try:
+            runs = store.list_runs(limit=limit)
+        except Exception as error:
+            raise OperationsDataError(str(error)) from error
+        return benchmarks_payload(observed_at=observed_at, runs=runs)
+
+    @app.get("/api/v1/operations/analytics", dependencies=[Depends(require_api_key)])
+    async def operations_analytics() -> dict[str, Any]:
+        observed_at = clock.utc_now().isoformat()
+        benchmark_store = BenchmarkStore(settings.data_dir / "benchmarks")
+        benchmark_store.initialize()
+        runs = benchmark_store.list_runs(limit=100)
+        summaries: dict[str, BenchmarkSummary] = {}
+        for run in runs:
+            summary = load_run_summary(benchmark_store, run.run_id)
+            if summary is not None:
+                summaries[run.run_id] = summary
+        telemetry_store = SqliteStore(
+            settings.data_dir / "morpheus.sqlite3", owned_root=settings.data_dir
+        )
+        await telemetry_store.initialize()
+        cutoff = retention_cutoff(observed_at, retention_days=settings.telemetry_retention_days)
+        telemetry = [
+            record
+            for record in await telemetry_store.telemetry(limit=1_000)
+            if record["recorded_at"] >= cutoff
+        ]
+        report = analytics_report(
+            runs=runs,
+            summaries=summaries,
+            telemetry=telemetry,
+            window_days=settings.telemetry_retention_days,
+        )
+        return analytics_payload(observed_at=observed_at, report=report)
 
     @app.get("/api/v1/overview", dependencies=[Depends(require_api_key)])
     async def overview() -> dict[str, Any]:
@@ -515,6 +686,12 @@ def _service_evidence_from_host(host: dict[str, Any]) -> dict[str, Any]:
         "status": "unavailable",
         "reason": str(host.get("reason", "runtime_agent_service_evidence_unavailable")),
     }
+
+
+def load_run_summary(benchmark_store: BenchmarkStore, run_id: str) -> BenchmarkSummary | None:
+    if not benchmark_store.summary_exists(run_id, statistic="p50"):
+        return None
+    return benchmark_store.load_summary(run_id, statistic="p50")
 
 
 def _add_optional_capability_health(

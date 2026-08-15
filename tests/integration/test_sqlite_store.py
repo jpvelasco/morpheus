@@ -5,10 +5,17 @@ from pathlib import Path
 import pytest
 
 from morpheus.adapters.persistence.sqlite import SqliteStore
+from morpheus.core.metrics_history import MetricSample
 from morpheus.core.paths import OwnedPathError
 from morpheus.core.telemetry import TelemetryEvent
 
 pytestmark = pytest.mark.integration
+
+
+def _sample(
+    observed_at: str, *, source: str = "vllm", signal: str = "gpu_cache_usage", value: float
+) -> MetricSample:
+    return MetricSample(observed_at=observed_at, source=source, signal=signal, value=value)
 
 
 @pytest.mark.asyncio
@@ -56,3 +63,194 @@ def test_SEC_006_sqlite_store_rejects_a_database_outside_its_owned_root(tmp_path
 
     with pytest.raises(OwnedPathError, match="escapes"):
         SqliteStore(tmp_path / "outside.sqlite3", owned_root=owned)
+
+
+@pytest.mark.asyncio
+async def test_OUI_002_metric_samples_persist_and_round_trip(tmp_path: Path) -> None:
+    store = SqliteStore(tmp_path / "morpheus.sqlite3")
+    await store.initialize()
+    await store.record_metric_samples(
+        [
+            _sample("2026-08-15T12:00:00+00:00", value=10.0),
+            _sample("2026-08-15T12:01:00+00:00", value=20.0),
+            _sample(
+                "2026-08-15T12:02:00+00:00",
+                source="host",
+                signal="utilization_percent",
+                value=55.0,
+            ),
+        ]
+    )
+    samples = await store.metric_samples(
+        signal="gpu_cache_usage",
+        start="2026-08-15T12:00:00+00:00",
+        end="2026-08-15T12:02:00+00:00",
+        limit=10,
+    )
+    assert len(samples) == 2
+    assert [sample.value for sample in samples] == [10.0, 20.0]
+
+
+@pytest.mark.asyncio
+async def test_OUI_002_metric_query_is_range_bounded(tmp_path: Path) -> None:
+    store = SqliteStore(tmp_path / "morpheus.sqlite3")
+    await store.initialize()
+    await store.record_metric_samples(
+        [
+            _sample("2026-08-15T12:00:00+00:00", value=1.0),
+            _sample("2026-08-15T12:01:00+00:00", value=2.0),
+            _sample("2026-08-15T12:02:00+00:00", value=3.0),
+        ]
+    )
+    samples = await store.metric_samples(
+        signal="gpu_cache_usage",
+        start="2026-08-15T12:01:00+00:00",
+        end="2026-08-15T12:03:00+00:00",
+        limit=10,
+    )
+    assert [sample.value for sample in samples] == [2.0, 3.0]
+
+
+@pytest.mark.asyncio
+async def test_OUI_002_metric_limit_is_capped(tmp_path: Path) -> None:
+    store = SqliteStore(tmp_path / "morpheus.sqlite3")
+    await store.initialize()
+    await store.record_metric_samples(
+        [_sample("2026-08-15T12:00:00+00:00", value=float(index)) for index in range(3)]
+    )
+    assert (
+        len(
+            await store.metric_samples(
+                signal="gpu_cache_usage",
+                start="2000-01-01T00:00:00+00:00",
+                end="2100-01-01T00:00:00+00:00",
+                limit=2,
+            )
+        )
+        == 2
+    )
+
+
+@pytest.mark.asyncio
+async def test_OUI_002_metric_retention_prunes_old_samples(tmp_path: Path) -> None:
+    store = SqliteStore(tmp_path / "morpheus.sqlite3")
+    await store.initialize()
+    await store.record_metric_samples(
+        [
+            _sample("2026-01-01T00:00:00+00:00", value=1.0),
+            _sample("2026-01-02T00:00:00+00:00", value=2.0),
+            _sample("2026-01-03T00:00:00+00:00", value=3.0),
+        ]
+    )
+    assert await store.prune_metrics(before="2026-01-03T00:00:00+00:00") == 2
+    remaining = await store.metric_samples(
+        signal="gpu_cache_usage",
+        start="2000-01-01T00:00:00+00:00",
+        end="2100-01-01T00:00:00+00:00",
+        limit=10,
+    )
+    assert len(remaining) == 1
+    assert remaining[0].value == 3.0
+
+
+@pytest.mark.asyncio
+async def test_OUI_002_latest_metric_observed_at_reports_most_recent(tmp_path: Path) -> None:
+    store = SqliteStore(tmp_path / "morpheus.sqlite3")
+    await store.initialize()
+    assert await store.latest_metric_observed_at(signal="gpu_cache_usage") is None
+    await store.record_metric_samples(
+        [
+            _sample("2026-08-15T12:00:00+00:00", value=1.0),
+            _sample("2026-08-15T12:03:00+00:00", value=3.0),
+        ]
+    )
+    assert await store.latest_metric_observed_at(signal="gpu_cache_usage") == (
+        "2026-08-15T12:03:00+00:00"
+    )
+    assert await store.latest_metric_observed_at() == "2026-08-15T12:03:00+00:00"
+
+
+@pytest.mark.asyncio
+async def test_OUI_003_events_persist_redacted_messages(tmp_path: Path) -> None:
+    store = SqliteStore(tmp_path / "morpheus.sqlite3")
+    await store.initialize()
+    await store.record_event(
+        source="engine",
+        severity="error",
+        message="upstream rejected Bearer abc123 secret=xyz789",
+        correlation_id="corr-1",
+    )
+    events = await store.events(limit=10)
+    assert len(events) == 1
+    assert "abc123" not in events[0].message
+    assert "xyz789" not in events[0].message
+    assert events[0].correlation_id == "corr-1"
+
+
+@pytest.mark.asyncio
+async def test_OUI_003_events_query_filters_by_source_severity_correlation_and_since(
+    tmp_path: Path,
+) -> None:
+    store = SqliteStore(tmp_path / "morpheus.sqlite3")
+    await store.initialize()
+    await store.record_event(
+        source="engine", severity="error", message="oops", correlation_id="corr-1"
+    )
+    await store.record_event(source="api", severity="warn", message="slow", correlation_id="corr-1")
+    await store.record_event(
+        source="agent", severity="info", message="heartbeat", correlation_id="corr-2"
+    )
+
+    only_engine = await store.events(source="engine", limit=10)
+    assert [event.message for event in only_engine] == ["oops"]
+
+    only_warn = await store.events(severity="warn", limit=10)
+    assert [event.message for event in only_warn] == ["slow"]
+
+    correlated = await store.events(correlation_id="corr-1", limit=10)
+    assert {event.message for event in correlated} == {"oops", "slow"}
+
+    since_events = await store.events(since="2026-08-16T00:00:00+00:00", limit=10)
+    assert since_events == []
+
+
+@pytest.mark.asyncio
+async def test_OUI_003_events_are_most_recent_first_and_limit_is_capped(tmp_path: Path) -> None:
+    store = SqliteStore(tmp_path / "morpheus.sqlite3")
+    await store.initialize()
+    for index in range(3):
+        await store.record_event(
+            source="api",
+            severity="info",
+            message=f"event-{index}",
+            recorded_at=f"2026-08-15T12:00:0{index}+00:00",
+        )
+    events = await store.events(limit=2)
+    assert [event.message for event in events] == ["event-2", "event-1"]
+
+
+@pytest.mark.asyncio
+async def test_OUI_003_events_retention_prunes_old_records(tmp_path: Path) -> None:
+    store = SqliteStore(tmp_path / "morpheus.sqlite3")
+    await store.initialize()
+    for index in range(3):
+        await store.record_event(
+            source="api",
+            severity="info",
+            message=f"event-{index}",
+            recorded_at=f"2026-01-0{index + 1}T00:00:00+00:00",
+        )
+    assert await store.prune_events(before="2026-01-03T00:00:00+00:00") == 2
+    assert len(await store.events(limit=10)) == 1
+
+
+@pytest.mark.asyncio
+async def test_OUI_003_store_rejects_unapproved_sources_and_severities(tmp_path: Path) -> None:
+    store = SqliteStore(tmp_path / "morpheus.sqlite3")
+    await store.initialize()
+    with pytest.raises(ValueError):
+        await store.record_event(source="bogus", severity="info", message="x")
+    with pytest.raises(ValueError):
+        await store.record_event(source="api", severity="fatal", message="x")
+    with pytest.raises(ValueError):
+        await store.events(source="bogus", limit=10)

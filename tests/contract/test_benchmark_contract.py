@@ -13,7 +13,7 @@ from morpheus.core.benchmark import (
     RunIdentity,
     summarize_samples,
 )
-from morpheus.core.benchstore import BenchmarkStore, StoreManifest
+from morpheus.core.benchstore import BenchmarkStore, CampaignRun, StoreManifest
 
 
 def make_samples(run_id: str = "run-1", count: int = 4) -> tuple[BenchmarkSample, ...]:
@@ -122,3 +122,23 @@ def test_invalid_documents_rejected_at_boundary(tmp_path) -> None:
     store.store_samples(make_samples())
     with pytest.raises(BenchmarkError):
         store.load_samples("unknown-run")
+
+
+def test_store_lists_runs_most_recent_first_and_bounded(tmp_path) -> None:
+    store = BenchmarkStore(tmp_path)
+    store.initialize()
+    for index in range(3):
+        store.store_run(
+            CampaignRun(
+                run_id=f"run-{index}",
+                declaration=make_declaration(),
+                identity=make_identity(),
+                started_at=datetime(2026, 8, 1, 12, index, tzinfo=UTC),
+                ended_at=datetime(2026, 8, 1, 12, index + 1, tzinfo=UTC),
+                status="completed",
+            )
+        )
+    assert [run.run_id for run in store.list_runs(limit=10)] == ["run-2", "run-1", "run-0"]
+    assert [run.run_id for run in store.list_runs(limit=2)] == ["run-2", "run-1"]
+    with pytest.raises(BenchmarkError):
+        store.list_runs(limit=101)

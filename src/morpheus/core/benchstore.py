@@ -208,6 +208,9 @@ class BenchmarkStore:
             payload = migrate(payload, payload["schema_version"])
         return BenchmarkSummary.from_dict(payload["summary"])
 
+    def summary_exists(self, run_id: str, statistic: str = "p50") -> bool:
+        return self._path(f"summaries/{run_id}-{statistic}.json").exists()
+
     def store_run(self, run: CampaignRun) -> None:
         payload = {"schema_version": SCHEMA_VERSION, "run": run.to_dict()}
         self._write_json(self._path(f"runs/{run.run_id}.json"), payload)
@@ -217,6 +220,20 @@ class BenchmarkStore:
         if "schema_version" in payload and payload["schema_version"] != SCHEMA_VERSION:
             payload = migrate(payload, payload["schema_version"])
         return CampaignRun.from_dict(payload["run"])
+
+    def list_runs(self, *, limit: int = 100) -> tuple[CampaignRun, ...]:
+        """List stored runs most recent first, bounded by ``limit``."""
+        if not 1 <= limit <= 100:
+            raise BenchmarkError("run list limit must be between 1 and 100")
+        runs: list[CampaignRun] = []
+        for path in sorted(self._path("runs").glob("*.json"), reverse=True):
+            payload = self._read_document(f"runs/{path.name}")
+            if "schema_version" in payload and payload["schema_version"] != SCHEMA_VERSION:
+                payload = migrate(payload, payload["schema_version"])
+            runs.append(CampaignRun.from_dict(payload["run"]))
+            if len(runs) >= limit:
+                break
+        return tuple(sorted(runs, key=lambda item: item.started_at, reverse=True))
 
     def backup(self, destination: Path) -> None:
         """Copy the whole store to a destination inside an owned sibling workspace."""
