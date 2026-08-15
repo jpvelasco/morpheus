@@ -26,6 +26,8 @@ _QUANT_BYTES_PER_PARAM = {
     "q5_k_m": 0.6875,
     "q4_k_m": 0.59375,
     "q4_0": 0.5625,
+    "awq": 1.0,
+    "gptq": 1.0,
 }
 _KV_BYTES_PER_TOKEN = 512
 _OVERHEAD_BYTES = 512 * 1024 * 1024

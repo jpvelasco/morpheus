@@ -47,7 +47,7 @@ LLAMA = ModelCatalogEntry(
     source_digest="sha256:" + "a" * 64,
     revision="v1",
     engine_support=("llama.cpp", "vllm"),
-    features=("tools", "long-context", "coding", "agentic"),
+    features=("tool_calling", "long-context", "coding", "agentic"),
 )
 
 QWEN = ModelCatalogEntry(
@@ -65,7 +65,7 @@ QWEN = ModelCatalogEntry(
     source_digest="sha256:" + "b" * 64,
     revision="v1",
     engine_support=("llama.cpp",),
-    features=("tools", "coding"),
+    features=("tool_calling", "coding"),
 )
 
 MISTRAL = ModelCatalogEntry(

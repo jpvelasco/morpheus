@@ -16,7 +16,16 @@ import {
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 
-import { createSession, destroySession, fetchOverview, type CapabilityState, type HealthState, type Overview } from './api'
+import {
+  createSession,
+  destroySession,
+  fetchLatestRecommendation,
+  fetchOverview,
+  type CapabilityState,
+  type HealthState,
+  type Overview,
+  type RecommendationRecord,
+} from './api'
 import './styles.css'
 
 const SESSION_MARKER = 'morpheus.session.active'
@@ -142,8 +151,7 @@ function OverviewPage({ overview }: { overview: Overview }) {
   )
 }
 
-function DiagnosticsPage({ overview }: { overview: Overview }) {
-  return (
+function DiagnosticsPage({ overview }: { overview: Overview }) {  return (
     <section className="diagnostics-section" aria-labelledby="diagnostics-heading">
       <div className="section-heading">
         <div>
@@ -173,11 +181,77 @@ function DiagnosticsPage({ overview }: { overview: Overview }) {
   )
 }
 
+function RecommendationsPage({ record }: { record: RecommendationRecord | null | undefined }) {
+  if (!record) {
+    return (
+      <section className="diagnostics-section" aria-labelledby="recommendations-heading">
+        <div className="section-heading">
+          <div>
+            <p className="section-label">Evidence-ranked selection</p>
+            <h2 id="recommendations-heading">Recommendations</h2>
+          </div>
+        </div>
+        <p className="empty-state">No recommendation recorded yet. Generate one from the operator CLI or API.</p>
+      </section>
+    )
+  }
+  return (
+    <section className="diagnostics-section" aria-labelledby="recommendations-heading">
+      <div className="section-heading">
+        <div>
+          <p className="section-label">Evidence-ranked selection</p>
+          <h2 id="recommendations-heading">Recommendations</h2>
+        </div>
+        <span>{record.profile.name} · {new Date(record.created_at).toLocaleString()}</span>
+      </div>
+      <p className="recommendation-summary">{record.summary}</p>
+      <div className="ranking-list">
+        {record.ranked.slice(0, 3).map((tuple, index) => (
+          <article className="diagnostic-check" key={`${tuple.candidate.model_id}-${tuple.candidate.quantization}-${tuple.candidate.engine_id}`}>
+            <div className="diagnostic-title">
+              <h3>{index + 1}. {tuple.candidate.model_id} · {tuple.candidate.quantization} · {tuple.candidate.engine_id}</h3>
+              <span className="score-badge">{(tuple.score * 100).toFixed(1)}%</span>
+            </div>
+            <dl className="evidence-list">
+              <div><dt>Context</dt><dd>{tuple.candidate.context_window.toLocaleString()} tokens</dd></div>
+              <div><dt>Concurrency</dt><dd>{tuple.candidate.concurrency}</dd></div>
+              {tuple.contributions.filter((item) => item.comparability === 'comparable').slice(0, 4).map((item) => (
+                <div key={item.metric}>
+                  <dt>{humanName(item.metric)}</dt>
+                  <dd>{(item.contribution * 100).toFixed(0)}% · confidence {(item.effective_confidence * 100).toFixed(0)}%</dd>
+                </div>
+              ))}
+              <div><dt>Why</dt><dd>{tuple.summary}</dd></div>
+            </dl>
+          </article>
+        ))}
+      </div>
+      <div className="feature-table" role="table" aria-label="Excluded tuples">
+        <div className="feature-row table-head" role="row">
+          <div className="feature-name" role="cell">Excluded tuple</div>
+          <div role="cell">Reason</div>
+        </div>
+        {record.excluded.slice(0, 6).map((excluded) => (
+          <div className="feature-row" role="row" key={`${excluded.candidate.model_id}-${excluded.candidate.quantization}-${excluded.candidate.engine_id}-${String(excluded.candidate.context_window)}`}>
+            <div className="feature-name" role="cell">
+              {excluded.candidate.model_id} · {excluded.candidate.quantization} · {excluded.candidate.engine_id}
+            </div>
+            <div className="feature-blocker" role="cell">
+              {excluded.violations.map((violation) => `${humanName(violation.code)}: ${violation.detail}`).join('; ')}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 function Dashboard({ onLogout, onSessionExpired }: { onLogout: () => Promise<void>; onSessionExpired: () => void }) {
   const [overview, setOverview] = useState<Overview | null>(null)
+  const [recommendation, setRecommendation] = useState<RecommendationRecord | null | undefined>(undefined)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [view, setView] = useState<'overview' | 'diagnostics'>('overview')
+  const [view, setView] = useState<'overview' | 'diagnostics' | 'recommendations'>('overview')
   const activeRequest = useRef<AbortController | null>(null)
 
   const refresh = useCallback(async () => {
@@ -202,10 +276,31 @@ function Dashboard({ onLogout, onSessionExpired }: { onLogout: () => Promise<voi
     }
   }, [onSessionExpired])
 
+  const refreshRecommendation = useCallback(async () => {
+    const controller = new AbortController()
+    activeRequest.current?.abort()
+    activeRequest.current = controller
+    try {
+      setRecommendation(await fetchLatestRecommendation(controller.signal))
+    } catch (reason) {
+      if (reason instanceof DOMException && reason.name === 'AbortError') return
+      setRecommendation(null)
+    } finally {
+      if (activeRequest.current === controller) {
+        activeRequest.current = null
+      }
+    }
+  }, [])
+
   useEffect(() => {
     void refresh()
     return () => { activeRequest.current?.abort() }
   }, [refresh])
+
+  useEffect(() => {
+    void refreshRecommendation()
+    return () => { activeRequest.current?.abort() }
+  }, [refreshRecommendation])
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -231,11 +326,14 @@ function Dashboard({ onLogout, onSessionExpired }: { onLogout: () => Promise<voi
       <nav className="view-tabs" aria-label="Dashboard views">
         <button type="button" className={view === 'overview' ? 'active' : ''} onClick={() => { setView('overview') }}>Overview</button>
         <button type="button" className={view === 'diagnostics' ? 'active' : ''} onClick={() => { setView('diagnostics') }}>Diagnostics</button>
+        <button type="button" className={view === 'recommendations' ? 'active' : ''} onClick={() => { setView('recommendations') }}>Recommendations</button>
       </nav>
       <main className="workspace">
         {error && <div className="error-banner" role="alert"><AlertTriangle size={18} /> <span>{error}. Showing the most recent valid observation when available.</span></div>}
         {loading && !overview && <div className="loading-state" role="status"><RefreshCw className="spin" size={19} /> Loading operational state</div>}
-        {overview && (view === 'overview' ? <OverviewPage overview={overview} /> : <DiagnosticsPage overview={overview} />)}
+        {overview && view === 'overview' && <OverviewPage overview={overview} />}
+        {overview && view === 'diagnostics' && <DiagnosticsPage overview={overview} />}
+        {view === 'recommendations' && <RecommendationsPage record={recommendation} />}
       </main>
     </div>
   )
