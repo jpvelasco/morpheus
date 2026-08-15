@@ -148,7 +148,7 @@ def test_partition_covers_all_candidates(host: str) -> None:
     )
     assert len(viable) + len(rejected) == len(CANDIDATES)
     assert len({candidate for candidate, _ in rejected}) == len(rejected)
-    assert len({candidate for candidate in viable}) == len(viable)
+    assert len(set(viable)) == len(viable)
 
 
 def test_partition_is_deterministic() -> None:

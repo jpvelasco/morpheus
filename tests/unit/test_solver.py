@@ -128,15 +128,15 @@ def context(
     engine: EngineCatalogEntry = LLAMACPP,
     rule: EngineRule | None = None,
 ):
-    return dict(
-        candidate=cand or candidate(),
-        model=model,
-        engine=engine,
-        engine_rule=rule or RULES[cand.engine_id if cand else "llama.cpp"],
-        budget=budget or BUDGETS["ubuntu-nvidia"],
-        requirements=needs or requirements(),
-        trust_violations=violations,
-    )
+    return {
+        "candidate": cand or candidate(),
+        "model": model,
+        "engine": engine,
+        "engine_rule": rule or RULES[cand.engine_id if cand else "llama.cpp"],
+        "budget": budget or BUDGETS["ubuntu-nvidia"],
+        "requirements": needs or requirements(),
+        "trust_violations": violations,
+    }
 
 
 def codes(result) -> tuple[str, ...]:
