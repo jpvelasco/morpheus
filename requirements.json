@@ -586,19 +586,20 @@
     {
       "id": "GATE-001",
       "phase": 15,
-      "status": "planned",
-      "owning_tests": [],
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_compat.py",
+        "tests/contract/test_compat_contract.py"
+      ],
       "risk": "critical",
       "required_environments": [
         "VM"
       ],
       "requires_live_evidence": false,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": [
-        "IMP-GATE-001-01"
-      ]
+      "implementation_tasks": []
     },
     {
       "id": "GATE-002",
@@ -1278,8 +1279,13 @@
     {
       "id": "RUNM-002",
       "phase": 15,
-      "status": "planned",
-      "owning_tests": [],
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_vllm.py",
+        "tests/contract/test_vllm_contract.py",
+        "tests/unit/test_llamacpp.py",
+        "tests/contract/test_llamacpp_contract.py"
+      ],
       "risk": "critical",
       "required_environments": [
         "DEV",
@@ -1288,17 +1294,18 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": true,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": [
-        "IMP-RUNM-002-01"
-      ]
+      "implementation_tasks": []
     },
     {
       "id": "RUNM-003",
       "phase": 15,
-      "status": "planned",
-      "owning_tests": [],
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_service.py",
+        "tests/contract/test_service_contract.py"
+      ],
       "risk": "critical",
       "required_environments": [
         "VM",
@@ -1306,17 +1313,18 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": true,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": [
-        "IMP-RUNM-003-01"
-      ]
+      "implementation_tasks": []
     },
     {
       "id": "RUNM-004",
       "phase": 15,
-      "status": "planned",
-      "owning_tests": [],
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_service.py",
+        "tests/contract/test_service_contract.py"
+      ],
       "risk": "critical",
       "required_environments": [
         "VM",
@@ -1324,17 +1332,18 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": true,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": [
-        "IMP-RUNM-004-01"
-      ]
+      "implementation_tasks": []
     },
     {
       "id": "RUNM-005",
       "phase": 15,
-      "status": "planned",
-      "owning_tests": [],
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_service.py",
+        "tests/contract/test_service_contract.py"
+      ],
       "risk": "critical",
       "required_environments": [
         "VM",
@@ -1342,17 +1351,19 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": true,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": [
-        "IMP-RUNM-005-01"
-      ]
+      "implementation_tasks": []
     },
     {
       "id": "RUNM-006",
       "phase": 15,
-      "status": "planned",
-      "owning_tests": [],
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_compat.py",
+        "tests/contract/test_compat_contract.py",
+        "tests/unit/test_gateway.py"
+      ],
       "risk": "critical",
       "required_environments": [
         "DEV",
@@ -1361,11 +1372,9 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": true,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": [
-        "IMP-RUNM-006-01"
-      ]
+      "implementation_tasks": []
     },
     {
       "id": "PLAT-001",
@@ -1411,8 +1420,13 @@
     {
       "id": "PLAT-003",
       "phase": 15,
-      "status": "planned",
-      "owning_tests": [],
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_packages.py",
+        "tests/contract/test_packages_contract.py",
+        "tests/unit/test_service.py",
+        "tests/contract/test_service_contract.py"
+      ],
       "risk": "critical",
       "required_environments": [
         "DEV",
@@ -1421,11 +1435,9 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": [
-        "IMP-PLAT-003-01"
-      ]
+      "implementation_tasks": []
     },
     {
       "id": "PLAT-004",
