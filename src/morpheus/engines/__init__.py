@@ -1,0 +1,43 @@
+"""llama.cpp engine adapters (RUNM-002)."""
+
+from morpheus.engines.llamacpp import (
+    KNOWN_GOOD_BUILDS,
+    STABLE_MINIMUM_BUILD,
+    CapabilityProbe,
+    EngineCommandError,
+    EngineRunner,
+    LlamaCppCapabilities,
+    LlamaCppConfiguration,
+    LlamaCppEngine,
+    LogRing,
+    NativeEngineRunner,
+    NativeProcessHandle,
+    PortProbe,
+    ProcessHandle,
+    SocketPortProbe,
+    SubprocessCapabilityProbe,
+    parse_llamacpp_health,
+    parse_llamacpp_metrics,
+    parse_llamacpp_version,
+)
+
+__all__ = [
+    "KNOWN_GOOD_BUILDS",
+    "STABLE_MINIMUM_BUILD",
+    "CapabilityProbe",
+    "EngineCommandError",
+    "EngineRunner",
+    "LlamaCppCapabilities",
+    "LlamaCppConfiguration",
+    "LlamaCppEngine",
+    "LogRing",
+    "NativeEngineRunner",
+    "NativeProcessHandle",
+    "PortProbe",
+    "ProcessHandle",
+    "SocketPortProbe",
+    "SubprocessCapabilityProbe",
+    "parse_llamacpp_health",
+    "parse_llamacpp_metrics",
+    "parse_llamacpp_version",
+]
