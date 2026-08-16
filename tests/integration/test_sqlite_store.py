@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -210,7 +211,9 @@ async def test_OUI_003_events_query_filters_by_source_severity_correlation_and_s
     correlated = await store.events(correlation_id="corr-1", limit=10)
     assert {event.message for event in correlated} == {"oops", "slow"}
 
-    since_events = await store.events(since="2026-08-16T00:00:00+00:00", limit=10)
+    since_events = await store.events(
+        since=(datetime.now(UTC) + timedelta(days=1)).isoformat(), limit=10
+    )
     assert since_events == []
 
 
