@@ -1786,8 +1786,12 @@
     {
       "id": "AID-002",
       "phase": 17,
-      "status": "planned",
-      "owning_tests": [],
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_diagnosis.py",
+        "tests/unit/test_diagnosis_adapters.py",
+        "tests/contract/test_diagnosis_contract.py"
+      ],
       "risk": "critical",
       "required_environments": [
         "DEV",
@@ -1795,17 +1799,19 @@
       ],
       "requires_live_evidence": false,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": [
-        "IMP-AID-002-01"
-      ]
+      "implementation_tasks": []
     },
     {
       "id": "AID-003",
       "phase": 17,
-      "status": "planned",
-      "owning_tests": [],
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_diagnosis.py",
+        "tests/unit/test_diagnosis_adapters.py",
+        "tests/contract/test_diagnosis_contract.py"
+      ],
       "risk": "high",
       "required_environments": [
         "DEV",
@@ -1813,17 +1819,19 @@
       ],
       "requires_live_evidence": false,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": [
-        "IMP-AID-003-01"
-      ]
+      "implementation_tasks": []
     },
     {
       "id": "AID-004",
       "phase": 17,
-      "status": "planned",
-      "owning_tests": [],
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_diagnosis.py",
+        "tests/unit/test_diagnosis_adapters.py",
+        "tests/contract/test_diagnosis_contract.py"
+      ],
       "risk": "critical",
       "required_environments": [
         "DEV",
@@ -1831,11 +1839,9 @@
       ],
       "requires_live_evidence": false,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": [
-        "IMP-AID-004-01"
-      ]
+      "implementation_tasks": []
     },
     {
       "id": "ACCESS-001",

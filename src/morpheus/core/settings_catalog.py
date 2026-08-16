@@ -18,12 +18,12 @@ from typing import Any
 from morpheus.config import MorpheusSettings
 
 #: Field keys the operator may never edit through the operations surface.
-SECRET_FIELDS = ("api_key", "upstream_api_key", "agent_key", "session_secret")
+SECRET_FIELDS = ("api_key", "upstream_api_key", "agent_key", "session_secret", "diagnosis_api_key")
 
 #: Build identity fields that are public but never operator-editable.
 NON_EDITABLE_FIELDS = ("release_version", "source_commit")
 
-URL_FIELDS = ("llm_base_url", "vllm_metrics_url", "runtime_agent_url")
+URL_FIELDS = ("llm_base_url", "vllm_metrics_url", "runtime_agent_url", "diagnosis_endpoint")
 PORT_FIELDS = ("api_port", "dashboard_port", "agent_port", "telemetry_port")
 
 LABELS: dict[str, str] = {
@@ -62,6 +62,14 @@ LABELS: dict[str, str] = {
     "enable_lifecycle": "Enable runtime lifecycle",
     "lifecycle_deployment_root": "Lifecycle deployment root",
     "lifecycle_lab_authorized": "Lifecycle lab authorized",
+    "diagnosis_mode": "Diagnosis provider mode",
+    "diagnosis_provider": "Diagnosis provider name",
+    "diagnosis_endpoint": "Diagnosis provider endpoint",
+    "diagnosis_timeout_ms": "Diagnosis timeout (milliseconds)",
+    "diagnosis_max_cost": "Diagnosis cost budget",
+    "diagnosis_retention": "Diagnosis data retention",
+    "diagnosis_consent": "Diagnosis data consent",
+    "diagnosis_api_key": "Diagnosis API key",
     "api_key": "API key",
     "upstream_api_key": "Upstream API key",
     "agent_key": "Runtime agent key",
@@ -104,6 +112,14 @@ DESCRIPTIONS: dict[str, str] = {
     "enable_lifecycle": "Enable runtime lifecycle management.",
     "lifecycle_deployment_root": "Fixed deployment root for lifecycle actions.",
     "lifecycle_lab_authorized": "Allow disposable-lab lifecycle actions.",
+    "diagnosis_mode": "Disabled, local-model, or external-API diagnosis provider.",
+    "diagnosis_provider": "Display name of the selected diagnosis provider.",
+    "diagnosis_endpoint": "HTTP(S) endpoint of the external diagnosis provider.",
+    "diagnosis_timeout_ms": "Provider response time bound before diagnosis fails.",
+    "diagnosis_max_cost": "Estimated cost budget per diagnosis request.",
+    "diagnosis_retention": "Provider-side retention implication of the evidence.",
+    "diagnosis_consent": "Explicit consent that evidence may leave the host.",
+    "diagnosis_api_key": "Key presented to the external diagnosis provider.",
     "api_key": "Key that authenticates API requests.",
     "upstream_api_key": "Key presented to the upstream inference service.",
     "agent_key": "Key that authenticates runtime agent calls.",
@@ -139,6 +155,13 @@ VALIDATION_NOTES: dict[str, str] = {
     "metrics_retention_days": "integer 1-365",
     "events_retention_days": "integer 1-365",
     "metrics_collection_interval_seconds": "integer 5-3600",
+    "diagnosis_mode": "disabled, local, or external",
+    "diagnosis_provider": "2-128 characters",
+    "diagnosis_endpoint": "http(s) URL with host, no credentials, no query",
+    "diagnosis_timeout_ms": "integer 1000-300000",
+    "diagnosis_max_cost": "integer 0-1000000",
+    "diagnosis_retention": "64 characters or fewer",
+    "diagnosis_api_key": "set in the secret env file, never through the UI",
 }
 
 

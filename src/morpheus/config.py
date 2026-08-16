@@ -69,6 +69,14 @@ class MorpheusSettings(BaseModel):
     enable_lifecycle: bool = False
     lifecycle_deployment_root: Path | None = None
     lifecycle_lab_authorized: bool = False
+    diagnosis_mode: str = Field(default="disabled", pattern=r"^(disabled|local|external)$")
+    diagnosis_provider: str = Field(default="", max_length=128)
+    diagnosis_endpoint: str = ""
+    diagnosis_timeout_ms: int = Field(default=30_000, ge=1_000, le=300_000)
+    diagnosis_max_cost: int = Field(default=0, ge=0, le=1_000_000)
+    diagnosis_retention: str = Field(default="none", max_length=64)
+    diagnosis_consent: bool = False
+    diagnosis_api_key: SecretStr = SecretStr("")
 
     @field_validator("bind_address")
     @classmethod
@@ -123,6 +131,22 @@ class MorpheusSettings(BaseModel):
             raise ValueError("runtime_agent_url must not contain a path, query, or fragment")
         return value.rstrip("/")
 
+    @field_validator("diagnosis_endpoint", mode="before")
+    @classmethod
+    def validate_diagnosis_endpoint(cls, value: Any) -> str:
+        if value is None or value == "":
+            return ""
+        if not isinstance(value, str):
+            raise ValueError("diagnosis_endpoint must be a string")
+        parsed = urlsplit(value)
+        if parsed.scheme not in {"http", "https"}:
+            raise ValueError("diagnosis_endpoint must use http or https")
+        if not parsed.hostname or parsed.username or parsed.password:
+            raise ValueError("diagnosis_endpoint must have a host and no embedded credentials")
+        if parsed.query or parsed.fragment:
+            raise ValueError("diagnosis_endpoint must not contain a query or fragment")
+        return value.rstrip("/")
+
     @field_validator("runtime_agent_socket", mode="before")
     @classmethod
     def validate_runtime_agent_socket(cls, value: Any) -> Path | None:
@@ -172,13 +196,21 @@ class MorpheusSettings(BaseModel):
             raise ValueError("configure only one runtime agent endpoint")
         if self.enable_lifecycle and self.lifecycle_deployment_root is None:
             raise ValueError("lifecycle requires a fixed deployment root")
+        if self.diagnosis_mode == "external" and not self.diagnosis_endpoint:
+            raise ValueError("external diagnosis requires a configured endpoint")
         return self
 
     def features(self) -> dict[str, bool]:
         return {name: bool(getattr(self, field)) for name, field in FEATURE_FIELDS.items()}
 
     def public_dict(self) -> dict[str, Any]:
-        excluded = {"api_key", "upstream_api_key", "agent_key", "session_secret"}
+        excluded = {
+            "api_key",
+            "upstream_api_key",
+            "agent_key",
+            "session_secret",
+            "diagnosis_api_key",
+        }
         public = self.model_dump(mode="json", exclude=excluded)
         public["secrets_configured"] = {
             "agent_key": bool(self.agent_key.get_secret_value()),
