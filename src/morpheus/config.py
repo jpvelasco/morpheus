@@ -13,6 +13,8 @@ from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator, m
 
 from morpheus.core.paths import OwnedPathError, OwnedPathResolver
 
+_LOOPBACK_PROFILES = ("loopback", "ssh_tunnel")
+
 FEATURE_FIELDS = {
     "search": "enable_search",
     "voice": "enable_voice",
@@ -77,6 +79,7 @@ class MorpheusSettings(BaseModel):
     diagnosis_retention: str = Field(default="none", max_length=64)
     diagnosis_consent: bool = False
     diagnosis_api_key: SecretStr = SecretStr("")
+    access_profile: str = Field(default="loopback", pattern=r"^(loopback|ssh_tunnel)$")
 
     @field_validator("bind_address")
     @classmethod
@@ -198,6 +201,13 @@ class MorpheusSettings(BaseModel):
             raise ValueError("lifecycle requires a fixed deployment root")
         if self.diagnosis_mode == "external" and not self.diagnosis_endpoint:
             raise ValueError("external diagnosis requires a configured endpoint")
+        if (
+            self.access_profile in _LOOPBACK_PROFILES
+            and not ipaddress.ip_address(self.bind_address).is_loopback
+        ):
+            raise ValueError(
+                "access profiles loopback and ssh_tunnel require a loopback bind address"
+            )
         return self
 
     def features(self) -> dict[str, bool]:

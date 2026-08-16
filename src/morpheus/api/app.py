@@ -45,6 +45,7 @@ from morpheus.api.runtime import runtime_services_snapshot, runtime_snapshot
 from morpheus.api.session import BrowserSession, SessionCodec, SessionValidationError
 from morpheus.api.settings_plan import plan_settings
 from morpheus.config import MorpheusSettings, load_settings
+from morpheus.core.access import AccessPolicyError, access_capabilities
 from morpheus.core.analytics import analytics_report
 from morpheus.core.benchmark import BenchmarkSummary
 from morpheus.core.benchstore import BenchmarkStore
@@ -503,6 +504,13 @@ def create_app(
             backend_version=morpheus_version,
             desktop_version=request.headers.get("X-Morpheus-Desktop-Version"),
         )
+
+    @app.get("/api/v1/system/access", dependencies=[Depends(require_api_key)])
+    async def system_access() -> dict[str, Any]:
+        try:
+            return {"access": access_capabilities(settings)}
+        except AccessPolicyError as error:
+            raise OperationsDataError(str(error)) from error
 
     @app.get("/api/v1/operations/navigation", dependencies=[Depends(require_api_key)])
     async def operations_navigation() -> dict[str, Any]:
