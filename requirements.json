@@ -1764,8 +1764,13 @@
     {
       "id": "AID-001",
       "phase": 17,
-      "status": "planned",
-      "owning_tests": [],
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_runbooks.py",
+        "tests/unit/test_diagnostic_evidence.py",
+        "tests/integration/test_diagnostic_evidence_package.py",
+        "tests/contract/test_diagnostic_evidence_contract.py"
+      ],
       "risk": "critical",
       "required_environments": [
         "DEV",
@@ -1774,11 +1779,9 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": [
-        "IMP-AID-001-01"
-      ]
+      "implementation_tasks": []
     },
     {
       "id": "AID-002",
