@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Morpheus — Backend not reachable</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      body {
+        margin: 0;
+        font-family: system-ui, sans-serif;
+        background: #10151c;
+        color: #e5e9ee;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+      }
+      main {
+        max-width: 34rem;
+        padding: 2rem;
+        text-align: center;
+      }
+      h1 {
+        font-size: 1.25rem;
+      }
+      p {
+        color: #9aa7b4;
+        line-height: 1.5;
+      }
+      code {
+        background: #1c232c;
+        padding: 0.1rem 0.35rem;
+        border-radius: 4px;
+      }
+      button {
+        margin-top: 1rem;
+        padding: 0.6rem 1.2rem;
+        border: 0;
+        border-radius: 6px;
+        background: #3b82f6;
+        color: #fff;
+        font-size: 0.95rem;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Morpheus backend is not reachable</h1>
+      <p>
+        The desktop shell could not reach a Morpheus backend on
+        <code>127.0.0.1:7400</code> or <code>127.0.0.1:7401</code>. Start the
+        backend, then reopen this window, or open the loopback browser surface
+        instead.
+      </p>
+      <button id="open-browser" type="button">Open in browser</button>
+      <p id="status"></p>
+    </main>
+    <script>
+      document.getElementById('open-browser').addEventListener('click', async () => {
+        const status = document.getElementById('status')
+        try {
+          await window.__TAURI__.core.invoke('open_browser', {
+            url: 'http://127.0.0.1:7401/',
+          })
+          status.textContent = 'Opening the browser surface…'
+        } catch (error) {
+          status.textContent = 'Could not open the browser: ' + error
+        }
+      })
+    </script>
+  </body>
+</html>

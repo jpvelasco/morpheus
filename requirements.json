@@ -1705,8 +1705,11 @@
     {
       "id": "DESK-001",
       "phase": 16,
-      "status": "planned",
-      "owning_tests": [],
+      "status": "implemented",
+      "owning_tests": [
+        "tests/contract/test_desktop_handshake_contract.py",
+        "tests/unit/test_compatibility.py"
+      ],
       "risk": "high",
       "required_environments": [
         "DEV",
@@ -1714,11 +1717,9 @@
       ],
       "requires_live_evidence": false,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": [
-        "IMP-DESK-001-01"
-      ]
+      "implementation_tasks": []
     },
     {
       "id": "DESK-002",
