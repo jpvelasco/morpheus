@@ -31,9 +31,12 @@ private request data, host addresses, or unredacted evidence.
   and refined on 2026-08-12 with an early vertical slice, bounded self-replan,
   smaller delivery subphases, and optional distribution signing; no v0.2 runtime
   implementation or target mutation has started.
-- **Implementation inventory:** 83 implemented, 2 planned, 12 deferred; see
+- **Implementation inventory:** 85 implemented, 0 planned, 12 deferred; see
   [`requirements.json`](../requirements.json) and the
-  [implementation gap review](IMPLEMENTATION_GAP_REVIEW.md).
+  [implementation gap review](IMPLEMENTATION_GAP_REVIEW.md). All planned
+  v0.2 requirements are implemented at the source level; the remaining gates
+  are the physical qualification lanes (HOST-RO/HOST-MAINT) and live
+  hardware evidence.
 - **Release posture:** not yet release-ready. A passing candidate does not
   replace lifecycle, browser, load, fault, supply-chain finalize, or soak
   evidence.
