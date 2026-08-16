@@ -26,6 +26,9 @@
   prerequisites, executable validation tasks, evidence, and release gates.
 - [Release state](RELEASE_STATE.md): durable current-candidate ledger, completed
   milestones, active work, and resume constraints.
+- [v0.2 implementation audit (2026-08-15)](IMPLEMENTATION_AUDIT_2026-08-15.md):
+  dated review of plan adherence, integration gaps, traceability concerns, and
+  the post-implementation cleanup checklist at source `c955adf`.
 - [History identity migration](HISTORY_REWRITE.md): pre-publication email
   rewrite, SHA continuity, and legacy deployed-candidate provenance.
 - [Lifecycle operations](LIFECYCLE.md): fixed release layout, authenticated
