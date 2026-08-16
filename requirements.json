@@ -1885,8 +1885,11 @@
     {
       "id": "ACCESS-003",
       "phase": 18,
-      "status": "planned",
-      "owning_tests": [],
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_support_matrix.py",
+        "tests/contract/test_support_matrix_contract.py"
+      ],
       "risk": "high",
       "required_environments": [
         "HOST-RO",
@@ -1894,11 +1897,9 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": true,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": [
-        "IMP-ACCESS-003-01"
-      ]
+      "implementation_tasks": []
     }
   ]
 }

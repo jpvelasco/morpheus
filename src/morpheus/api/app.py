@@ -83,6 +83,7 @@ from morpheus.core.workflows import WorkflowId, workflow_definitions
 from morpheus.core.workload import SEED_PROFILES, OperatorConstraints
 from morpheus.ops.diagnosis import DiagnosisService
 from morpheus.ops.diagnostics import DiagnosticEvidenceBuilder, DiagnosticEvidenceError
+from morpheus.ops.support import SupportReportService
 from morpheus.ports.protocols import Clock, InferencePort, RuntimeAgentPort
 
 
@@ -531,6 +532,18 @@ def create_app(
             return {"access": access_capabilities(settings)}
         except AccessPolicyError as error:
             raise OperationsDataError(str(error)) from error
+
+    @app.get("/api/v1/support", dependencies=[Depends(require_api_key)])
+    async def support_posture() -> dict[str, Any]:
+        """Evidence-bounded support posture (ACCESS-003)."""
+        benchmark_store = BenchmarkStore(settings.data_dir / "benchmarks")
+        benchmark_store.initialize()
+        service = SupportReportService(
+            evidence_root=settings.data_dir / "diagnostics",
+            benchmark_store=benchmark_store,
+        )
+        profile = service.report(named_targets={"batwing": "linux", "batmobile": "linux"})
+        return {"schema_version": 1, "support": profile.to_public_dict()}
 
     @app.get("/api/v1/operations/navigation", dependencies=[Depends(require_api_key)])
     async def operations_navigation() -> dict[str, Any]:
