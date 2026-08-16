@@ -1724,8 +1724,13 @@
     {
       "id": "DESK-002",
       "phase": 16,
-      "status": "planned",
-      "owning_tests": [],
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_package_trust.py",
+        "tests/unit/test_bootstrap.py",
+        "tests/contract/test_install_contract.py",
+        "tests/contract/test_desktop_package_contract.py"
+      ],
       "risk": "critical",
       "required_environments": [
         "DEV",
@@ -1734,11 +1739,9 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": [
-        "IMP-DESK-002-01"
-      ]
+      "implementation_tasks": []
     },
     {
       "id": "DESK-003",
