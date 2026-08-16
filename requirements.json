@@ -1866,8 +1866,11 @@
     {
       "id": "ACCESS-002",
       "phase": 17,
-      "status": "planned",
-      "owning_tests": [],
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_access_network.py",
+        "tests/contract/test_network_access_contract.py"
+      ],
       "risk": "critical",
       "required_environments": [
         "VM",
@@ -1875,11 +1878,9 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": [
-        "IMP-ACCESS-002-01"
-      ]
+      "implementation_tasks": []
     },
     {
       "id": "ACCESS-003",

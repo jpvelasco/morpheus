@@ -9,6 +9,7 @@ from dataclasses import asdict
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 import httpx
 import uvicorn
@@ -200,6 +201,7 @@ def create_app(
     allowed_origins = [
         f"http://127.0.0.1:{settings.dashboard_port}",
         f"http://localhost:{settings.dashboard_port}",
+        *settings.allowed_origins,
     ]
     app.add_middleware(
         CORSMiddleware,
@@ -208,6 +210,24 @@ def create_app(
         allow_methods=["GET", "POST", "DELETE"],
         allow_headers=["Authorization", "Content-Type", "X-CSRF-Token", "X-Request-ID"],
     )
+
+    @app.middleware("http")
+    async def enforce_origin_controls(
+        request: Request,
+        call_next: Callable[[Request], Awaitable[Any]],
+    ) -> Any:
+        expected_hosts = {urlsplit(origin).netloc for origin in settings.allowed_origins}
+        if expected_hosts and request.headers.get("host") not in expected_hosts:
+            return JSONResponse(
+                status_code=403,
+                content={
+                    "error": {
+                        "code": "origin_not_allowed",
+                        "message": "Host is not in the allowed origin controls",
+                    }
+                },
+            )
+        return await call_next(request)
 
     @app.middleware("http")
     async def secure_responses(
@@ -1249,4 +1269,14 @@ def run() -> None:
         clock=clock,
         runtime_agent=runtime_agent,
     )
+    if settings.access_profile == "network":
+        uvicorn.run(
+            app,
+            host=settings.bind_address,
+            port=settings.api_port,
+            access_log=False,
+            ssl_certfile=str(settings.tls_cert_path),
+            ssl_keyfile=str(settings.tls_key_path),
+        )
+        return
     uvicorn.run(app, host=settings.bind_address, port=settings.api_port, access_log=False)

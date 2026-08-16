@@ -71,6 +71,9 @@ LABELS: dict[str, str] = {
     "diagnosis_consent": "Diagnosis data consent",
     "diagnosis_api_key": "Diagnosis API key",
     "access_profile": "Access profile",
+    "tls_cert_path": "TLS certificate path",
+    "tls_key_path": "TLS private key path",
+    "allowed_origins": "Allowed network origins",
     "api_key": "API key",
     "upstream_api_key": "Upstream API key",
     "agent_key": "Runtime agent key",
@@ -122,6 +125,9 @@ DESCRIPTIONS: dict[str, str] = {
     "diagnosis_consent": "Explicit consent that evidence may leave the host.",
     "diagnosis_api_key": "Key presented to the external diagnosis provider.",
     "access_profile": "Loopback-only or SSH-tunnel access posture.",
+    "tls_cert_path": "PEM certificate used by the network access profile.",
+    "tls_key_path": "PEM private key used by the network access profile.",
+    "allowed_origins": "Comma-separated https origins allowed in network profile.",
     "api_key": "Key that authenticates API requests.",
     "upstream_api_key": "Key presented to the upstream inference service.",
     "agent_key": "Key that authenticates runtime agent calls.",
@@ -164,7 +170,13 @@ VALIDATION_NOTES: dict[str, str] = {
     "diagnosis_max_cost": "integer 0-1000000",
     "diagnosis_retention": "64 characters or fewer",
     "diagnosis_api_key": "set in the secret env file, never through the UI",
-    "access_profile": "loopback or ssh_tunnel; requires a loopback bind address",
+    "access_profile": (
+        "loopback, ssh_tunnel, or network; loopback and ssh_tunnel require a loopback "
+        "bind; network requires allow_lan, tls paths, origins, secure cookies, api_key"
+    ),
+    "tls_cert_path": "absolute filesystem path",
+    "tls_key_path": "absolute filesystem path",
+    "allowed_origins": "comma-separated https origins with host, no path, query, or credentials",
 }
 
 
