@@ -53,7 +53,9 @@ from morpheus.core.catalog import SEED_CATALOG
 from morpheus.core.compatibility import compatibility_payload
 from morpheus.core.concurrency import ConcurrencyLimiter, FixedWindowRateLimiter, RetryPolicy
 from morpheus.core.controls import ComponentHealth
+from morpheus.core.diagnosis import DiagnosisConfig, DiagnosisMode
 from morpheus.core.diagnostic_evidence import (
+    DiagnosticEvidence,
     DiagnosticProvenance,
     build_diagnostic_evidence,
 )
@@ -77,6 +79,7 @@ from morpheus.core.recommendation import (
 from morpheus.core.settings_catalog import detect_sources, settings_catalog
 from morpheus.core.workflows import WorkflowId, workflow_definitions
 from morpheus.core.workload import SEED_PROFILES, OperatorConstraints
+from morpheus.ops.diagnosis import DiagnosisService
 from morpheus.ops.diagnostics import DiagnosticEvidenceBuilder, DiagnosticEvidenceError
 from morpheus.ports.protocols import Clock, InferencePort, RuntimeAgentPort
 
@@ -146,6 +149,25 @@ def _evidence_json(evidence: Evidence) -> dict[str, Any]:
     value["duration_ms"] = evidence.duration.total_seconds() * 1000
     value.pop("duration")
     return value
+
+
+def _diagnosis_config(settings: MorpheusSettings) -> DiagnosisConfig:
+    destination = {
+        "disabled": "none",
+        "local": "local",
+        "external": f"external:{settings.diagnosis_provider or 'api'}",
+    }[settings.diagnosis_mode]
+    return DiagnosisConfig(
+        mode=DiagnosisMode(settings.diagnosis_mode),
+        provider_name=settings.diagnosis_provider or settings.diagnosis_mode,
+        timeout_ms=settings.diagnosis_timeout_ms,
+        max_cost=settings.diagnosis_max_cost,
+        retention=settings.diagnosis_retention,
+        data_destination=destination,
+        endpoint=settings.diagnosis_endpoint,
+        consent_required=True,
+        consent_granted=settings.diagnosis_consent,
+    )
 
 
 def create_app(
@@ -817,6 +839,23 @@ def create_app(
             host=host,
             observed_at=observed_at,
         )
+        try:
+            evidence_package = await _live_evidence(checks=checks, host=host)
+            package = DiagnosticEvidenceBuilder(settings.data_dir / "diagnostics").build(
+                evidence=evidence_package,
+                run_id=f"diag-{clock.utc_now().strftime('%Y%m%d-%H%M%S-%f')}",
+                source_commit=settings.source_commit,
+                canaries={},
+                started_at=clock.utc_now(),
+                ended_at=clock.utc_now(),
+                safe_summary="Diagnostic evidence package assembled for local analysis",
+                tool_versions={"morpheus": morpheus_version},
+            )
+        except (DiagnosticEvidenceError, EventsError, ValueError, OSError) as error:
+            raise OperationsDataError(str(error)) from error
+        return {"schema_version": 1, "evidence_package": package.to_json()}
+
+    async def _live_evidence(*, checks: dict[str, Any], host: dict[str, Any]) -> DiagnosticEvidence:
         store = SqliteStore(settings.data_dir / "morpheus.sqlite3", owned_root=settings.data_dir)
         await store.initialize()
         events = await store.events(limit=200)
@@ -834,50 +873,75 @@ def create_app(
             telemetry=[],
             window_days=settings.telemetry_retention_days,
         )
-        try:
-            package = DiagnosticEvidenceBuilder(settings.data_dir / "diagnostics").build(
-                evidence=build_diagnostic_evidence(
-                    health={
-                        "status": checks["status"],
-                        "checks": checks["checks"],
-                    },
-                    machine_profile=host,
-                    deployment={
-                        "version": morpheus_version,
-                        "release_version": settings.release_version,
-                        "source_commit": settings.source_commit,
-                    },
-                    metrics={},
-                    events=[
-                        {
-                            "recorded_at": event.recorded_at,
-                            "source": event.source,
-                            "severity": event.severity,
-                            "message": event.message,
-                            "correlation_id": event.correlation_id,
-                        }
-                        for event in events
-                    ],
-                    log_excerpts=[],
-                    regressions=list(report["regressions"]),
-                    runbooks=["batwing-operator"],
-                    provenance=DiagnosticProvenance(
-                        morpheus_version=morpheus_version,
-                        source_commit=settings.source_commit,
-                        observed_at=observed_at,
-                    ),
-                ),
-                run_id=f"diag-{clock.utc_now().strftime('%Y%m%d-%H%M%S-%f')}",
+        return build_diagnostic_evidence(
+            health={
+                "status": checks["status"],
+                "checks": checks["checks"],
+            },
+            machine_profile=host,
+            deployment={
+                "version": morpheus_version,
+                "release_version": settings.release_version,
+                "source_commit": settings.source_commit,
+            },
+            metrics={},
+            events=[
+                {
+                    "recorded_at": event.recorded_at,
+                    "source": event.source,
+                    "severity": event.severity,
+                    "message": event.message,
+                    "correlation_id": event.correlation_id,
+                }
+                for event in events
+            ],
+            log_excerpts=[],
+            regressions=list(report["regressions"]),
+            runbooks=["batwing-operator"],
+            provenance=DiagnosticProvenance(
+                morpheus_version=morpheus_version,
                 source_commit=settings.source_commit,
-                canaries={},
-                started_at=clock.utc_now(),
-                ended_at=clock.utc_now(),
-                safe_summary="Diagnostic evidence package assembled for local analysis",
-                tool_versions={"morpheus": morpheus_version},
-            )
+                observed_at=clock.utc_now().isoformat(),
+            ),
+        )
+
+    @app.get("/api/v1/diagnostics/provider", dependencies=[Depends(require_api_key)])
+    async def diagnosis_provider_capabilities() -> dict[str, Any]:
+        """Show provider capabilities before any evidence leaves the host (AID-002)."""
+        return {"provider": _diagnosis_config(settings).capabilities()}
+
+    @app.post("/api/v1/diagnostics/analyze", dependencies=[Depends(require_api_key)])
+    async def analyze_diagnostics() -> dict[str, Any]:
+        """Run grounded AI diagnosis over the bounded evidence package (AID-003/004)."""
+        evidence = await inference.health()
+        host = await runtime_snapshot(runtime_agent, clock=clock)
+        try:
+            discovered = await inference.models()
+            model_contract_ready = bool(discovered)
+        except (httpx.HTTPError, OSError, ValueError):
+            model_contract_ready = False
+        checks = _diagnostics_payload(
+            settings=settings,
+            evidence=evidence,
+            model_contract_ready=model_contract_ready,
+            host=host,
+            observed_at=clock.utc_now().isoformat(),
+        )
+        try:
+            evidence_package = await _live_evidence(checks=checks, host=host)
         except (DiagnosticEvidenceError, EventsError, ValueError, OSError) as error:
             raise OperationsDataError(str(error)) from error
-        return {"schema_version": 1, "evidence_package": package.to_json()}
+        config = _diagnosis_config(settings)
+        outcome = await DiagnosisService().run(
+            evidence_package,
+            config,
+            api_key=settings.diagnosis_api_key.get_secret_value(),
+        )
+        return {
+            "schema_version": 1,
+            "provider": config.capabilities(),
+            "outcome": outcome.to_json(),
+        }
 
     def _store() -> RecommendationStore:
         store = RecommendationStore(settings.data_dir / "recommendations")

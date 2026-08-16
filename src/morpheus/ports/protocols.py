@@ -24,6 +24,10 @@ class InferencePort(Protocol):
     def forward_chat(self, body: bytes) -> AsyncIterator[bytes]: ...
 
 
+class DiagnosisInference(Protocol):
+    async def complete(self, prompt: str) -> str: ...
+
+
 class MetricsPort(Protocol):
     async def collect(self) -> MappingResult: ...
 
