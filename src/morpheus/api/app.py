@@ -79,6 +79,7 @@ from morpheus.core.recommendation import (
     recommend_for_host,
 )
 from morpheus.core.settings_catalog import detect_sources, settings_catalog
+from morpheus.core.targets import FROZEN_TARGETS
 from morpheus.core.workflows import WorkflowId, workflow_definitions
 from morpheus.core.workload import SEED_PROFILES, OperatorConstraints
 from morpheus.ops.diagnosis import DiagnosisService
@@ -535,15 +536,51 @@ def create_app(
 
     @app.get("/api/v1/support", dependencies=[Depends(require_api_key)])
     async def support_posture() -> dict[str, Any]:
-        """Evidence-bounded support posture (ACCESS-003)."""
+        """Evidence-bounded support posture (ACCESS-003, HOST-003, PLAT-004)."""
         benchmark_store = BenchmarkStore(settings.data_dir / "benchmarks")
         benchmark_store.initialize()
         service = SupportReportService(
             evidence_root=settings.data_dir / "diagnostics",
             benchmark_store=benchmark_store,
         )
-        profile = service.report(named_targets={"ubuntu-1": "linux", "ubuntu-2": "linux"})
-        return {"schema_version": 1, "support": profile.to_public_dict()}
+        profile, posture = service.report(targets=FROZEN_TARGETS)
+        return {
+            "schema_version": 1,
+            "support": {
+                "dimensions": [
+                    {
+                        "dimension": claim.dimension.value,
+                        "value": claim.value,
+                        "state": claim.state.value,
+                        "evidence_refs": list(claim.evidence_refs),
+                    }
+                    for claim in profile.machine_claims
+                ],
+                "targets": [
+                    {
+                        "target": target.target,
+                        "platform": target.platform,
+                        "architecture": target.architecture,
+                        "engine_tier": target.engine_tier,
+                        "validated": target.validated,
+                        "claims": [
+                            {
+                                "dimension": claim.dimension.value,
+                                "value": claim.value,
+                                "artifact": claim.artifact,
+                                "lane": claim.lane,
+                                "rollback_path": claim.rollback_path,
+                                "state": claim.state.value,
+                                "evidence_refs": list(claim.evidence_refs),
+                            }
+                            for claim in target.claims
+                        ],
+                    }
+                    for target in posture
+                ],
+                "advertised": list(profile.advertised()),
+            },
+        }
 
     @app.get("/api/v1/operations/navigation", dependencies=[Depends(require_api_key)])
     async def operations_navigation() -> dict[str, Any]:

@@ -32,6 +32,11 @@ KNOWN_RUNBOOKS = (
         path="docs/runbooks/ACCESS.md",
         title="Loopback and SSH-tunnel access runbook",
     ),
+    RunbookReference(
+        id="qualification-operator",
+        path="docs/runbooks/QUALIFICATION.md",
+        title="Frozen target and support matrix qualification runbook",
+    ),
 )
 
 

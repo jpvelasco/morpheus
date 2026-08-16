@@ -61,11 +61,23 @@ evidence naming the machine), the read-only evidence scanner
 (`ops/support.py` SupportReportService), `GET /api/v1/support`, and
 unit + contract suites proving absent evidence never becomes a claim and
 DEV/VM evidence never names a physical target.
-Gate totals: 1573 collected backend (1564 passed, 9 skipped, 91%
+18.1 (HOST-003 + PLAT-004) shipped the frozen target/support matrix
+(`core/targets.py`: immutable declarations for ubuntu-1, ubuntu-2,
+windows-x64, and macos-arm64; every declared claim maps to an exact
+artifact kind, machine, lane (HOST-RO/HOST-MAINT), and rollback path;
+nothing outside the registry is advertised), target posture derivation
+(`derive_target_posture` in `core/support_matrix.py`: per-claim proven/
+unproven state strictly from retained evidence, `validated` only when
+every declared claim is proven), the `docs/runbooks/QUALIFICATION.md`
+runbook registered as `qualification-operator`, and `GET /api/v1/support`
+now returns the full declared matrix with artifact/lane/rollback mapping
+per claim.
+Gate totals: 1587 collected backend (1578 passed, 9 skipped, 91%
 coverage), 131 vitest (99.01%), 48 Playwright e2e, 17 cargo tests.
-DESK-001, DESK-002, AID-001, AID-002, AID-003, AID-004, ACCESS-001,
-DESK-003, ACCESS-002, and ACCESS-003 are flipped to `implemented` at
-0.2.0 in `requirements.json` (83 implemented, 2 planned, 12 deferred).
+All planned requirements are flipped to `implemented` at 0.2.0 in
+`requirements.json` (85 implemented, 12 deferred); HOST-003 and PLAT-004
+retain `requires_live_evidence` and `requires_hardware_evidence` — the
+physical qualification lanes (Phase 18.2-18.4) are their remaining gates.
 AID-001 retains
 `requires_live_evidence: true`; live HOST-RO validation happens in the
 physical qualification lane.
@@ -76,7 +88,8 @@ ADR-0009, evidence-ranked selection, managed runtime, benchmark history, Tauri
 desktop, operations, and bounded diagnosis. The standing continuation for
 v0.2 work stays in force; the active product queue now continues with Phase
 18 (frozen target/support matrix and physical qualification lanes) in
-dependency order.
+dependency order. 18.1 is delivered; 18.2-18.4 are the physical lanes and
+never run without explicit live-host authorization.
 
 The deployed v0.1 Morpheus remains a **read-only operator surface**; planning
 language must not be mistaken for deployed behavior.

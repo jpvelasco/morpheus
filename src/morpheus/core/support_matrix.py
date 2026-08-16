@@ -136,6 +136,30 @@ def _passing_evidence(
     return tuple(run for run in evidence_runs if run.status.lower() == "pass")
 
 
+@dataclass(frozen=True, slots=True)
+class TargetPosture:
+    target: str
+    platform: str
+    architecture: str
+    engine_tier: str
+    claims: tuple[ClaimPosture, ...]
+
+    @property
+    def validated(self) -> bool:
+        return all(claim.state is ClaimState.PROVEN for claim in self.claims)
+
+
+@dataclass(frozen=True, slots=True)
+class ClaimPosture:
+    dimension: SupportDimension
+    value: str
+    artifact: str
+    lane: str
+    rollback_path: str
+    state: ClaimState
+    evidence_refs: tuple[str, ...] = ()
+
+
 def _string_field(section: Mapping[str, Any], field: str) -> str | None:
     value = section.get(field)
     if not isinstance(value, str) or not value.strip():
@@ -239,3 +263,85 @@ def derive_support_profile(
         state = ClaimState.PROVEN if refs else ClaimState.UNPROVEN
         targets.append(TargetClaim(target, platform, state, refs))
     return SupportProfile(tuple(claims), tuple(targets))
+
+
+def _matches_declared(
+    evidence: EvidenceRunRef,
+    machine: str,
+    dimension: SupportDimension,
+    value: str,
+) -> bool:
+    if evidence.environment.upper() not in _PHYSICAL_ENVIRONMENTS:
+        return False
+    if _string_field(evidence.machine_profile, "machine_id") != machine:
+        return False
+    if dimension is SupportDimension.OS:
+        return _string_field(evidence.machine_profile, "platform") == value
+    if dimension is SupportDimension.ARCHITECTURE:
+        return _string_field(evidence.machine_profile, "architecture") == value
+    if dimension is SupportDimension.ACCELERATOR:
+        return _string_field(evidence.machine_profile, "accelerator") == value
+    if dimension is SupportDimension.RECOVERY:
+        return value == _RECOVERY_PROVEN and evidence.deployment.get("recovery") is True
+    if dimension is SupportDimension.ENGINE:
+        return _string_field(evidence.deployment, "engine_id") == value
+    if dimension is SupportDimension.INSTALL:
+        return _string_field(evidence.deployment, "install_method") == value
+    if dimension is SupportDimension.LIFECYCLE:
+        return _string_field(evidence.deployment, "lifecycle_state") == value
+    if dimension is SupportDimension.ACCESS:
+        return _string_field(evidence.deployment, "access_profile") == value
+    return False
+
+
+def derive_target_posture(
+    *,
+    targets: tuple[Any, ...],
+    evidence_runs: tuple[EvidenceRunRef, ...],
+    benchmark_runs: tuple[BenchmarkRunRef, ...],
+) -> tuple[TargetPosture, ...]:
+    """Derive the declared-matrix posture strictly from retained evidence."""
+    passes = _passing_evidence(evidence_runs)
+    postures: list[TargetPosture] = []
+    for target in sorted(targets, key=lambda item: item.target):
+        claims: list[ClaimPosture] = []
+        for declared in sorted(target.claims, key=lambda item: item.dimension.value):
+            refs: tuple[str, ...] = ()
+            if declared.artifact == "benchmark_run":
+                refs = tuple(
+                    run.reference
+                    for run in sorted(benchmark_runs, key=lambda item: item.run_id)
+                    if run.status == "completed"
+                    and run.machine_id == declared.machine
+                    and run.engine_id == declared.value
+                )
+            else:
+                refs = tuple(
+                    evidence.reference
+                    for evidence in sorted(passes, key=lambda item: item.run_id)
+                    if _matches_declared(
+                        evidence, declared.machine, declared.dimension, declared.value
+                    )
+                )
+            state = ClaimState.PROVEN if refs else ClaimState.UNPROVEN
+            claims.append(
+                ClaimPosture(
+                    dimension=declared.dimension,
+                    value=declared.value,
+                    artifact=declared.artifact.value,
+                    lane=declared.lane.value,
+                    rollback_path=declared.rollback_path,
+                    state=state,
+                    evidence_refs=refs,
+                )
+            )
+        postures.append(
+            TargetPosture(
+                target=target.target,
+                platform=target.platform,
+                architecture=target.architecture,
+                engine_tier=target.engine_tier,
+                claims=tuple(claims),
+            )
+        )
+    return tuple(postures)
