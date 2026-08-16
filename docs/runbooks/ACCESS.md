@@ -79,3 +79,21 @@ Recovery: after rate-limit backoff or a backend restart, a valid login
 restores the same semantics. Keep the loopback profile unless the network
 profile is explicitly required, and re-check the live posture at
 `GET /api/v1/system/access` before serving.
+
+## Support posture (ACCESS-003)
+
+`GET /api/v1/support` reports the evidence-bounded support matrix. It is
+read-only: every claim is derived from retained PASS evidence runs under
+`data_dir/diagnostics` and completed benchmark runs, and it never probes
+live hosts. Dimensions (os, architecture, accelerator, engine, install,
+lifecycle, access, recovery, benchmark) are `proven` only when retained
+evidence supports the exact value; everything else is `unproven` and is
+never advertised. Every proven claim carries the evidence references
+(`run_id:digest`) behind it.
+
+Named targets (ubuntu-1, ubuntu-2) are advertised only when a PASS run
+from a physical environment (`HOST-RO` or `HOST-MAINT`) names the target
+machine and platform; DEV or VM evidence can never advertise a physical
+target. Support claims therefore never exceed the attached target
+evidence, and physical qualification lanes add the claims they actually
+prove.
