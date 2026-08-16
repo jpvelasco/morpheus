@@ -3,8 +3,9 @@
 ## Where We Left Off (2026-08-15)
 
 **Phase 16 (16.1-16.5, Tauri shell + package trust), Phase 17.1 (AID-001
-diagnostic evidence packages), and Phase 17.2 (AID-002/003/004 grounded
-AI-assisted diagnosis) are implemented and merged.** 16.4 shipped the
+diagnostic evidence packages), Phase 17.2 (AID-002/003/004 grounded
+AI-assisted diagnosis), and Phase 17.3 (ACCESS-001 + DESK-003 loopback
+and SSH-tunnel access profiles) are implemented and merged.** 16.4 shipped the
 Tauri 2 shell (`desktop/src-tauri/`: loopback health discovery on 7400/7401,
 no shell/fs/http/process/opener webview capability - enforced by a startup
 manifest check and Rust tests, fallback page with open-in-browser and
@@ -32,20 +33,29 @@ typed inference port with real timeout; external with consent gate, cost
 guard, and canary-absence check before any request), `ops/diagnosis.py`
 (provider failure never blocks ordinary diagnostics), and
 `GET /api/v1/diagnostics/provider` + `POST /api/v1/diagnostics/analyze`.
-Gate totals: 1509 collected backend (1509 passed, 9 skipped, 90.74%
+17.3 (ACCESS-001 + DESK-003) shipped the access-profile core
+(`core/access.py`: loopback and ssh_tunnel profiles, loopback-only binding
+enforced at settings validation, proxy headers never trusted,
+`GET /api/v1/system/access` posture report), the
+`docs/runbooks/ACCESS.md` tunneling runbook registered as `access-operator`,
+and parity/revocation/reconnect contract suites proving tunneled access
+shares identical authorization, CSRF, and cookie semantics with direct
+loopback access.
+Gate totals: 1523 collected backend (1523 passed, 9 skipped, 90.74%
 coverage), 131 vitest (99.01%), 48 Playwright e2e, 17 cargo tests.
-DESK-001, DESK-002, AID-001, AID-002, AID-003, and AID-004 are flipped to
-`implemented` at 0.2.0 in `requirements.json` (79 implemented, 6 planned,
-12 deferred). AID-001 retains `requires_live_evidence: true`; live HOST-RO
-validation happens in the physical qualification lane.
+DESK-001, DESK-002, AID-001, AID-002, AID-003, AID-004, ACCESS-001, and
+DESK-003 are flipped to `implemented` at 0.2.0 in `requirements.json`
+(81 implemented, 4 planned, 12 deferred). AID-001 retains
+`requires_live_evidence: true`; live HOST-RO validation happens in the
+physical qualification lane.
 
 The v0.2 product direction paragraph below remains the standing context:
 focused developer-inference appliance, Phase 11 onward plan, ADR-0005 through
 ADR-0009, evidence-ranked selection, managed runtime, benchmark history, Tauri
 desktop, operations, and bounded diagnosis. The standing continuation for
 v0.2 work stays in force; the active product queue now continues with Phase
-17.3 (ACCESS-001 + DESK-003 loopback and SSH-tunnel access profiles) in
-dependency order.
+17.4 (ACCESS-002 optional TLS-authenticated network profile) in dependency
+order.
 
 The deployed v0.1 Morpheus remains a **read-only operator surface**; planning
 language must not be mistaken for deployed behavior.

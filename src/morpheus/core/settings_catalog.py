@@ -70,6 +70,7 @@ LABELS: dict[str, str] = {
     "diagnosis_retention": "Diagnosis data retention",
     "diagnosis_consent": "Diagnosis data consent",
     "diagnosis_api_key": "Diagnosis API key",
+    "access_profile": "Access profile",
     "api_key": "API key",
     "upstream_api_key": "Upstream API key",
     "agent_key": "Runtime agent key",
@@ -120,6 +121,7 @@ DESCRIPTIONS: dict[str, str] = {
     "diagnosis_retention": "Provider-side retention implication of the evidence.",
     "diagnosis_consent": "Explicit consent that evidence may leave the host.",
     "diagnosis_api_key": "Key presented to the external diagnosis provider.",
+    "access_profile": "Loopback-only or SSH-tunnel access posture.",
     "api_key": "Key that authenticates API requests.",
     "upstream_api_key": "Key presented to the upstream inference service.",
     "agent_key": "Key that authenticates runtime agent calls.",
@@ -162,6 +164,7 @@ VALIDATION_NOTES: dict[str, str] = {
     "diagnosis_max_cost": "integer 0-1000000",
     "diagnosis_retention": "64 characters or fewer",
     "diagnosis_api_key": "set in the secret env file, never through the UI",
+    "access_profile": "loopback or ssh_tunnel; requires a loopback bind address",
 }
 
 
