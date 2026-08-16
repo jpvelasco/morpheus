@@ -194,11 +194,25 @@ async def test_OUI_003_events_query_filters_by_source_severity_correlation_and_s
     store = SqliteStore(tmp_path / "morpheus.sqlite3")
     await store.initialize()
     await store.record_event(
-        source="engine", severity="error", message="oops", correlation_id="corr-1"
+        source="engine",
+        severity="error",
+        message="oops",
+        correlation_id="corr-1",
+        recorded_at="2026-08-15T21:00:00+00:00",
     )
-    await store.record_event(source="api", severity="warn", message="slow", correlation_id="corr-1")
     await store.record_event(
-        source="agent", severity="info", message="heartbeat", correlation_id="corr-2"
+        source="api",
+        severity="warn",
+        message="slow",
+        correlation_id="corr-1",
+        recorded_at="2026-08-15T22:00:00+00:00",
+    )
+    await store.record_event(
+        source="agent",
+        severity="info",
+        message="heartbeat",
+        correlation_id="corr-2",
+        recorded_at="2026-08-15T23:00:00+00:00",
     )
 
     only_engine = await store.events(source="engine", limit=10)
