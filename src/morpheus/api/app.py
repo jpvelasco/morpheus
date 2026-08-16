@@ -53,6 +53,10 @@ from morpheus.core.catalog import SEED_CATALOG
 from morpheus.core.compatibility import compatibility_payload
 from morpheus.core.concurrency import ConcurrencyLimiter, FixedWindowRateLimiter, RetryPolicy
 from morpheus.core.controls import ComponentHealth
+from morpheus.core.diagnostic_evidence import (
+    DiagnosticProvenance,
+    build_diagnostic_evidence,
+)
 from morpheus.core.events import EventsError
 from morpheus.core.health import Evidence, HealthState
 from morpheus.core.metrics_history import (
@@ -73,6 +77,7 @@ from morpheus.core.recommendation import (
 from morpheus.core.settings_catalog import detect_sources, settings_catalog
 from morpheus.core.workflows import WorkflowId, workflow_definitions
 from morpheus.core.workload import SEED_PROFILES, OperatorConstraints
+from morpheus.ops.diagnostics import DiagnosticEvidenceBuilder, DiagnosticEvidenceError
 from morpheus.ports.protocols import Clock, InferencePort, RuntimeAgentPort
 
 
@@ -793,6 +798,86 @@ def create_app(
             "host": host,
             "configuration": settings.public_dict(),
         }
+
+    @app.post("/api/v1/diagnostics/evidence", dependencies=[Depends(require_api_key)])
+    async def diagnostics_evidence() -> dict[str, Any]:
+        """Build a bounded, redacted diagnostic evidence package (AID-001)."""
+        evidence = await inference.health()
+        host = await runtime_snapshot(runtime_agent, clock=clock)
+        try:
+            discovered = await inference.models()
+            model_contract_ready = bool(discovered)
+        except (httpx.HTTPError, OSError, ValueError):
+            model_contract_ready = False
+        observed_at = clock.utc_now().isoformat()
+        checks = _diagnostics_payload(
+            settings=settings,
+            evidence=evidence,
+            model_contract_ready=model_contract_ready,
+            host=host,
+            observed_at=observed_at,
+        )
+        store = SqliteStore(settings.data_dir / "morpheus.sqlite3", owned_root=settings.data_dir)
+        await store.initialize()
+        events = await store.events(limit=200)
+        benchmark_store = BenchmarkStore(settings.data_dir / "benchmarks")
+        benchmark_store.initialize()
+        runs = benchmark_store.list_runs(limit=100)
+        summaries: dict[str, BenchmarkSummary] = {}
+        for run in runs:
+            summary = load_run_summary(benchmark_store, run.run_id)
+            if summary is not None:
+                summaries[run.run_id] = summary
+        report = analytics_report(
+            runs=runs,
+            summaries=summaries,
+            telemetry=[],
+            window_days=settings.telemetry_retention_days,
+        )
+        try:
+            package = DiagnosticEvidenceBuilder(settings.data_dir / "diagnostics").build(
+                evidence=build_diagnostic_evidence(
+                    health={
+                        "status": checks["status"],
+                        "checks": checks["checks"],
+                    },
+                    machine_profile=host,
+                    deployment={
+                        "version": morpheus_version,
+                        "release_version": settings.release_version,
+                        "source_commit": settings.source_commit,
+                    },
+                    metrics={},
+                    events=[
+                        {
+                            "recorded_at": event.recorded_at,
+                            "source": event.source,
+                            "severity": event.severity,
+                            "message": event.message,
+                            "correlation_id": event.correlation_id,
+                        }
+                        for event in events
+                    ],
+                    log_excerpts=[],
+                    regressions=list(report["regressions"]),
+                    runbooks=["batwing-operator"],
+                    provenance=DiagnosticProvenance(
+                        morpheus_version=morpheus_version,
+                        source_commit=settings.source_commit,
+                        observed_at=observed_at,
+                    ),
+                ),
+                run_id=f"diag-{clock.utc_now().strftime('%Y%m%d-%H%M%S-%f')}",
+                source_commit=settings.source_commit,
+                canaries={},
+                started_at=clock.utc_now(),
+                ended_at=clock.utc_now(),
+                safe_summary="Diagnostic evidence package assembled for local analysis",
+                tool_versions={"morpheus": morpheus_version},
+            )
+        except (DiagnosticEvidenceError, EventsError, ValueError, OSError) as error:
+            raise OperationsDataError(str(error)) from error
+        return {"schema_version": 1, "evidence_package": package.to_json()}
 
     def _store() -> RecommendationStore:
         store = RecommendationStore(settings.data_dir / "recommendations")
