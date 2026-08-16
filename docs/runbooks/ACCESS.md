@@ -1,9 +1,11 @@
-# Access Runbook (ACCESS-001)
+# Access Runbook (ACCESS-001/002)
 
 Morpheus v0.2 serves loopback-only surfaces behind an authenticated
 browser session. Reach a remote host by establishing an SSH tunnel to the
 host; never bind the services to a peer-addressable interface in the
-loopback or SSH-tunnel profile.
+loopback or SSH-tunnel profile. The network profile is the only profile
+that may bind beyond loopback, and it demands TLS, explicit origins, and
+hardened cookies.
 
 ## Default posture
 
@@ -52,3 +54,28 @@ on the local machine.
   restart or a tunnel re-establishment.
 - After the backend restarts, log in again; the old signed cookie remains
   valid until its expiry because sessions are stateless signed tokens.
+
+## Network profile (ACCESS-002, optional)
+
+The network profile allows direct LAN or remote browser access only when
+all of the following are configured together:
+
+- `access_profile=network` with `allow_lan=true` and an explicit bind
+  address;
+- TLS certificate and key paths (`tls_cert_path`, `tls_key_path`) so every
+  served surface runs HTTPS;
+- `allowed_origins` listing every `https://host[:port]` that may reach the
+  surfaces (any other Host header is rejected with 403);
+- `session_cookie_secure=true` and a configured `api_key`.
+
+Behavior that never changes in the network profile:
+
+- proxy headers (`X-Forwarded-*`) are never trusted for authorization or
+  origin decisions;
+- CSRF and session cookie semantics are identical to loopback access;
+- API rate limits apply to every client IP.
+
+Recovery: after rate-limit backoff or a backend restart, a valid login
+restores the same semantics. Keep the loopback profile unless the network
+profile is explicitly required, and re-check the live posture at
+`GET /api/v1/system/access` before serving.

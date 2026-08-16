@@ -79,7 +79,10 @@ class MorpheusSettings(BaseModel):
     diagnosis_retention: str = Field(default="none", max_length=64)
     diagnosis_consent: bool = False
     diagnosis_api_key: SecretStr = SecretStr("")
-    access_profile: str = Field(default="loopback", pattern=r"^(loopback|ssh_tunnel)$")
+    access_profile: str = Field(default="loopback", pattern=r"^(loopback|ssh_tunnel|network)$")
+    tls_cert_path: Path | None = None
+    tls_key_path: Path | None = None
+    allowed_origins: tuple[str, ...] = ()
 
     @field_validator("bind_address")
     @classmethod
@@ -170,6 +173,39 @@ class MorpheusSettings(BaseModel):
             raise ValueError("lifecycle_deployment_root must be an absolute path")
         return path.resolve(strict=False)
 
+    @field_validator("tls_cert_path", "tls_key_path", mode="before")
+    @classmethod
+    def validate_tls_path(cls, value: Any) -> Path | None:
+        if value is None or value == "":
+            return None
+        path = Path(value)
+        if not path.is_absolute():
+            raise ValueError("tls paths must be absolute filesystem paths")
+        return path
+
+    @field_validator("allowed_origins", mode="before")
+    @classmethod
+    def validate_allowed_origins(cls, value: Any) -> tuple[str, ...]:
+        if value is None or value == "":
+            return ()
+        raw = value if isinstance(value, list | tuple) else str(value).split(",")
+        origins: list[str] = []
+        for entry in raw:
+            origin = str(entry).strip()
+            if not origin:
+                continue
+            parsed = urlsplit(origin)
+            if parsed.scheme != "https":
+                raise ValueError("allowed_origins must be https origins")
+            if not parsed.hostname or parsed.username or parsed.password:
+                raise ValueError("allowed_origins must have a host and no embedded credentials")
+            if parsed.query or parsed.fragment or parsed.path not in ("", "/"):
+                raise ValueError("allowed_origins must not contain a path, query, or fragment")
+            origins.append(parsed.scheme + "://" + parsed.netloc)
+        if len(origins) != len(set(origins)):
+            raise ValueError("allowed_origins must be unique")
+        return tuple(origins)
+
     @field_validator("data_dir", mode="before")
     @classmethod
     def validate_data_dir(cls, value: Any) -> Path:
@@ -208,6 +244,17 @@ class MorpheusSettings(BaseModel):
             raise ValueError(
                 "access profiles loopback and ssh_tunnel require a loopback bind address"
             )
+        if self.access_profile == "network":
+            if not self.allow_lan:
+                raise ValueError("the network access profile requires allow_lan=true")
+            if not self.tls_cert_path or not self.tls_key_path:
+                raise ValueError("the network access profile requires tls cert and key paths")
+            if not self.allowed_origins:
+                raise ValueError("the network access profile requires allowed_origins")
+            if not self.session_cookie_secure:
+                raise ValueError("the network access profile requires a secure session cookie")
+            if not self.api_key.get_secret_value():
+                raise ValueError("the network access profile requires a configured api_key")
         return self
 
     def features(self) -> dict[str, bool]:

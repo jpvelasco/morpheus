@@ -51,4 +51,9 @@ def run() -> None:
     root = Path(os.environ.get("MORPHEUS_DASHBOARD_DIR", "/app/web"))
     app = create_dashboard_app(root)
     host = os.environ.get("MORPHEUS_BIND_ADDRESS", "127.0.0.1")
+    cert = os.environ.get("MORPHEUS_TLS_CERT")
+    key = os.environ.get("MORPHEUS_TLS_KEY")
+    if cert and key:
+        uvicorn.run(app, host=host, port=7401, access_log=False, ssl_certfile=cert, ssl_keyfile=key)
+        return
     uvicorn.run(app, host=host, port=7401, access_log=False)

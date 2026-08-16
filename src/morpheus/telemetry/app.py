@@ -269,4 +269,14 @@ def run() -> None:
         ),
     )
     app = create_proxy_app(settings=settings, inference=inference, store=store, clock=clock)
+    if settings.access_profile == "network":
+        uvicorn.run(
+            app,
+            host=settings.bind_address,
+            port=settings.telemetry_port,
+            access_log=False,
+            ssl_certfile=str(settings.tls_cert_path),
+            ssl_keyfile=str(settings.tls_key_path),
+        )
+        return
     uvicorn.run(app, host=settings.bind_address, port=settings.telemetry_port, access_log=False)
