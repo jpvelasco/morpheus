@@ -51,12 +51,22 @@ telemetry, and dashboard runners; `docs/runbooks/ACCESS.md` network
 profile section), with exposure, origin, proxy-header, brute-force, and
 recovery contract suites proving non-loopback exposure stays confined to
 the network profile and rate-limited recovery after restart.
-Gate totals: 1577 collected backend (1577 passed, 9 skipped, 91%
+17.5 (ACCESS-003) shipped the evidence-bounded support matrix
+(`core/support_matrix.py`: pure deterministic derivation of os,
+architecture, accelerator, engine, install, lifecycle, access, recovery,
+and benchmark claims from retained PASS evidence runs and completed
+benchmark runs; claims always carry exact `run_id:digest` references;
+named targets are advertised only from physical HOST-RO/HOST-MAINT
+evidence naming the machine), the read-only evidence scanner
+(`ops/support.py` SupportReportService), `GET /api/v1/support`, and
+unit + contract suites proving absent evidence never becomes a claim and
+DEV/VM evidence never names a physical target.
+Gate totals: 1573 collected backend (1564 passed, 9 skipped, 91%
 coverage), 131 vitest (99.01%), 48 Playwright e2e, 17 cargo tests.
 DESK-001, DESK-002, AID-001, AID-002, AID-003, AID-004, ACCESS-001,
-DESK-003, and ACCESS-002 are flipped to `implemented` at 0.2.0 in
-`requirements.json` (82 implemented, 3 planned, 12 deferred). AID-001
-retains
+DESK-003, ACCESS-002, and ACCESS-003 are flipped to `implemented` at
+0.2.0 in `requirements.json` (83 implemented, 2 planned, 12 deferred).
+AID-001 retains
 `requires_live_evidence: true`; live HOST-RO validation happens in the
 physical qualification lane.
 
@@ -65,8 +75,8 @@ focused developer-inference appliance, Phase 11 onward plan, ADR-0005 through
 ADR-0009, evidence-ranked selection, managed runtime, benchmark history, Tauri
 desktop, operations, and bounded diagnosis. The standing continuation for
 v0.2 work stays in force; the active product queue now continues with Phase
-17.5 (ACCESS-003 evidence-bounded support access) in dependency
-order.
+18 (frozen target/support matrix and physical qualification lanes) in
+dependency order.
 
 The deployed v0.1 Morpheus remains a **read-only operator surface**; planning
 language must not be mistaken for deployed behavior.
