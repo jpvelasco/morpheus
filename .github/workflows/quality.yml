@@ -65,3 +65,5 @@ jobs:
         run: cargo clippy --manifest-path desktop/src-tauri/Cargo.toml --lib --all-targets -- -D warnings
       - name: Test
         run: cargo test --manifest-path desktop/src-tauri/Cargo.toml --lib --locked
+      - name: Build
+        run: cargo build --manifest-path desktop/src-tauri/Cargo.toml --locked
