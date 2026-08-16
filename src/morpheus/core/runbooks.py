@@ -27,6 +27,11 @@ KNOWN_RUNBOOKS = (
         path="docs/runbooks/ubuntu-operator.md",
         title="ubuntu-1 host operator runbook",
     ),
+    RunbookReference(
+        id="access-operator",
+        path="docs/runbooks/ACCESS.md",
+        title="Loopback and SSH-tunnel access runbook",
+    ),
 )
 
 
