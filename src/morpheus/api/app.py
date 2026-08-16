@@ -19,6 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 
+from morpheus import __version__ as morpheus_version
 from morpheus.adapters.inference.openai import OpenAIInferenceAdapter
 from morpheus.adapters.metrics.collector import collect_metrics
 from morpheus.adapters.metrics.vllm import VllmMetricsAdapter
@@ -49,6 +50,7 @@ from morpheus.core.benchmark import BenchmarkSummary
 from morpheus.core.benchstore import BenchmarkStore
 from morpheus.core.capabilities import Capability, evaluate_capabilities
 from morpheus.core.catalog import SEED_CATALOG
+from morpheus.core.compatibility import compatibility_payload
 from morpheus.core.concurrency import ConcurrencyLimiter, FixedWindowRateLimiter, RetryPolicy
 from morpheus.core.controls import ComponentHealth
 from morpheus.core.events import EventsError
@@ -467,6 +469,13 @@ def create_app(
         evidence = await inference.health()
         service_evidence = await runtime_services_snapshot(runtime_agent, clock=clock)
         return {"capabilities": capability_payload(evidence, service_evidence)}
+
+    @app.get("/api/v1/system/compatibility", dependencies=[Depends(require_api_key)])
+    async def system_compatibility(request: Request) -> dict[str, Any]:
+        return compatibility_payload(
+            backend_version=morpheus_version,
+            desktop_version=request.headers.get("X-Morpheus-Desktop-Version"),
+        )
 
     @app.get("/api/v1/operations/navigation", dependencies=[Depends(require_api_key)])
     async def operations_navigation() -> dict[str, Any]:

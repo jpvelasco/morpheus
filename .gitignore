@@ -79,3 +79,7 @@ Thumbs.db
 
 #Ignore vscode AI rules
 .github\instructions\codacy.instructions.md
+
+# Rust / Tauri desktop
+desktop/src-tauri/target/
+desktop/src-tauri/gen/
