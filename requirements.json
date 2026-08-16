@@ -1708,9 +1708,7 @@
       "status": "implemented",
       "owning_tests": [
         "tests/contract/test_desktop_handshake_contract.py",
-        "tests/unit/test_compatibility.py",
-        "desktop/src-tauri/src/compat.rs",
-        "desktop/src-tauri/src/discovery.rs"
+        "tests/unit/test_compatibility.py"
       ],
       "risk": "high",
       "required_environments": [
