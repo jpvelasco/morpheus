@@ -8,6 +8,7 @@
 
 mod compat;
 mod discovery;
+mod plan;
 
 use std::time::Duration;
 
@@ -40,6 +41,14 @@ pub fn run() {
                 let _ = handle.run_on_main_thread(move || {
                     if let Some(url) = discovery::choose(reachable) {
                         let _ = window.navigate(url.parse().expect("valid backend url"));
+                    } else {
+                        let kind = plan::plan_for_status("no_backend", false);
+                        let applyable = plan::can_apply(kind, true, false);
+                        let _ = window.navigate(
+                            format!("index.html?plan={kind:?}&confirmed={applyable}")
+                                .parse()
+                                .expect("valid fallback url"),
+                        );
                     }
                 });
             });

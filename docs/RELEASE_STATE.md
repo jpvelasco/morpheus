@@ -31,7 +31,7 @@ private request data, host addresses, or unredacted evidence.
   and refined on 2026-08-12 with an early vertical slice, bounded self-replan,
   smaller delivery subphases, and optional distribution signing; no v0.2 runtime
   implementation or target mutation has started.
-- **Implementation inventory:** 74 implemented, 11 planned, 12 deferred; see
+- **Implementation inventory:** 75 implemented, 10 planned, 12 deferred; see
   [`requirements.json`](../requirements.json) and the
   [implementation gap review](IMPLEMENTATION_GAP_REVIEW.md).
 - **Release posture:** not yet release-ready. A passing candidate does not
@@ -308,15 +308,24 @@ Tauri 2 shell (`desktop/src-tauri/`) and DESK-002's authenticated
 window/webview/event permissions — no shell, filesystem, HTTP, or process
 capability — enforced by a startup manifest check and Rust tests, with a
 bundled open-in-browser fallback page when no loopback backend is reachable.
-The complete non-live gate passes 1429 tests with 90.98 percent coverage;
-strict formatting, linting, Bandit, pip-audit, and offline package builds are
-green, the pinned frontend gate passes 131 unit tests at 99.01 percent statement
-coverage with strict lint, typecheck, and production build, and the desktop
-gate passes 10 Rust tests under fmt/clippy `-D warnings` with a pinned 1.97.1
-toolchain. The browser lane keeps 48 passing Playwright e2e instances
-(sequentially flaky only on this harness's chromium-mobile infra under
-sustained load; each instance passes standalone). This is DEV implementation
-evidence; no v0.2 candidate exists yet.
+Phase 16.5 completed DESK-002 with the package-trust core
+(`core/package_trust.py`, developer/source vs signed-distribution
+qualifications; unsigned packages always require confirmation and can never
+enable unattended update), the confirmed bootstrap planner (`core/bootstrap.py`
+with install/repair/update/rollback/noop plans that never silently replace a
+running backend), the install adapter with a side-effect-free dev executor
+(`adapters/install/`), a Rust plan-gating module, and
+`desktop/package/package-dev.sh` bundling the compiled shell into a
+checksummed `.mrpkg` with per-file digests, an SPDX SBOM, and a SHA256SUMS
+sidecar. The complete non-live gate passes 1458 tests with 91.05 percent
+coverage; strict formatting, linting, Bandit, pip-audit, and offline package
+builds are green, the pinned frontend gate passes 131 unit tests at 99.01
+percent statement coverage with strict lint, typecheck, and production build,
+and the desktop gate passes 17 Rust tests under fmt/clippy `-D warnings` with
+a pinned 1.97.1 toolchain. The browser lane keeps 48 passing Playwright e2e
+instances (sequentially flaky only on this harness's chromium-mobile infra
+under sustained load; each instance passes standalone). This is DEV
+implementation evidence; no v0.2 candidate exists yet.
 
 Developer/source qualification uses checksummed, scanned, SBOM-backed native
 packages and never waits on public signing credentials. Windows signing, Apple

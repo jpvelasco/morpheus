@@ -3,26 +3,33 @@
 ## Where We Left Off (2026-08-15)
 
 **Phase 16.4 (DESK-001 minimal-capability Tauri shell + DESK-002 compatibility
-handshake) is implemented and merged.** Backend (`core/compatibility.py` pure
-versioned payload, authenticated `GET /api/v1/system/compatibility` reading
-`X-Morpheus-Desktop-Version`, 12 unit + contract tests), the Tauri 2 shell
-(`desktop/src-tauri/`: loopback health discovery on 7400/7401, no shell/fs/http/
-process/opener webview capability — enforced by a startup manifest check and
-Rust tests, fallback page with open-in-browser, 10 Rust tests green under
-cargo fmt/clippy `-D warnings`), and a new CI `desktop` job (webkit deps +
-pinned Rust 1.97.1) are green. Gate totals: 1438 collected backend
-(1429 passed, 9 skipped, 90.98% coverage), 131 vitest (99.01%), 48 Playwright
-e2e, 10 cargo tests. DESK-001 is flipped to `implemented` at 0.2.0 in
-`requirements.json` (74 implemented, 11 planned, 12 deferred); DESK-002 flips
-at 16.5 with the package-trust-aware bootstrap/update flow.
+handshake) and Phase 16.5 (DESK-002 checksummed developer packages and
+package-trust-aware bootstrap/update) are implemented and merged.** 16.4
+shipped the Tauri 2 shell (`desktop/src-tauri/`: loopback health discovery on
+7400/7401, no shell/fs/http/process/opener webview capability — enforced by a
+startup manifest check and Rust tests, fallback page with open-in-browser and
+bootstrap-plan status, 10 Rust tests). 16.5 shipped the package-trust core
+(`core/package_trust.py`: developer/source vs signed-distribution
+qualifications; unsigned packages always require confirmation and can never
+enable unattended update), the confirmed bootstrap planner
+(`core/bootstrap.py`: install/repair/update/rollback/noop plans; a running
+backend is never replaced silently), the install adapter + dev executor
+(`adapters/install/`), a Rust plan-gating module (17 cargo tests total), and
+`desktop/package/package-dev.sh` which bundles the compiled shell into a
+checksummed `.mrpkg` with SHA256SUMS. CI desktop job now also builds the
+binary. Gate totals: 1458 collected backend (1458 passed, 9 skipped, 91.05%
+coverage), 131 vitest (99.01%), 48 Playwright e2e, 17 cargo tests. DESK-001
+and DESK-002 are flipped to `implemented` at 0.2.0 in `requirements.json`
+(75 implemented, 10 planned, 12 deferred). DESK-002 retains
+`requires_live_evidence: true`; live HOST-MAINT validation happens in the
+physical qualification lane.
 
 The v0.2 product direction paragraph below remains the standing context:
 focused developer-inference appliance, Phase 11 onward plan, ADR-0005 through
 ADR-0009, evidence-ranked selection, managed runtime, benchmark history, Tauri
 desktop, operations, and bounded diagnosis. The standing continuation for
 v0.2 work stays in force; the active product queue now continues with Phase
-16.5 (checksummed developer packages and package-trust-aware bootstrap/update)
-in dependency order, then Phase 17 (AI-assisted diagnosis and secure access).
+17 (AI-assisted diagnosis and secure access) in dependency order.
 
 The deployed v0.1 Morpheus remains a **read-only operator surface**; planning
 language must not be mistaken for deployed behavior.

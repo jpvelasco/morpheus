@@ -57,9 +57,21 @@
         instead.
       </p>
       <button id="open-browser" type="button">Open in browser</button>
+      <p id="plan"></p>
       <p id="status"></p>
     </main>
     <script>
+      const params = new URLSearchParams(window.location.search)
+      const plan = params.get('plan')
+      const confirmed = params.get('confirmed')
+      if (plan) {
+        document.getElementById('plan').textContent =
+          'Bootstrap plan: ' +
+          plan +
+          (confirmed === 'false'
+            ? ' (developer package - confirmation required)'
+            : ' (confirmation received)')
+      }
       document.getElementById('open-browser').addEventListener('click', async () => {
         const status = document.getElementById('status')
         try {
