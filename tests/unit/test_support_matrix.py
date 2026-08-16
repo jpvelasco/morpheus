@@ -16,6 +16,7 @@ from morpheus.core.support_matrix import (
     EvidenceRunRef,
     SupportDimension,
     derive_support_profile,
+    derive_target_posture,
 )
 
 A_DIGEST = "a" * 64
@@ -225,3 +226,115 @@ def test_recovery_claim_requires_explicit_true() -> None:
     profile = derive_support_profile(evidence_runs=evidence, benchmark_runs=(), named_targets={})
     recovery = next(c for c in profile.machine_claims if c.dimension is SupportDimension.RECOVERY)
     assert recovery.state is ClaimState.UNPROVEN
+
+
+def test_target_posture_unvalidated_without_evidence() -> None:
+    from morpheus.core.targets import FROZEN_TARGETS
+
+    posture = derive_target_posture(
+        targets=FROZEN_TARGETS,
+        evidence_runs=(),
+        benchmark_runs=(),
+    )
+    batwing = next(p for p in posture if p.target == "batwing")
+    assert batwing.validated is False
+    assert all(claim.state is ClaimState.UNPROVEN for claim in batwing.claims)
+
+
+def test_target_posture_physical_evidence_proves_declared_claims() -> None:
+    from morpheus.core.targets import FROZEN_TARGETS
+
+    posture = derive_target_posture(
+        targets=FROZEN_TARGETS,
+        evidence_runs=(
+            run(
+                run_id="diag-1",
+                environment="HOST-RO",
+                machine_profile={
+                    "machine_id": "batwing",
+                    "platform": "linux",
+                    "architecture": "x86_64",
+                    "accelerator": "cuda",
+                },
+                deployment={
+                    "engine_id": "vllm",
+                    "install_method": "mrpkg",
+                    "access_profile": "loopback",
+                    "recovery": True,
+                },
+            ),
+            run(
+                run_id="diag-2",
+                environment="HOST-MAINT",
+                machine_profile={"machine_id": "batwing"},
+                deployment={"lifecycle_state": "managed"},
+            ),
+        ),
+        benchmark_runs=(benchmark(run_id="bench-1", machine_id="batwing", engine_id="vllm"),),
+    )
+    batwing = next(p for p in posture if p.target == "batwing")
+    proven = {
+        claim.dimension: claim for claim in batwing.claims if claim.state is ClaimState.PROVEN
+    }
+    assert set(proven) == set(SupportDimension)
+    assert batwing.validated is True
+    assert proven[SupportDimension.OS].evidence_refs == (f"diag-1:{A_DIGEST}",)
+    assert proven[SupportDimension.BENCHMARK].evidence_refs == ("bench-1:completed",)
+
+
+def test_target_posture_requires_matching_machine_and_lane() -> None:
+    from morpheus.core.targets import FROZEN_TARGETS
+
+    posture = derive_target_posture(
+        targets=FROZEN_TARGETS,
+        evidence_runs=(
+            run(
+                run_id="diag-1",
+                environment="HOST-RO",
+                machine_profile={"machine_id": "batmobile", "platform": "linux"},
+            ),
+        ),
+        benchmark_runs=(benchmark(run_id="bench-1", machine_id="batmobile", engine_id="vllm"),),
+    )
+    batwing = next(p for p in posture if p.target == "batwing")
+    batmobile = next(p for p in posture if p.target == "batmobile")
+    assert batwing.validated is False
+    assert batmobile.validated is False
+    os_claim = next(c for c in batmobile.claims if c.dimension is SupportDimension.OS)
+    assert os_claim.state is ClaimState.PROVEN
+
+
+def test_target_posture_dev_evidence_never_proves_physical_targets() -> None:
+    from morpheus.core.targets import FROZEN_TARGETS
+
+    posture = derive_target_posture(
+        targets=FROZEN_TARGETS,
+        evidence_runs=(
+            run(
+                run_id="diag-1",
+                environment="DEV",
+                machine_profile={"machine_id": "batwing", "platform": "linux"},
+            ),
+        ),
+        benchmark_runs=(),
+    )
+    batwing = next(p for p in posture if p.target == "batwing")
+    assert all(claim.state is ClaimState.UNPROVEN for claim in batwing.claims)
+
+
+def test_target_posture_wrong_platform_never_proves_os_claim() -> None:
+    from morpheus.core.targets import FROZEN_TARGETS
+
+    posture = derive_target_posture(
+        targets=FROZEN_TARGETS,
+        evidence_runs=(
+            run(
+                run_id="diag-1",
+                environment="HOST-RO",
+                machine_profile={"machine_id": "windows-x64", "platform": "linux"},
+            ),
+        ),
+        benchmark_runs=(),
+    )
+    windows = next(p for p in posture if p.target == "windows-x64")
+    assert all(claim.state is ClaimState.UNPROVEN for claim in windows.claims)

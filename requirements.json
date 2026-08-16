@@ -1143,8 +1143,12 @@
     {
       "id": "HOST-003",
       "phase": 18,
-      "status": "planned",
-      "owning_tests": [],
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_targets.py",
+        "tests/unit/test_support_matrix.py",
+        "tests/contract/test_support_matrix_contract.py"
+      ],
       "risk": "critical",
       "required_environments": [
         "HOST-RO",
@@ -1152,11 +1156,9 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": true,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": [
-        "IMP-HOST-003-01"
-      ]
+      "implementation_tasks": []
     },
     {
       "id": "SEL-001",
@@ -1446,8 +1448,12 @@
     {
       "id": "PLAT-004",
       "phase": 18,
-      "status": "planned",
-      "owning_tests": [],
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_targets.py",
+        "tests/unit/test_support_matrix.py",
+        "tests/contract/test_support_matrix_contract.py"
+      ],
       "risk": "critical",
       "required_environments": [
         "HOST-RO",
@@ -1455,11 +1461,9 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": true,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": [
-        "IMP-PLAT-004-01"
-      ]
+      "implementation_tasks": []
     },
     {
       "id": "BENCH-001",

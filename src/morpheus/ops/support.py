@@ -4,7 +4,6 @@ import hashlib
 import json
 import os
 import zipfile
-from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
@@ -15,8 +14,11 @@ from morpheus.core.support_matrix import (
     BenchmarkRunRef,
     EvidenceRunRef,
     SupportProfile,
+    TargetPosture,
     derive_support_profile,
+    derive_target_posture,
 )
+from morpheus.core.targets import TargetDefinition
 
 
 def _json_bytes(value: Any) -> bytes:
@@ -83,10 +85,12 @@ class SupportReportService:
         self._evidence_root = OwnedPathResolver(evidence_root).root
         self._benchmark_store = benchmark_store
 
-    def report(self, *, named_targets: Mapping[str, str]) -> SupportProfile:
-        evidence_runs: list[EvidenceRunRef] = []
-        if self._evidence_root.is_dir():
-            evidence_runs = self._collect_evidence_runs()
+    def report(
+        self,
+        *,
+        targets: tuple[TargetDefinition, ...],
+    ) -> tuple[SupportProfile, tuple[TargetPosture, ...]]:
+        evidence_runs = self._collect_evidence_runs()
         benchmark_runs = tuple(
             BenchmarkRunRef(
                 run_id=run.run_id,
@@ -96,13 +100,21 @@ class SupportReportService:
             )
             for run in self._benchmark_store.list_runs(limit=100)
         )
-        return derive_support_profile(
-            evidence_runs=tuple(evidence_runs),
+        profile = derive_support_profile(
+            evidence_runs=evidence_runs,
             benchmark_runs=benchmark_runs,
-            named_targets=dict(named_targets),
+            named_targets={},
         )
+        posture = derive_target_posture(
+            targets=targets,
+            evidence_runs=evidence_runs,
+            benchmark_runs=benchmark_runs,
+        )
+        return profile, posture
 
-    def _collect_evidence_runs(self) -> list[EvidenceRunRef]:
+    def _collect_evidence_runs(self) -> tuple[EvidenceRunRef, ...]:
+        if not self._evidence_root.is_dir():
+            return ()
         evidence_runs: list[EvidenceRunRef] = []
         for directory in sorted(self._evidence_root.iterdir()):
             if not directory.is_dir():
@@ -127,4 +139,4 @@ class SupportReportService:
                     runbooks=tuple(_read_json(directory / "runbooks.json", [])),
                 )
             )
-        return evidence_runs
+        return tuple(evidence_runs)

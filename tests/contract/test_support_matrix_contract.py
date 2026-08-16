@@ -129,8 +129,29 @@ def test_ACCESS_003_support_report_is_empty_without_evidence(tmp_path: Path) -> 
     for dimension in support["dimensions"]:
         assert dimension["state"] == "unproven"
         assert dimension["value"] == ""
+    assert {target["target"] for target in support["targets"]} == {
+        "batwing",
+        "batmobile",
+        "windows-x64",
+        "macos-arm64",
+    }
     for target in support["targets"]:
-        assert target["state"] == "unproven"
+        assert target["validated"] is False
+        for claim in target["claims"]:
+            assert claim["state"] == "unproven"
+            assert claim["evidence_refs"] == []
+
+
+def test_ACCESS_003_every_declared_claim_carries_artifact_lane_and_rollback(
+    tmp_path: Path,
+) -> None:
+    response = client(tmp_path).get("/api/v1/support", headers=AUTH)
+    assert response.status_code == 200
+    for target in response.json()["support"]["targets"]:
+        for claim in target["claims"]:
+            assert claim["artifact"] in {"evidence_run", "benchmark_run"}
+            assert claim["lane"] in {"HOST-RO", "HOST-MAINT"}
+            assert claim["rollback_path"]
 
 
 def test_ACCESS_003_report_claims_only_retained_evidence(tmp_path: Path) -> None:
@@ -179,6 +200,14 @@ def test_ACCESS_003_benchmark_claim_comes_from_completed_runs(tmp_path: Path) ->
     assert dimensions["benchmark"]["state"] == "proven"
     assert dimensions["benchmark"]["value"] == "vllm@batwing"
     assert dimensions["benchmark"]["evidence_refs"] == ["bench-1:completed"]
+    batwing = next(
+        target for target in response.json()["support"]["targets"] if target["target"] == "batwing"
+    )
+    benchmark_claim = next(
+        claim for claim in batwing["claims"] if claim["dimension"] == "benchmark"
+    )
+    assert benchmark_claim["state"] == "proven"
+    assert benchmark_claim["evidence_refs"] == ["bench-1:completed"]
 
 
 def test_ACCESS_003_dev_evidence_never_names_physical_targets(tmp_path: Path) -> None:
@@ -186,12 +215,14 @@ def test_ACCESS_003_dev_evidence_never_names_physical_targets(tmp_path: Path) ->
         tmp_path / "diagnostics",
         "diag-1",
         environment="DEV",
-        machine_profile={"platform": "linux", "architecture": "x86_64"},
+        machine_profile={"machine_id": "batwing", "platform": "linux"},
         deployment={"engine_id": "llama.cpp"},
     )
     response = client(tmp_path).get("/api/v1/support", headers=AUTH)
-    targets = {item["target"]: item["state"] for item in response.json()["support"]["targets"]}
-    assert targets == {"batwing": "unproven", "batmobile": "unproven"}
+    assert response.status_code == 200
+    for target in response.json()["support"]["targets"]:
+        assert target["validated"] is False
+        assert all(claim["state"] == "unproven" for claim in target["claims"])
 
 
 def test_ACCESS_003_target_named_evidence_is_advertised(tmp_path: Path) -> None:
@@ -203,14 +234,36 @@ def test_ACCESS_003_target_named_evidence_is_advertised(tmp_path: Path) -> None:
             "machine_id": "batwing",
             "platform": "linux",
             "architecture": "x86_64",
+            "accelerator": "cuda",
         },
-        deployment={"engine_id": "llama.cpp"},
+        deployment={
+            "engine_id": "vllm",
+            "install_method": "mrpkg",
+            "access_profile": "loopback",
+            "recovery": True,
+        },
     )
+    benchmark_store = BenchmarkStore(tmp_path / "benchmarks")
+    benchmark_store.initialize()
+    write_benchmark_run(benchmark_store, "bench-1", machine_id="batwing", engine_id="vllm")
     response = client(tmp_path).get("/api/v1/support", headers=AUTH)
-    targets = {item["target"]: item for item in response.json()["support"]["targets"]}
-    assert targets["batwing"]["state"] == "proven"
-    assert targets["batwing"]["evidence_refs"][0].startswith("diag-batwing:")
-    assert targets["batmobile"]["state"] == "unproven"
+    targets = {target["target"]: target for target in response.json()["support"]["targets"]}
+    batwing = targets["batwing"]
+    proven = {claim["dimension"] for claim in batwing["claims"] if claim["state"] == "proven"}
+    assert {
+        "os",
+        "architecture",
+        "accelerator",
+        "engine",
+        "install",
+        "access",
+        "recovery",
+    } <= proven
+    assert batwing["validated"] is False
+    os_claim = next(claim for claim in batwing["claims"] if claim["dimension"] == "os")
+    assert os_claim["evidence_refs"][0].startswith("diag-batwing:")
+    assert targets["batmobile"]["validated"] is False
+    assert targets["windows-x64"]["validated"] is False
 
 
 def test_ACCESS_003_report_requires_authentication(tmp_path: Path) -> None:
