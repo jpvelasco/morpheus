@@ -688,15 +688,17 @@
     {
       "id": "RAG-003",
       "phase": 8,
-      "status": "deferred",
-      "owning_tests": [],
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_rag_contract.py"
+      ],
       "risk": "medium",
       "required_environments": [
         "VM"
       ],
       "requires_live_evidence": false,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
       "implementation_tasks": []
     },
