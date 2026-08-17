@@ -136,6 +136,26 @@ docker compose --project-name morpheus \
 
 Confirm `coder-model` and Open WebUI still run and were not recreated.
 
+## Search: documented Open WebUI query URL
+
+When the search control is enabled, the existing Open WebUI can query the
+Morpheus-owned SearXNG sidecar through exactly one documented URL
+(SRCH-002). Configuration through the Open WebUI admin interface remains
+operator-controlled; Morpheus never edits the Open WebUI database.
+
+Documented query URL (JSON contract):
+
+```
+http://searxng:8080/search?q={query}&format=json
+```
+
+- `{query}` is the operator query, URL-encoded, 1-512 characters, no control
+  characters
+- the response must contain a `results` list; every result carries `title`,
+  `url`, and `content` strings and `url` must be http(s)
+- verification is enforced by `morpheus.core.search_contract`
+  (`documented_query_url`, `verify_search_payload`) at every search call
+
 ## Live read-only checks (optional)
 
 ```bash
