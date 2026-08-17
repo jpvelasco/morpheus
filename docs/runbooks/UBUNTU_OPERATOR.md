@@ -250,6 +250,13 @@ temperature, process, or ownership checks fail (IMG-002):
 policy (VOICE-004), the process-ownership observation, and the owned-paths
 decision into one typed start decision with every blocker reported.
 
+Any action that would stop or restart external inference is outside normal
+Morpheus ownership (IMG-003): it requires an operator-run, separately
+authorized transition workflow — `morpheus.core.transition_authority.
+authorize_transition` only issues a `TransitionSession` when the operator
+confirms in a separate session; normal operations are always denied with
+the transition note.
+
 ## Live read-only checks (optional)
 
 ```bash
