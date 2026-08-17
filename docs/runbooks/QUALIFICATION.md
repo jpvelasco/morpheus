@@ -1,7 +1,7 @@
 # Qualification Runbook (HOST-003, PLAT-004)
 
 Morpheus v0.2 qualifies exactly the targets in the frozen matrix
-(`core/targets.py`): batwing and batmobile (Linux x86-64, NVIDIA CUDA,
+(`core/targets.py`): ubuntu-1 and ubuntu-2 (Linux x86-64, NVIDIA CUDA,
 vLLM tier), one Windows 11 x86-64 host (native `llama.cpp`), and one
 Apple Silicon macOS host (native `llama.cpp`). Everything else is
 reported honestly as unvalidated; no support claim exists outside this

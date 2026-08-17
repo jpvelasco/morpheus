@@ -160,7 +160,7 @@ def _target(
 
 FROZEN_TARGETS = (
     _target(
-        "batwing",
+        "ubuntu-1",
         "linux",
         "x86_64",
         "vllm",
@@ -169,7 +169,7 @@ FROZEN_TARGETS = (
         engine_artifact=ArtifactKind.BENCHMARK_RUN,
     ),
     _target(
-        "batmobile",
+        "ubuntu-2",
         "linux",
         "x86_64",
         "vllm",

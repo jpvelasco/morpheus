@@ -122,7 +122,7 @@ class DockerComposeLifecycleAdapter:
             '{"id":{{json .Id}},"image":{{json .Image}},'
             '"restart_count":{{json .RestartCount}},"started_at":{{json .State.StartedAt}}}'
         )
-        for name in ("qwopus-coder", "open-webui"):
+        for name in ("coder-model", "open-webui"):
             selected.append(
                 self._runner.run(
                     ("docker", "container", "inspect", "--format", container_template, "--", name),

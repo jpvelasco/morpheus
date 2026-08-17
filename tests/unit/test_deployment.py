@@ -105,7 +105,7 @@ def declaration(**overrides) -> CampaignDeclaration:
 
 def identity() -> RunIdentity:
     return RunIdentity(
-        machine_id="batmobile",
+        machine_id="ubuntu-2",
         model_id="llama-3.1-8b-instruct",
         model_revision="main",
         quantization="q4_k_m",

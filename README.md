@@ -14,20 +14,20 @@ without weakening that external-runtime boundary.
 ## Status
 
 Morpheus is an **operator control plane** for a host that already runs
-OpenAI-compatible inference (on Batwing: `qwopus-coder` + Open WebUI). It is
+OpenAI-compatible inference (on ubuntu-1: `coder-model` + Open WebUI). It is
 intentionally **not** a full appliance installer and does not manage models or
 the external GPU stack.
 
 That paragraph describes the currently deployed v0.1 behavior. The approved
-v0.2 product plan will add a managed-appliance path for Batwing and Batmobile
+v0.2 product plan will add a managed-appliance path for ubuntu-1 and ubuntu-2
 and qualified Windows and Apple Silicon macOS hosts, but no v0.2 runtime
 implementation or live migration has started.
 
-For day-to-day operator use on Batwing, install the frozen candidate with the
-Batwing path and stop feature work there:
+For day-to-day operator use on ubuntu-1, install the frozen candidate with the
+ubuntu-1 path and stop feature work there:
 
-- [Batwing operator runbook](docs/runbooks/BATWING_OPERATOR.md)
-- Installer: `deploy/batwing/install.sh`
+- [ubuntu-1 operator runbook](docs/runbooks/UBUNTU_OPERATOR.md)
+- Installer: `deploy/ubuntu-1/install.sh`
 
 Optional sidecars (search, voice, workflows, research, RAG, image generation)
 are outside the focused v0.2 critical path. Morpheus is not attempting to match
@@ -35,8 +35,8 @@ ODS feature breadth.
 
 The current external runtime is treated as an integration dependency:
 
-- vLLM service: `qwopus-coder`
-- internal API: `http://qwopus-coder:8000/v1`
+- vLLM service: `coder-model`
+- internal API: `http://coder-model:8000/v1`
 - host API: `http://127.0.0.1:8082/v1`
 - shared Docker network: `ai_default`
 - user interface: the existing Open WebUI service
@@ -46,7 +46,7 @@ at runtime. ODS is research input only.
 
 ## Documentation
 
-- [Batwing operator runbook](docs/runbooks/BATWING_OPERATOR.md)
+- [ubuntu-1 operator runbook](docs/runbooks/UBUNTU_OPERATOR.md)
 - [Product specification](docs/PRODUCT_SPECIFICATION.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [TDD implementation plan](docs/IMPLEMENTATION_PLAN.md)

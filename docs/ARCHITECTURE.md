@@ -37,7 +37,7 @@ flowchart LR
         Selector[Constraint and Ranking Engine]
         Campaigns[Benchmark Orchestrator]
         Managed[Managed Inference Runtime]
-        Store[History and Operational Store]
+        Store[History Import and Operational Store]
         Advisor[Optional Diagnostic Advisor]
         Telemetry[Optional Telemetry Proxy]
         Search[Optional SearXNG]
@@ -84,7 +84,7 @@ dependency, deployment prerequisite, or control path.
 ### 3.1 Externally Owned
 
 - the `ai` Compose project;
-- `qwopus-coder` and its image, model revision, command, caches, and ports;
+- `coder-model` and its image, model revision, command, caches, and ports;
 - the existing `open-webui` container and `/mnt/data/AI/open-webui` data;
 - the `ai_default` Docker network;
 - `/mnt/data/AI/docker-compose.yml`;
@@ -362,7 +362,7 @@ Morpheus uses two networks:
 
 1. `morpheus_internal`, owned by Morpheus, for control-plane and sidecar traffic.
 2. `ai_default`, external and not owned, only for services that must reach
-   `qwopus-coder` or be reached by Open WebUI through Docker DNS.
+   `coder-model` or be reached by Open WebUI through Docker DNS.
 
 Default host bindings:
 
@@ -613,7 +613,7 @@ normal plan, policy, preflight, and confirmation path.
 ## 16. Target and Access Architecture
 
 Stable v0.2 targets Ubuntu 26.04 LTS x86-64, Windows 11 x86-64, and macOS 14 or
-later on Apple Silicon. Batwing and Batmobile are separate named Linux profiles,
+later on Apple Silicon. ubuntu-1 and ubuntu-2 are separate named Linux profiles,
 not special-case branches. The same contracts discover each host and select
 platform, telemetry, process, service, filesystem, secret, and engine adapters
 through capabilities. Unsupported or inaccessible evidence degrades honestly

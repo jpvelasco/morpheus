@@ -1,7 +1,7 @@
 #cloud-config
 users:
   - default
-  - name: batjp
+  - name: operator
     gecos: Morpheus validation operator
     groups:
       - adm
@@ -68,9 +68,9 @@ runcmd:
   - [systemctl, enable, --now, chrony.service]
   - [systemctl, enable, --now, docker.service]
   - [systemctl, enable, --now, qemu-guest-agent.service]
-  - [usermod, -aG, docker, batjp]
-  - [sudo, -u, batjp, -H, pipx, install, "uv==0.8.0"]
-  - [install, -d, -o, batjp, -g, batjp, -m, "0750", /home/batjp/validation]
+  - [usermod, -aG, docker, operator]
+  - [sudo, -u, operator, -H, pipx, install, "uv==0.8.0"]
+  - [install, -d, -o, operator, -g, operator, -m, "0750", /home/operator/validation]
   - [touch, /var/lib/morpheus-validation-ready]
 
 final_message: Morpheus validation baseline prerequisites are ready.

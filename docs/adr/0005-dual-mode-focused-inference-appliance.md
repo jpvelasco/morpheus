@@ -6,10 +6,10 @@ Date: 2026-08-11
 
 ## Context
 
-Morpheus v0.1 deliberately stopped at a read-only status plane around Batwing's
+Morpheus v0.1 deliberately stopped at a read-only status plane around ubuntu-1's
 externally owned vLLM and Open WebUI services. That boundary protected a working
-server, but it cannot satisfy the reopened product goal: run Morpheus on Batwing
-or Batmobile, discover the machine, choose an appropriate developer model and
+server, but it cannot satisfy the reopened product goal: run Morpheus on ubuntu-1
+or ubuntu-2, discover the machine, choose an appropriate developer model and
 engine, install and benchmark it, serve inference, and operate it through a
 focused web application.
 
@@ -40,14 +40,14 @@ engine, benchmark, operations, and diagnosis milestones.
 
 ## Consequences
 
-- The deployed Batwing status plane remains safe and useful during v0.2 work.
+- The deployed ubuntu-1 status plane remains safe and useful during v0.2 work.
 - Managed installation and lifecycle can be designed without granting control
   over all discovered Docker or inference resources.
 - API, CLI, persistence, dashboard, audit, agent, and lifecycle contracts must
   distinguish observed and managed identities.
 - Model storage and inference engines become first-class Morpheus-owned
   resources with quotas, manifests, rollback, and cleanup policy.
-- Batwing's current coder remains external until a later adoption or replacement
+- ubuntu-1's current coder remains external until a later adoption or replacement
   action is separately authorized.
 - Broad optional-service work is deferred behind the focused v0.2 release.
 

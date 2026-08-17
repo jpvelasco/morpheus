@@ -15,7 +15,7 @@ def test_OPT_TEL_001_probe_is_loopback_only_and_covers_compatibility() -> None:
     compile(source, str(PROBE), "exec")
 
     assert "http://127.0.0.1" in source
-    assert "qwopus-coder" not in source
+    assert "coder-model" not in source
     assert "/v1/chat/completions" in source
     for mode in ("unavailable", "slow", "empty_stream", "slow_stream"):
         assert mode in source

@@ -24,7 +24,7 @@ private request data, host addresses, or unredacted evidence.
   artifacts; any change that alters product source requires a new candidate.
 - **Active product direction:** v0.2 reopens Morpheus as a focused developer
   inference appliance with stable native paths on Ubuntu, Windows, and Apple
-  Silicon macOS. Batwing and Batmobile remain named Linux qualification
+  Silicon macOS. ubuntu-1 and ubuntu-2 remain named Linux qualification
   machines. The accepted plan adds evidence-ranked selection, managed inference,
   benchmark history, a Tauri desktop plus independent backend, operations, and
   bounded AI-assisted diagnosis. The planning handoff was consistency-audited
@@ -212,7 +212,7 @@ network-disabled supply-chain scan then reported zero Gitleaks findings across
 history, worktree, and candidate archives; zero high/critical Trivy findings on
 repository, candidate filesystem, and both OCI images; and CycloneDX plus SPDX
 SBOMs for every declared artifact. Human license review was approved for that
-candidate (reviewer JP Velasco; no exceptions; no forbidden licenses) and
+candidate (reviewer: project maintainer; no exceptions; no forbidden licenses) and
 `validation/security/run.sh finalize` produced a passing supply-chain
 manifest.
 
@@ -223,7 +223,7 @@ dashboard, and telemetry became healthy; the core probe verified auth, model
 discovery, dashboard framing headers, and non-streaming/streaming completions.
 Hardening checks confirmed non-root users, read-only roots, `cap_drop ALL`,
 `no-new-privileges`, tmpfs, memory limits, loopback-only publications, and no
-Docker socket. Selected `qwopus-coder` and Open WebUI identity fields were
+Docker socket. Selected `coder-model` and Open WebUI identity fields were
 unchanged before and after; the disposable project containers, volume, and
 network were removed. Evidence:
 `artifacts/release-validation/cont002-aa7-cand-evidence/`.
@@ -233,7 +233,7 @@ A disposable lifecycle lab then drove the authenticated runtime agent and
 idempotent reinstall, start, core smoke (API/dashboard/telemetry), named
 backup, restore-preflight, stop, and default uninstall that preserved
 Morpheus-owned data markers while removing project containers. Every step
-reported `protected_external_runtime: unchanged`; selected `qwopus-coder` and
+reported `protected_external_runtime: unchanged`; selected `coder-model` and
 Open WebUI identity fields matched before/after. Evidence:
 `artifacts/release-validation/life003-aa7-lab/`. External-network integrity
 hashing no longer includes live endpoint membership so expected Morpheus
@@ -271,7 +271,7 @@ Phase 11.5 Ubuntu CPU walking skeleton.** RUNM-001 (exactly two ownership modes,
 workflow-scoped adoption records, immutable planning contracts, and separate
 state machines) is `implemented` with unit, contract, and acceptance coverage
 and a complete non-live gate that runs without GPU access or model downloads.
-Deployed Batwing v0.1 read-only behavior is preserved; required HOST-RO evidence
+Deployed ubuntu-1 v0.1 read-only behavior is preserved; required HOST-RO evidence
 for `validated` status remains a later, separately authorized validation step.
 
 ## v0.2 Queue
@@ -285,10 +285,10 @@ for `validated` status remains a later, separately authorized validation step.
    bounded evidence-driven plan adjustment, and continue automatically when its
    gate is green.
 3. **Phase 12 — portable discovery and catalogs:** prepare privacy-reviewed
-   Batwing, Batmobile, Windows, and Apple Silicon macOS profiles through
+   ubuntu-1, ubuntu-2, Windows, and Apple Silicon macOS profiles through
    read-only lanes; define native platform ports and versioned catalogs.
 4. **Phase 13 — benchmark foundation:** normalize and import the existing
-   Qwopus result history before creating new model-management workflows.
+   imported result history before creating new model-management workflows.
 
 The optional search, voice, workflow, research, RAG, and image-generation suite
 is not on this critical path. Any product-source change after the existing v0.1
@@ -343,7 +343,7 @@ implementation; no agent may infer or announce an open-source license.
 
 - Never restart, reconfigure, or mutate external inference/Open WebUI services
   during normal validation.
-- Treat Batwing's current coder as `external_observed` until a later request
+- Treat ubuntu-1's current coder as `external_observed` until a later request
   explicitly authorizes a tested adoption or replacement workflow.
 - Use only disposable candidate stacks and validation VMs for mutation.
 - Do not enable persistent user-service linger as a workaround for agent tests.

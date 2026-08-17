@@ -101,7 +101,7 @@ def assert_http_contract() -> None:
 
 
 def assert_network_isolation() -> None:
-    for hostname in ("qwopus-coder", "host.docker.internal"):
+    for hostname in ("coder-model", "host.docker.internal"):
         try:
             socket.getaddrinfo(hostname, 8000)
         except socket.gaierror:

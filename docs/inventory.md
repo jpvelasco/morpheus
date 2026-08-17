@@ -10,7 +10,7 @@ uses older terminology.
 These are immediate Morpheus inputs because they are already tuned for our machine and workflow.
 
 - `open-webui` front end
-- `qwopus-coder` vLLM service
+- `coder-model` vLLM service
 - The current vLLM launch configuration in `/mnt/data/AI/docker-compose.yml`
 - Prefix caching enabled on the running vLLM service
 - Chunked prefill enabled on the running vLLM service
@@ -21,7 +21,7 @@ These are immediate Morpheus inputs because they are already tuned for our machi
 - The `enable_thinking=false` chat template override
 - The current benchmark and verification commands we already used
 - The recent speed observations and log-based performance notes
-- The current ports and runtime wiring for `open-webui` and `qwopus-coder`
+- The current ports and runtime wiring for `open-webui` and `coder-model`
 
 ## Ideas Learned From ODS
 
@@ -72,11 +72,11 @@ Use this as the default home for each class of work.
 - `src/morpheus/cli/`
 
 The existing benchmark harness remains independently maintained at
-`/home/batjp/Documents/qwopus-tool-tests`. Under the v0.2 plan, Morpheus imports
+`/home/operator/Documents/history-tool-tests`. Under the v0.2 plan, Morpheus imports
 its published JSONL and reports through a versioned, checksummed mapping without
 modifying the source files or pretending missing historical provenance exists.
 New managed campaigns use Morpheus's canonical benchmark schema and can continue
-to invoke validated Qwopus workload implementations behind an adapter.
+to invoke validated history workload implementations behind an adapter.
 
 ## Recommendation
 

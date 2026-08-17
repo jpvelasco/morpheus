@@ -34,8 +34,8 @@ _ROLLBACK_PATHS = frozenset(
 
 def test_frozen_matrix_declares_the_four_targets() -> None:
     assert {target.target for target in FROZEN_TARGETS} == {
-        "batwing",
-        "batmobile",
+        "ubuntu-1",
+        "ubuntu-2",
         "windows-x64",
         "macos-arm64",
     }
@@ -57,10 +57,10 @@ def test_every_claim_maps_to_artifact_machine_lane_and_rollback() -> None:
 
 
 def test_frozen_values_match_the_supported_engine_tiers() -> None:
-    batwing = declared_target("batwing")
-    assert batwing.platform == "linux"
-    assert batwing.architecture == "x86_64"
-    assert batwing.engine_tier == "vllm"
+    ubuntu_one = declared_target("ubuntu-1")
+    assert ubuntu_one.platform == "linux"
+    assert ubuntu_one.architecture == "x86_64"
+    assert ubuntu_one.engine_tier == "vllm"
     windows = declared_target("windows-x64")
     assert windows.platform == "windows"
     assert windows.engine_tier == "llama.cpp"
@@ -76,7 +76,7 @@ def test_unknown_target_is_rejected() -> None:
 
 
 def test_linux_targets_declare_cuda_accelerator_and_managed_lifecycle() -> None:
-    for name in ("batwing", "batmobile"):
+    for name in ("ubuntu-1", "ubuntu-2"):
         target = declared_target(name)
         accelerator = next(c for c in target.claims if c.dimension is SupportDimension.ACCELERATOR)
         engine = next(c for c in target.claims if c.dimension is SupportDimension.ENGINE)
@@ -86,7 +86,7 @@ def test_linux_targets_declare_cuda_accelerator_and_managed_lifecycle() -> None:
 
 
 def test_declared_claims_are_immutable_frozen_values() -> None:
-    target = declared_target("batwing")
+    target = declared_target("ubuntu-1")
     with pytest.raises((AttributeError, FrozenInstanceError)):
         target.claims[0].value = "changed"  # type: ignore[misc]
 

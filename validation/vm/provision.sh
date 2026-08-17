@@ -36,7 +36,7 @@ seed_volume="${guest_name}-seed.iso"
 mkdir -p "${cache_dir}" "$(dirname -- "${key_path}")"
 
 if [[ ! -f "${key_path}" ]]; then
-  ssh-keygen -q -t ed25519 -N '' -C 'morpheus-validation@batwing' -f "${key_path}"
+  ssh-keygen -q -t ed25519 -N '' -C 'morpheus-validation@ubuntu-1' -f "${key_path}"
 fi
 if [[ ! -f "${key_path}.pub" ]]; then
   ssh-keygen -y -f "${key_path}" >"${key_path}.pub"

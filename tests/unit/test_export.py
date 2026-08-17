@@ -130,7 +130,7 @@ class TestGuardedCapture:
             guarded_capture(
                 _Collector(_result()),
                 authorized=False,
-                host_name="batwing",
+                host_name="ubuntu-1",
                 artifact_root=tmp_path,
                 capability_profile=_capabilities(),
             )
@@ -150,7 +150,7 @@ class TestGuardedCapture:
         path = guarded_capture(
             _Collector(_result()),
             authorized=True,
-            host_name="batwing",
+            host_name="ubuntu-1",
             artifact_root=tmp_path,
             capability_profile=_capabilities(),
         )
@@ -163,14 +163,14 @@ class TestGuardedCapture:
         first = guarded_capture(
             _Collector(_result()),
             authorized=True,
-            host_name="batmobile",
+            host_name="ubuntu-2",
             artifact_root=tmp_path,
             capability_profile=_capabilities(),
         )
         second = guarded_capture(
             _Collector(_result()),
             authorized=True,
-            host_name="batmobile",
+            host_name="ubuntu-2",
             artifact_root=tmp_path,
             capability_profile=_capabilities(),
         )
@@ -188,7 +188,7 @@ class TestGuardedCapture:
             guarded_capture(
                 _Collector(result),
                 authorized=True,
-                host_name="batmobile",
+                host_name="ubuntu-2",
                 artifact_root=tmp_path,
                 capability_profile=_capabilities(),
             )
@@ -203,7 +203,7 @@ class TestGuardedCapture:
             guarded_capture(
                 _Collector(_result()),
                 authorized=True,
-                host_name="batmobile",
+                host_name="ubuntu-2",
                 artifact_root=blocker,
                 capability_profile=_capabilities(),
             )

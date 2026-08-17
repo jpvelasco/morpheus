@@ -148,7 +148,7 @@ def evidence(candidate: Candidate, value: float) -> MetricEvidence:
     return MetricEvidence(
         metric="decode_throughput",
         value=value,
-        machine_id="batwing",
+        machine_id="ubuntu-1",
         freshness="2026-08-01",
     )
 
@@ -177,7 +177,7 @@ def ranked() -> tuple[RankedCandidate, ...]:
         viable,
         profile=SEED_PROFILES[0],
         evidence_by_candidate=mapping,
-        reference_machine_id="batwing",
+        reference_machine_id="ubuntu-1",
     )
 
 
@@ -187,7 +187,7 @@ def test_replay_is_byte_identical() -> None:
     first = build_recommendation(
         profile=SEED_PROFILES[0],
         operator=OperatorConstraints(allowed_engines=("llama.cpp",)),
-        reference_machine_id="batwing",
+        reference_machine_id="ubuntu-1",
         budget={
             "ram_bytes": BUDGET.ram_bytes,
             "storage_bytes": BUDGET.storage_bytes,
@@ -200,7 +200,7 @@ def test_replay_is_byte_identical() -> None:
     second = build_recommendation(
         profile=SEED_PROFILES[0],
         operator=OperatorConstraints(allowed_engines=("llama.cpp",)),
-        reference_machine_id="batwing",
+        reference_machine_id="ubuntu-1",
         budget={
             "ram_bytes": BUDGET.ram_bytes,
             "storage_bytes": BUDGET.storage_bytes,
@@ -219,7 +219,7 @@ def test_any_input_change_changes_the_digest() -> None:
     kwargs: dict = {
         "profile": SEED_PROFILES[0],
         "operator": None,
-        "reference_machine_id": "batwing",
+        "reference_machine_id": "ubuntu-1",
         "budget": {
             "ram_bytes": BUDGET.ram_bytes,
             "storage_bytes": BUDGET.storage_bytes,
@@ -229,7 +229,7 @@ def test_any_input_change_changes_the_digest() -> None:
         "excluded": rejected,
     }
     baseline = build_recommendation(**kwargs)
-    changed = build_recommendation(**{**kwargs, "reference_machine_id": "batmobile"})
+    changed = build_recommendation(**{**kwargs, "reference_machine_id": "ubuntu-2"})
     assert changed.record_id != baseline.record_id
 
 
@@ -238,7 +238,7 @@ def test_record_carries_complete_exclusion_set() -> None:
     item = build_recommendation(
         profile=SEED_PROFILES[0],
         operator=None,
-        reference_machine_id="batwing",
+        reference_machine_id="ubuntu-1",
         budget={
             "ram_bytes": BUDGET.ram_bytes,
             "storage_bytes": BUDGET.storage_bytes,
@@ -270,7 +270,7 @@ def test_store_round_trip_preserves_every_field(tmp_path) -> None:
     item = build_recommendation(
         profile=SEED_PROFILES[0],
         operator=OperatorConstraints(max_context=16384),
-        reference_machine_id="batwing",
+        reference_machine_id="ubuntu-1",
         budget={
             "ram_bytes": BUDGET.ram_bytes,
             "storage_bytes": BUDGET.storage_bytes,
@@ -295,7 +295,7 @@ def test_ranking_inside_record_matches_live_ranking() -> None:
     item = build_recommendation(
         profile=SEED_PROFILES[0],
         operator=None,
-        reference_machine_id="batwing",
+        reference_machine_id="ubuntu-1",
         budget={
             "ram_bytes": BUDGET.ram_bytes,
             "storage_bytes": BUDGET.storage_bytes,

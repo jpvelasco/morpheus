@@ -39,7 +39,7 @@ def evidence(
     *,
     confidence: float = 1.0,
     provenance: str = "measured",
-    machine_id: str | None = "batwing",
+    machine_id: str | None = "ubuntu-1",
     freshness: str | None = "2026-08-01",
 ) -> MetricEvidence:
     return MetricEvidence(
@@ -56,7 +56,7 @@ def rank(
     candidates: tuple[Candidate, ...],
     *,
     mapping: dict[Candidate, tuple[MetricEvidence, ...]] | None = None,
-    machine_id: str | None = "batwing",
+    machine_id: str | None = "ubuntu-1",
 ) -> tuple[RankedCandidate, ...]:
     return rank_candidates(
         candidates,

@@ -17,7 +17,7 @@ documented below remain.
 
 ## Deployed legacy candidate
 
-The running Batwing images were built before this identity migration. Their
+The running ubuntu-1 images were built before this identity migration. Their
 immutable tags and OCI labels correctly retain legacy source ID
 `aa7174aff3194ffeb1ca455d53005f242abe6d82`. The content-equivalent rewritten
 source commit is `fa5fe3ca2e393d6d20c1afa89dff2452650bf180`.

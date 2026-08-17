@@ -36,13 +36,13 @@ FIXTURE_BUDGETS = {
     "cpu-only": HardwareBudget(
         ram_bytes=16 * 1024**3, vram_bytes=0, storage_bytes=100 * 1024**3, accelerator="cpu"
     ),
-    "batwing": HardwareBudget(
+    "ubuntu-1": HardwareBudget(
         ram_bytes=128 * 1024**3,
         vram_bytes=48 * 1024**3,
         storage_bytes=1 * 1024**4,
         accelerator="cuda",
     ),
-    "batmobile": HardwareBudget(
+    "ubuntu-2": HardwareBudget(
         ram_bytes=64 * 1024**3,
         vram_bytes=16 * 1024**3,
         storage_bytes=2 * 1024**4,

@@ -23,9 +23,9 @@ class RunbookReference:
 
 KNOWN_RUNBOOKS = (
     RunbookReference(
-        id="batwing-operator",
-        path="docs/runbooks/BATWING_OPERATOR.md",
-        title="Batwing host operator runbook",
+        id="ubuntu-operator",
+        path="docs/runbooks/UBUNTU_OPERATOR.md",
+        title="ubuntu-1 host operator runbook",
     ),
     RunbookReference(
         id="access-operator",

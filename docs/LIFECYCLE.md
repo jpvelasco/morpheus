@@ -111,7 +111,7 @@ external Docker network is never removed.
 ## Integrity and Recovery Boundary
 
 Before and after every operation, the runtime agent hashes selected identity
-fields for `qwopus-coder`, Open WebUI, and the configured external network. It
+fields for `coder-model`, Open WebUI, and the configured external network. It
 does not request container environment values. A changed digest fails the
 operation evidence. Existing Compose-project containers, volumes, and networks
 must also carry the exact `io.morpheus.project` label; protected external names

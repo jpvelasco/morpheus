@@ -1,4 +1,4 @@
-"""Contract tests: checksummed Qwopus import (BENCH-003)."""
+"""Contract tests: checksummed History import (BENCH-003)."""
 
 from __future__ import annotations
 
@@ -8,9 +8,9 @@ from pathlib import Path
 import pytest
 
 from morpheus.core.benchstore import BenchmarkStore
-from morpheus.core.qwopus import QwopusImportContext, import_qwopus
+from morpheus.core.history_import import HistoryImportContext, import_history
 
-FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "qwopus"
+FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "History"
 GOLDEN = (
     "speed",
     "coding",
@@ -23,8 +23,8 @@ GOLDEN = (
 )
 
 
-def context() -> QwopusImportContext:
-    return QwopusImportContext(
+def context() -> HistoryImportContext:
+    return HistoryImportContext(
         machine_id="fixture-machine",
         benchmark_revision="bench-2026.2",
         ownership_target="DEV",
@@ -33,7 +33,7 @@ def context() -> QwopusImportContext:
 
 def _import_fixture(store: BenchmarkStore, name: str):
     raw = (FIXTURES / f"{name}.jsonl").read_text(encoding="utf-8")
-    return import_qwopus(StringIO(raw), store, context())
+    return import_history(StringIO(raw), store, context())
 
 
 @pytest.mark.parametrize("name", GOLDEN)
@@ -60,8 +60,8 @@ def test_original_checksums_preserved(tmp_path) -> None:
 
 def test_import_is_reproducible_across_stores(tmp_path) -> None:
     raw = (FIXTURES / "coding.jsonl").read_text(encoding="utf-8")
-    first = import_qwopus(StringIO(raw), BenchmarkStore(tmp_path / "a"), context())
-    second = import_qwopus(StringIO(raw), BenchmarkStore(tmp_path / "b"), context())
+    first = import_history(StringIO(raw), BenchmarkStore(tmp_path / "a"), context())
+    second = import_history(StringIO(raw), BenchmarkStore(tmp_path / "b"), context())
     assert first.run_ids == second.run_ids
     assert first.digests == second.digests
     assert first.limitations == second.limitations
@@ -70,7 +70,7 @@ def test_import_is_reproducible_across_stores(tmp_path) -> None:
 def test_missing_provenance_never_invented(tmp_path) -> None:
     store = BenchmarkStore(tmp_path)
     raw = (FIXTURES / "limitations.jsonl").read_text(encoding="utf-8")
-    report = import_qwopus(StringIO(raw), store, context())
+    report = import_history(StringIO(raw), store, context())
     assert len(report.limitations) == len(raw.splitlines())
     assert report.lines_mapped == 0
     assert report.run_ids == ()

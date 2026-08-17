@@ -7,7 +7,7 @@ from enum import StrEnum
 from types import MappingProxyType
 
 PROJECT_LABEL = "io.morpheus.project"
-PROTECTED_NAMES = frozenset({"ai", "ai_default", "open-webui", "qwopus-coder"})
+PROTECTED_NAMES = frozenset({"ai", "ai_default", "open-webui", "coder-model"})
 
 _IDENTITY_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 _DIGEST = re.compile(r"^[0-9a-f]{64}$")

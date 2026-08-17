@@ -48,7 +48,7 @@ def run(
 
 
 def benchmark(
-    *, run_id: str, status: str = "completed", machine_id: str = "batwing", engine_id: str = "vllm"
+    *, run_id: str, status: str = "completed", machine_id: str = "ubuntu-1", engine_id: str = "vllm"
 ) -> BenchmarkRunRef:
     return BenchmarkRunRef(run_id=run_id, status=status, machine_id=machine_id, engine_id=engine_id)
 
@@ -135,7 +135,7 @@ def test_benchmark_claims_require_completed_runs() -> None:
         named_targets={},
     )
     claims = {c.value for c in profile.machine_claims if c.state is ClaimState.PROVEN}
-    assert "vllm@batwing" in claims
+    assert "vllm@ubuntu-1" in claims
     benchmark_claims = [
         c for c in profile.machine_claims if c.dimension is SupportDimension.BENCHMARK
     ]
@@ -149,16 +149,16 @@ def test_named_targets_require_matching_physical_evidence() -> None:
             run(
                 run_id="diag-1",
                 environment="HOST-RO",
-                machine_profile={"machine_id": "batwing", "platform": "linux"},
+                machine_profile={"machine_id": "ubuntu-1", "platform": "linux"},
             ),
         ),
         benchmark_runs=(),
-        named_targets={"batwing": "linux", "batmobile": "linux"},
+        named_targets={"ubuntu-1": "linux", "ubuntu-2": "linux"},
     )
     targets = {t.target: t.state for t in profile.targets}
-    assert targets == {"batwing": ClaimState.PROVEN, "batmobile": ClaimState.UNPROVEN}
-    batwing = next(t for t in profile.targets if t.target == "batwing")
-    assert batwing.evidence_refs == (f"diag-1:{A_DIGEST}",)
+    assert targets == {"ubuntu-1": ClaimState.PROVEN, "ubuntu-2": ClaimState.UNPROVEN}
+    ubuntu_one = next(t for t in profile.targets if t.target == "ubuntu-1")
+    assert ubuntu_one.evidence_refs == (f"diag-1:{A_DIGEST}",)
 
 
 def test_named_target_wrong_platform_is_not_proven() -> None:
@@ -167,11 +167,11 @@ def test_named_target_wrong_platform_is_not_proven() -> None:
             run(
                 run_id="diag-1",
                 environment="HOST-RO",
-                machine_profile={"machine_id": "batwing", "platform": "windows"},
+                machine_profile={"machine_id": "ubuntu-1", "platform": "windows"},
             ),
         ),
         benchmark_runs=(),
-        named_targets={"batwing": "linux"},
+        named_targets={"ubuntu-1": "linux"},
     )
     assert profile.targets[0].state is ClaimState.UNPROVEN
 
@@ -182,11 +182,11 @@ def test_named_target_requires_physical_environment() -> None:
             run(
                 run_id="diag-1",
                 environment="DEV",
-                machine_profile={"machine_id": "batwing", "platform": "linux"},
+                machine_profile={"machine_id": "ubuntu-1", "platform": "linux"},
             ),
         ),
         benchmark_runs=(),
-        named_targets={"batwing": "linux"},
+        named_targets={"ubuntu-1": "linux"},
     )
     assert profile.targets[0].state is ClaimState.UNPROVEN
 
@@ -236,9 +236,9 @@ def test_target_posture_unvalidated_without_evidence() -> None:
         evidence_runs=(),
         benchmark_runs=(),
     )
-    batwing = next(p for p in posture if p.target == "batwing")
-    assert batwing.validated is False
-    assert all(claim.state is ClaimState.UNPROVEN for claim in batwing.claims)
+    ubuntu_one = next(p for p in posture if p.target == "ubuntu-1")
+    assert ubuntu_one.validated is False
+    assert all(claim.state is ClaimState.UNPROVEN for claim in ubuntu_one.claims)
 
 
 def test_target_posture_physical_evidence_proves_declared_claims() -> None:
@@ -251,7 +251,7 @@ def test_target_posture_physical_evidence_proves_declared_claims() -> None:
                 run_id="diag-1",
                 environment="HOST-RO",
                 machine_profile={
-                    "machine_id": "batwing",
+                    "machine_id": "ubuntu-1",
                     "platform": "linux",
                     "architecture": "x86_64",
                     "accelerator": "cuda",
@@ -266,18 +266,18 @@ def test_target_posture_physical_evidence_proves_declared_claims() -> None:
             run(
                 run_id="diag-2",
                 environment="HOST-MAINT",
-                machine_profile={"machine_id": "batwing"},
+                machine_profile={"machine_id": "ubuntu-1"},
                 deployment={"lifecycle_state": "managed"},
             ),
         ),
-        benchmark_runs=(benchmark(run_id="bench-1", machine_id="batwing", engine_id="vllm"),),
+        benchmark_runs=(benchmark(run_id="bench-1", machine_id="ubuntu-1", engine_id="vllm"),),
     )
-    batwing = next(p for p in posture if p.target == "batwing")
+    ubuntu_one = next(p for p in posture if p.target == "ubuntu-1")
     proven = {
-        claim.dimension: claim for claim in batwing.claims if claim.state is ClaimState.PROVEN
+        claim.dimension: claim for claim in ubuntu_one.claims if claim.state is ClaimState.PROVEN
     }
     assert set(proven) == set(SupportDimension)
-    assert batwing.validated is True
+    assert ubuntu_one.validated is True
     assert proven[SupportDimension.OS].evidence_refs == (f"diag-1:{A_DIGEST}",)
     assert proven[SupportDimension.BENCHMARK].evidence_refs == ("bench-1:completed",)
 
@@ -291,16 +291,16 @@ def test_target_posture_requires_matching_machine_and_lane() -> None:
             run(
                 run_id="diag-1",
                 environment="HOST-RO",
-                machine_profile={"machine_id": "batmobile", "platform": "linux"},
+                machine_profile={"machine_id": "ubuntu-2", "platform": "linux"},
             ),
         ),
-        benchmark_runs=(benchmark(run_id="bench-1", machine_id="batmobile", engine_id="vllm"),),
+        benchmark_runs=(benchmark(run_id="bench-1", machine_id="ubuntu-2", engine_id="vllm"),),
     )
-    batwing = next(p for p in posture if p.target == "batwing")
-    batmobile = next(p for p in posture if p.target == "batmobile")
-    assert batwing.validated is False
-    assert batmobile.validated is False
-    os_claim = next(c for c in batmobile.claims if c.dimension is SupportDimension.OS)
+    ubuntu_one = next(p for p in posture if p.target == "ubuntu-1")
+    ubuntu_two = next(p for p in posture if p.target == "ubuntu-2")
+    assert ubuntu_one.validated is False
+    assert ubuntu_two.validated is False
+    os_claim = next(c for c in ubuntu_two.claims if c.dimension is SupportDimension.OS)
     assert os_claim.state is ClaimState.PROVEN
 
 
@@ -313,13 +313,13 @@ def test_target_posture_dev_evidence_never_proves_physical_targets() -> None:
             run(
                 run_id="diag-1",
                 environment="DEV",
-                machine_profile={"machine_id": "batwing", "platform": "linux"},
+                machine_profile={"machine_id": "ubuntu-1", "platform": "linux"},
             ),
         ),
         benchmark_runs=(),
     )
-    batwing = next(p for p in posture if p.target == "batwing")
-    assert all(claim.state is ClaimState.UNPROVEN for claim in batwing.claims)
+    ubuntu_one = next(p for p in posture if p.target == "ubuntu-1")
+    assert all(claim.state is ClaimState.UNPROVEN for claim in ubuntu_one.claims)
 
 
 def test_target_posture_wrong_platform_never_proves_os_claim() -> None:

@@ -21,7 +21,7 @@ first implementation artifact is released.
   transition tables, terminal-state immutability, and audit results for
   undefined edges.
 - v0.2 focused developer-inference appliance specification and phased plan for
-  Ubuntu, Windows, and Apple Silicon macOS, retaining Batwing and Batmobile as
+  Ubuntu, Windows, and Apple Silicon macOS, retaining ubuntu-1 and ubuntu-2 as
   named Linux qualification machines.
 - Tauri 2 desktop and separately versioned per-user backend service plan.
 - Tiered runtime plan with native llama.cpp across stable targets and an

@@ -46,7 +46,7 @@ zero.
   accelerator API, and validation tier are immutable deployment-plan inputs.
 - Native path, ACL/reparse-point, process-tree, sleep/resume, service, installer,
   upgrade, rollback, and recovery behavior require OS-specific tests.
-- Batwing and Batmobile remain named Linux qualification machines, not the
+- ubuntu-1 and ubuntu-2 remain named Linux qualification machines, not the
   entire support definition.
 - New platform claims require physical evidence for discovery, installation,
   serving, benchmark, lifecycle, access, and recovery.

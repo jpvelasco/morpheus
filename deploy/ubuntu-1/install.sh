@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Install Morpheus control plane for Batwing next to the existing inference stack.
-# Never mutates qwopus-coder, Open WebUI, or their Compose project.
+# Install Morpheus control plane for ubuntu-1 next to the existing inference stack.
+# Never mutates coder-model, Open WebUI, or their Compose project.
 set -euo pipefail
 
 umask 077
@@ -10,7 +10,7 @@ repo_root=$(cd -- "${script_dir}/../.." && pwd)
 usage() {
   cat <<'EOF' >&2
 Usage:
-  deploy/batwing/install.sh --runtime-root ABSOLUTE_DIR [--candidate-dir ABSOLUTE_DIR]
+  deploy/ubuntu-1/install.sh --runtime-root ABSOLUTE_DIR [--candidate-dir ABSOLUTE_DIR]
 
 Loads candidate OCI images when --candidate-dir is given, writes a private
 runtime environment, installs the host runtime agent from the candidate agent
@@ -193,7 +193,7 @@ else
 fi
 
 echo
-echo "Batwing Morpheus install complete."
+echo "ubuntu-1 Morpheus install complete."
 echo "  Runtime root: ${runtime_root}"
 echo "  Dashboard:    http://127.0.0.1:${MORPHEUS_DASHBOARD_PORT:-7401}/"
 echo "  API health:   http://127.0.0.1:${MORPHEUS_API_PORT:-7400}/healthz"
@@ -201,6 +201,6 @@ echo "  CLI (from repo venv or agent): morpheus status | models | doctor"
 echo "  Env file:     ${env_file}"
 echo
 echo "External services (must remain untouched by Morpheus):"
-echo "  qwopus-coder, Open WebUI, network ${MORPHEUS_EXTERNAL_DOCKER_NETWORK:-ai_default}"
+echo "  coder-model, Open WebUI, network ${MORPHEUS_EXTERNAL_DOCKER_NETWORK:-ai_default}"
 echo
-echo "See docs/runbooks/BATWING_OPERATOR.md for daily use and stop criteria."
+echo "See docs/runbooks/UBUNTU_OPERATOR.md for daily use and stop criteria."
