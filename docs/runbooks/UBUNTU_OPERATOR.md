@@ -206,6 +206,12 @@ The wiring contract is enforced by `morpheus.core.research_deployment`
 must be sha256-digest pinned, endpoints must be http(s) without credentials,
 and the model id must be bounded.
 
+Research requests always use the configured model ID and preserve the
+server's no-thinking behavior (RSCH-002): the request builder
+(`morpheus.core.research_routing.build_research_request`) pins the
+configured model id, and `verify_research_request` rejects any request that
+names a different model or asks for thinking.
+
 ## Live read-only checks (optional)
 
 ```bash
