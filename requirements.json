@@ -316,8 +316,11 @@
     {
       "id": "SRCH-002",
       "phase": 4,
-      "status": "deferred",
-      "owning_tests": [],
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_search_contract.py",
+        "tests/contract/test_search_adapter.py"
+      ],
       "risk": "high",
       "required_environments": [
         "VM",
@@ -325,7 +328,7 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
       "implementation_tasks": []
     },
