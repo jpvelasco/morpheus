@@ -156,6 +156,20 @@ http://searxng:8080/search?q={query}&format=json
 - verification is enforced by `morpheus.core.search_contract`
   (`documented_query_url`, `verify_search_payload`) at every search call
 
+## GPU resource policy
+
+GPU acceleration for owned services is **opt-in** (VOICE-004): it stays
+disabled unless `MORPHEUS_ENABLE_GPU_ACCELERATION=true` is set, and any GPU
+use is rejected when it would violate the configured headroom policy:
+
+- `MORPHEUS_GPU_HEADROOM_FREE_MIB` (default 4096) — free GPU memory that
+  must remain after the requested use
+- `MORPHEUS_GPU_MAX_TEMPERATURE_C` (default unset) — temperature ceiling;
+  use is rejected above it when an observation is available
+
+Enforcement is pure (`morpheus.core.gpu_policy.evaluate_gpu_use`); live
+memory and temperature observations come from the host agent.
+
 ## Voice: documented Open WebUI contract
 
 When the voice control is enabled, the voice gateway exposes an

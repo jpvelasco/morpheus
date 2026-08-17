@@ -411,10 +411,10 @@
     {
       "id": "VOICE-004",
       "phase": 5,
-      "status": "deferred",
+      "status": "implemented",
       "owning_tests": [
-        "tests/contract/test_optional_compose.py",
-        "tests/contract/test_voice_gateway.py"
+        "tests/unit/test_gpu_policy.py",
+        "tests/unit/test_config.py"
       ],
       "risk": "critical",
       "required_environments": [
@@ -423,7 +423,7 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": true,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
       "implementation_tasks": []
     },

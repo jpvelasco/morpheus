@@ -26,6 +26,20 @@ def test_CFG_001_configuration_precedence(tmp_path: Path) -> None:
     assert str(settings.llm_base_url) == "http://config-llm:8000/v1"
 
 
+def test_CFG_004_gpu_policy_defaults_to_opt_in_disabled_with_headroom() -> None:
+    settings = MorpheusSettings()
+    assert settings.enable_gpu_acceleration is False
+    assert settings.gpu_headroom_free_mib == 4096
+    assert settings.gpu_max_temperature_c is None
+
+
+def test_CFG_004_gpu_policy_rejects_unsafe_values() -> None:
+    with pytest.raises(ValidationError):
+        MorpheusSettings(gpu_headroom_free_mib=-1)
+    with pytest.raises(ValidationError):
+        MorpheusSettings(gpu_max_temperature_c=0)
+
+
 def test_CONT_002_loads_the_configured_telemetry_host_port(tmp_path: Path) -> None:
     env_file = tmp_path / ".env"
     env_file.write_text("MORPHEUS_TELEMETRY_PORT=17410\n", encoding="utf-8")
