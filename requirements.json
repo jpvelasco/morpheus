@@ -1514,8 +1514,8 @@
       "owning_tests": [
         "tests/contract/test_benchmark_contract.py",
         "tests/unit/test_benchmark.py",
-        "tests/contract/test_history_contract.py",
-        "tests/unit/test_history.py"
+        "tests/contract/test_history_import_contract.py",
+        "tests/unit/test_history_import.py"
       ],
       "risk": "high",
       "required_environments": [

@@ -51,7 +51,7 @@ class LifecycleResult:
 
 class LifecycleCoordinator:
     def __init__(self, *, adapter: LifecycleAdapter, project_id: str) -> None:
-        if not project_id or project_id in {"ai", "open-webui", "history-coder"}:
+        if not project_id or project_id in {"ai", "open-webui", "coder-model"}:
             raise ValueError("project_id is not a valid Morpheus lifecycle identity")
         self._adapter = adapter
         self._project_id = project_id

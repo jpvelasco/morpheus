@@ -147,7 +147,7 @@ def test_SEC_002_agent_rejects_a_protected_container_with_a_forged_label(
             stdout=json.dumps(
                 {
                     "id": container_id,
-                    "name": "/history-coder",
+                    "name": "/coder-model",
                     "image_id": "sha256:" + "b" * 64,
                     "configured_image": "external/inference:stable",
                     "labels": {

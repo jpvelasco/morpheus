@@ -55,7 +55,7 @@ def evidence() -> DiagnosticEvidence:
         events=[{"recorded_at": "2026-08-15T12:00:00+00:00", "message": "ok"}],
         log_excerpts=[],
         regressions=[],
-        runbooks=["ubuntu-1-operator"],
+        runbooks=["ubuntu-operator"],
         provenance=DiagnosticProvenance("0.1.0", "a" * 64, "2026-08-15T12:00:00+00:00"),
     )
 
@@ -80,7 +80,7 @@ GOOD_PAYLOAD = {
     ],
     "likely_causes": [],
     "proposed_checks": [
-        {"type": "runbook", "id": "ubuntu-1-operator"},
+        {"type": "runbook", "id": "ubuntu-operator"},
         {"type": "policy_plan", "kind": "repair"},
     ],
 }
@@ -93,7 +93,7 @@ def test_parse_grounded_diagnosis_accepts_well_formed_output() -> None:
     assert len(diagnosis.findings) == 2
     assert diagnosis.findings[0].confidence == 0.9
     assert diagnosis.proposed_checks == (
-        ProposedCheck(type="runbook", id="ubuntu-1-operator"),
+        ProposedCheck(type="runbook", id="ubuntu-operator"),
         ProposedCheck(type="policy_plan", kind="repair"),
     )
 
@@ -193,7 +193,7 @@ def test_reject_unsafe_proposals_filters_shell_and_arbitrary_actions() -> None:
         "proposed_checks": [
             {"type": "shell", "command": "rm -rf /"},
             {"type": "docker", "command": "docker rm"},
-            {"type": "runbook", "id": "ubuntu-1-operator"},
+            {"type": "runbook", "id": "ubuntu-operator"},
         ],
     }
     with pytest.raises(InjectionDetectedError):
@@ -216,7 +216,7 @@ def test_evaluate_grounding_accepts_runbook_citations() -> None:
                 "kind": "observation",
                 "text": "covered by runbook",
                 "confidence": 0.9,
-                "citations": [{"type": "runbook", "id": "ubuntu-1-operator"}],
+                "citations": [{"type": "runbook", "id": "ubuntu-operator"}],
                 "missing_evidence": [],
             }
         ],

@@ -61,7 +61,7 @@ def _evidence() -> object:
             ("agent.log", f"Authorization: Bearer {CANARIES['secret']}"),
         ],
         regressions=[{"metric": "tokens_per_second", "change_pct": -12.5}],
-        runbooks=["ubuntu-1-operator"],
+        runbooks=["ubuntu-operator"],
         provenance=DiagnosticProvenance(
             morpheus_version="0.1.0",
             source_commit="0123456789abcdef",

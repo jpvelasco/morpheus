@@ -242,7 +242,7 @@ def test_fixture_compose_is_hardened_internal_and_loopback_only() -> None:
     assert compose["networks"]["fixture_external"]["internal"] is True
     rendered = json.dumps(compose)
     assert "ai_default" not in rendered
-    assert "history-coder" not in rendered
+    assert "coder-model" not in rendered
     assert "host.docker.internal" not in rendered
 
 
@@ -284,7 +284,7 @@ def test_fixture_probe_checks_contracts_and_network_isolation() -> None:
         "/fixture/partial-stream",
     ):
         assert path in probe
-    assert "history-coder" in probe
+    assert "coder-model" in probe
     assert "host.docker.internal" in probe
     assert "1.1.1.1" in probe
     assert "fixture_probe=passed" in probe

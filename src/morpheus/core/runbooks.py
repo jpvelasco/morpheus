@@ -23,8 +23,8 @@ class RunbookReference:
 
 KNOWN_RUNBOOKS = (
     RunbookReference(
-        id="ubuntu-1-operator",
-        path="docs/runbooks/ubuntu-operator.md",
+        id="ubuntu-operator",
+        path="docs/runbooks/UBUNTU_OPERATOR.md",
         title="ubuntu-1 host operator runbook",
     ),
     RunbookReference(

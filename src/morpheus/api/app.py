@@ -975,7 +975,7 @@ def create_app(
             ],
             log_excerpts=[],
             regressions=list(report["regressions"]),
-            runbooks=["ubuntu-1-operator"],
+            runbooks=["ubuntu-operator"],
             provenance=DiagnosticProvenance(
                 morpheus_version=morpheus_version,
                 source_commit=settings.source_commit,

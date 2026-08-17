@@ -157,8 +157,8 @@ def test_named_targets_require_matching_physical_evidence() -> None:
     )
     targets = {t.target: t.state for t in profile.targets}
     assert targets == {"ubuntu-1": ClaimState.PROVEN, "ubuntu-2": ClaimState.UNPROVEN}
-    ubuntu-1 = next(t for t in profile.targets if t.target == "ubuntu-1")
-    assert ubuntu-1.evidence_refs == (f"diag-1:{A_DIGEST}",)
+    ubuntu_one = next(t for t in profile.targets if t.target == "ubuntu-1")
+    assert ubuntu_one.evidence_refs == (f"diag-1:{A_DIGEST}",)
 
 
 def test_named_target_wrong_platform_is_not_proven() -> None:
@@ -236,9 +236,9 @@ def test_target_posture_unvalidated_without_evidence() -> None:
         evidence_runs=(),
         benchmark_runs=(),
     )
-    ubuntu-1 = next(p for p in posture if p.target == "ubuntu-1")
-    assert ubuntu-1.validated is False
-    assert all(claim.state is ClaimState.UNPROVEN for claim in ubuntu-1.claims)
+    ubuntu_one = next(p for p in posture if p.target == "ubuntu-1")
+    assert ubuntu_one.validated is False
+    assert all(claim.state is ClaimState.UNPROVEN for claim in ubuntu_one.claims)
 
 
 def test_target_posture_physical_evidence_proves_declared_claims() -> None:
@@ -272,12 +272,12 @@ def test_target_posture_physical_evidence_proves_declared_claims() -> None:
         ),
         benchmark_runs=(benchmark(run_id="bench-1", machine_id="ubuntu-1", engine_id="vllm"),),
     )
-    ubuntu-1 = next(p for p in posture if p.target == "ubuntu-1")
+    ubuntu_one = next(p for p in posture if p.target == "ubuntu-1")
     proven = {
-        claim.dimension: claim for claim in ubuntu-1.claims if claim.state is ClaimState.PROVEN
+        claim.dimension: claim for claim in ubuntu_one.claims if claim.state is ClaimState.PROVEN
     }
     assert set(proven) == set(SupportDimension)
-    assert ubuntu-1.validated is True
+    assert ubuntu_one.validated is True
     assert proven[SupportDimension.OS].evidence_refs == (f"diag-1:{A_DIGEST}",)
     assert proven[SupportDimension.BENCHMARK].evidence_refs == ("bench-1:completed",)
 
@@ -296,11 +296,11 @@ def test_target_posture_requires_matching_machine_and_lane() -> None:
         ),
         benchmark_runs=(benchmark(run_id="bench-1", machine_id="ubuntu-2", engine_id="vllm"),),
     )
-    ubuntu-1 = next(p for p in posture if p.target == "ubuntu-1")
-    ubuntu-2 = next(p for p in posture if p.target == "ubuntu-2")
-    assert ubuntu-1.validated is False
-    assert ubuntu-2.validated is False
-    os_claim = next(c for c in ubuntu-2.claims if c.dimension is SupportDimension.OS)
+    ubuntu_one = next(p for p in posture if p.target == "ubuntu-1")
+    ubuntu_two = next(p for p in posture if p.target == "ubuntu-2")
+    assert ubuntu_one.validated is False
+    assert ubuntu_two.validated is False
+    os_claim = next(c for c in ubuntu_two.claims if c.dimension is SupportDimension.OS)
     assert os_claim.state is ClaimState.PROVEN
 
 
@@ -318,8 +318,8 @@ def test_target_posture_dev_evidence_never_proves_physical_targets() -> None:
         ),
         benchmark_runs=(),
     )
-    ubuntu-1 = next(p for p in posture if p.target == "ubuntu-1")
-    assert all(claim.state is ClaimState.UNPROVEN for claim in ubuntu-1.claims)
+    ubuntu_one = next(p for p in posture if p.target == "ubuntu-1")
+    assert all(claim.state is ClaimState.UNPROVEN for claim in ubuntu_one.claims)
 
 
 def test_target_posture_wrong_platform_never_proves_os_claim() -> None:

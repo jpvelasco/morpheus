@@ -20,7 +20,7 @@ def test_INV_002_name_alone_never_grants_ownership() -> None:
     assert policy.is_owned(forged) is False
 
 
-@pytest.mark.parametrize("name", ["history-coder", "open-webui", "ai_default"])
+@pytest.mark.parametrize("name", ["coder-model", "open-webui", "ai_default"])
 def test_INV_001_protected_external_resources_are_rejected_even_with_forged_label(
     name: str,
 ) -> None:

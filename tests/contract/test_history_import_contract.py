@@ -1,4 +1,4 @@
-"""Contract tests: checksummed history import (BENCH-003)."""
+"""Contract tests: checksummed History import (BENCH-003)."""
 
 from __future__ import annotations
 
@@ -8,9 +8,9 @@ from pathlib import Path
 import pytest
 
 from morpheus.core.benchstore import BenchmarkStore
-from morpheus.core.history import historyImportContext, import_history
+from morpheus.core.history_import import HistoryImportContext, import_history
 
-FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "history"
+FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "History"
 GOLDEN = (
     "speed",
     "coding",
@@ -23,8 +23,8 @@ GOLDEN = (
 )
 
 
-def context() -> historyImportContext:
-    return historyImportContext(
+def context() -> HistoryImportContext:
+    return HistoryImportContext(
         machine_id="fixture-machine",
         benchmark_revision="bench-2026.2",
         ownership_target="DEV",

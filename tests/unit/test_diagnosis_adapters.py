@@ -44,7 +44,7 @@ GOOD_PAYLOAD = {
         }
     ],
     "likely_causes": [],
-    "proposed_checks": [{"type": "runbook", "id": "ubuntu-1-operator"}],
+    "proposed_checks": [{"type": "runbook", "id": "ubuntu-operator"}],
 }
 
 
@@ -73,7 +73,7 @@ def evidence() -> DiagnosticEvidence:
         events=[],
         log_excerpts=[],
         regressions=[],
-        runbooks=["ubuntu-1-operator"],
+        runbooks=["ubuntu-operator"],
         provenance=DiagnosticProvenance("0.1.0", "a" * 64, "2026-08-15T12:00:00+00:00"),
     )
 

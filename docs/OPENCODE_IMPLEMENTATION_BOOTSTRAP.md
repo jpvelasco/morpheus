@@ -104,7 +104,7 @@ NOT AUTHORIZED
 Do not:
 
 - Restart, stop, recreate, reconfigure, adopt, benchmark, load-test, or otherwise
-  mutate history-coder, Open WebUI, the ai Compose project, their networks, model
+  mutate coder-model, Open WebUI, the ai Compose project, their networks, model
   caches, volumes, persistent data, or configuration.
 - Modify /home/operator/morpheus-runtime or /mnt/data/AI.
 - Run HOST-RO or HOST-MAINT lanes without a new, explicit authorization naming

@@ -13,7 +13,7 @@ def test_CONT_002_core_probe_is_loopback_only_and_covers_behavior() -> None:
     source = PROBE.read_text(encoding="utf-8")
     compile(source, str(PROBE), "exec")
     assert "http://127.0.0.1" in source
-    assert "history-coder" not in source
+    assert "coder-model" not in source
     for route in (
         "/healthz",
         "/api/v1/health",

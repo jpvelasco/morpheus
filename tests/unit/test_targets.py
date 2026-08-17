@@ -57,10 +57,10 @@ def test_every_claim_maps_to_artifact_machine_lane_and_rollback() -> None:
 
 
 def test_frozen_values_match_the_supported_engine_tiers() -> None:
-    ubuntu-1 = declared_target("ubuntu-1")
-    assert ubuntu-1.platform == "linux"
-    assert ubuntu-1.architecture == "x86_64"
-    assert ubuntu-1.engine_tier == "vllm"
+    ubuntu_one = declared_target("ubuntu-1")
+    assert ubuntu_one.platform == "linux"
+    assert ubuntu_one.architecture == "x86_64"
+    assert ubuntu_one.engine_tier == "vllm"
     windows = declared_target("windows-x64")
     assert windows.platform == "windows"
     assert windows.engine_tier == "llama.cpp"

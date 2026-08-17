@@ -10,7 +10,7 @@ from morpheus.core.runbooks import (
     known_runbook_reference,
 )
 
-RUNBOOK_PATH = "docs/runbooks/ubuntu-operator.md"
+RUNBOOK_PATH = "docs/runbooks/UBUNTU_OPERATOR.md"
 
 
 def test_registry_is_bounded_and_unique() -> None:
@@ -26,7 +26,7 @@ def test_registry_is_bounded_and_unique() -> None:
 
 
 def test_known_reference_returns_bounded_identity() -> None:
-    reference = known_runbook_reference("ubuntu-1-operator")
+    reference = known_runbook_reference("ubuntu-operator")
     assert isinstance(reference, RunbookReference)
     assert reference.path == RUNBOOK_PATH
 

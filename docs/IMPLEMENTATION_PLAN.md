@@ -876,7 +876,7 @@ Requirements: HOST-001, HOST-002, SEL-001, PLAT-001, and PLAT-002.
   fixture behind;
 - no compatibility result installs software or probes with a completion request.
 
-## 24. Phase 13: Benchmark Data Foundation and history Import
+## 24. Phase 13: Benchmark Data Foundation and History Import
 
 Requirements: BENCH-001 through BENCH-005.
 

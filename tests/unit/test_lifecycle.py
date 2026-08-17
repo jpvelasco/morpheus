@@ -270,7 +270,7 @@ def test_SEC_002_lifecycle_request_rejects_fields_outside_the_fixed_action(
         factory()  # type: ignore[operator]
 
 
-@pytest.mark.parametrize("project_id", ["", "ai", "open-webui", "history-coder"])
+@pytest.mark.parametrize("project_id", ["", "ai", "open-webui", "coder-model"])
 def test_INV_001_lifecycle_coordinator_rejects_protected_project_identity(
     project_id: str,
 ) -> None:

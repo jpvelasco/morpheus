@@ -1,6 +1,6 @@
-"""Checksummed history JSONL import with explicit limitation mapping (BENCH-003).
+"""Checksummed JSONL history import with explicit limitation mapping (BENCH-003).
 
-Accepted line contract (history v1 history shape): one JSON object per line with
+Accepted line contract (history v1 shape): one JSON object per line with
 ``campaign``, ``model``, ``engine``, and ``t`` (elapsed seconds). Optional
 ``ts`` (RFC 3339 timestamp), ``ttft``, ``tps``, ``tokens``, ``error``, and
 ``config`` pairs. Source files are only ever read; every line keeps its own
@@ -29,7 +29,7 @@ _REQUIRED = ("campaign", "model", "engine", "t")
 
 
 @dataclass(frozen=True, slots=True)
-class historyLine:
+class HistoryLine:
     original: str
     digest: str
     campaign: str
@@ -45,7 +45,7 @@ class historyLine:
 
 
 @dataclass(frozen=True, slots=True)
-class historyImportReport:
+class HistoryImportReport:
     lines_seen: int
     lines_mapped: int
     run_ids: tuple[str, ...]
@@ -78,7 +78,7 @@ def _parse_timestamp(value: Any) -> datetime | None:
     return parsed.astimezone(UTC)
 
 
-def parse_history_line(line: str) -> tuple[historyLine | None, str | None]:
+def parse_history_line(line: str) -> tuple[HistoryLine | None, str | None]:
     """Parse one JSONL line, returning (line, limitation). Exactly one side is
     populated; the original text is never modified."""
     digest = _line_digest(line)
@@ -121,7 +121,7 @@ def parse_history_line(line: str) -> tuple[historyLine | None, str | None]:
             if isinstance(key, str) and isinstance(value, str)
         )
     return (
-        historyLine(
+        HistoryLine(
             original=line,
             digest=digest,
             campaign=campaign,
@@ -140,7 +140,7 @@ def parse_history_line(line: str) -> tuple[historyLine | None, str | None]:
 
 
 @dataclass(frozen=True, slots=True)
-class historyImportContext:
+class HistoryImportContext:
     """Operator-declared provenance for an import session (never invented)."""
 
     machine_id: str
@@ -156,9 +156,9 @@ class historyImportContext:
 def import_history(
     stream: TextIO,
     store: BenchmarkStore,
-    context: historyImportContext,
-) -> historyImportReport:
-    """Import a history JSONL history into the store without rewriting it."""
+    context: HistoryImportContext,
+) -> HistoryImportReport:
+    """Import a History JSONL history into the store without rewriting it."""
     store.initialize()
     bounded_identifier(context.machine_id, "machine id")
     bounded_identifier(context.benchmark_revision, "benchmark revision")
@@ -193,9 +193,9 @@ def import_history(
         entry = runs.get(key)
         if entry is None:
             slug = _bounded_slug(parsed.campaign)
-            run_id = f"history-{slug}-{hashlib.sha256(key.encode()).hexdigest()[:12]}"
+            run_id = f"History-{slug}-{hashlib.sha256(key.encode()).hexdigest()[:12]}"
             declaration = CampaignDeclaration(
-                name=f"history-{slug}",
+                name=f"History-{slug}",
                 campaign_type=parsed.campaign,
                 benchmark_revision=context.benchmark_revision,
                 duration_seconds=context.duration_seconds,
@@ -239,7 +239,7 @@ def import_history(
         if samples:
             store.store_samples(tuple(samples))
     store.store_raw_lines(tuple(raw_lines))
-    return historyImportReport(
+    return HistoryImportReport(
         lines_seen=len(digests),
         lines_mapped=sum(len(samples) for samples, _, _ in runs.values()),
         run_ids=tuple(sorted(run_id for _, _, run_id in runs.values())),

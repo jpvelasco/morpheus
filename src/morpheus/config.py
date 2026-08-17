@@ -40,7 +40,7 @@ class MorpheusSettings(BaseModel):
     release_version: str = ""
     source_commit: str = Field(default="", pattern=r"^(?:|[0-9a-f]{40,64})$")
     data_dir: Path = Path("./data")
-    llm_base_url: str = "http://history-coder:8000/v1"
+    llm_base_url: str = "http://coder-model:8000/v1"
     llm_model: str = "qwen36-27b-nvfp4"
     external_docker_network: str = Field(
         default="ai_default", pattern=r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$"

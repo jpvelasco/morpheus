@@ -27,8 +27,8 @@ pre-state and recovery plan.
 
 The initial deployment target is the current server:
 
-- inference container: `history-coder`
-- inference API on shared Docker network: `http://history-coder:8000/v1`
+- inference container: `coder-model`
+- inference API on shared Docker network: `http://coder-model:8000/v1`
 - host inference API: `http://127.0.0.1:8082/v1`
 - served model: `qwen36-27b-nvfp4`
 - chat interface: existing Open WebUI on host port `3000`
@@ -171,7 +171,7 @@ The following are out of scope for the focused v0.2 release:
 - GPU driver, Docker Engine, or NVIDIA Container Toolkit installation;
 - training, fine-tuning, or automatic quantization/conversion pipelines;
 - silent model download, promotion, replacement, or deletion;
-- implicit management of `history-coder`, Open WebUI, or the `ai` Compose project;
+- implicit management of `coder-model`, Open WebUI, or the `ai` Compose project;
 - replacing Open WebUI with a Morpheus chat product;
 - becoming a broad AI application suite equivalent to ODS;
 - prioritizing search, voice, research, workflow, RAG, or image-generation

@@ -8,7 +8,7 @@
       "max_model_len": 131072
     },
     {
-      "id": "history36-coder-q4km",
+      "id": "coder36-q4km",
       "object": "model",
       "root": "nvidia/Qwen3.6-27B-NVFP4",
       "max_model_len": 131072

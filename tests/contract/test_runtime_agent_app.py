@@ -185,7 +185,7 @@ def test_SEC_002_agent_rejects_arbitrary_lifecycle_target_fields() -> None:
         {
             "request_id": "lifecycle-request",
             "action": "start",
-            "target": "history-coder",
+            "target": "coder-model",
         }
     ).encode()
 

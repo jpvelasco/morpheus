@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Install Morpheus control plane for ubuntu-1 next to the existing inference stack.
-# Never mutates history-coder, Open WebUI, or their Compose project.
+# Never mutates coder-model, Open WebUI, or their Compose project.
 set -euo pipefail
 
 umask 077
@@ -201,6 +201,6 @@ echo "  CLI (from repo venv or agent): morpheus status | models | doctor"
 echo "  Env file:     ${env_file}"
 echo
 echo "External services (must remain untouched by Morpheus):"
-echo "  history-coder, Open WebUI, network ${MORPHEUS_EXTERNAL_DOCKER_NETWORK:-ai_default}"
+echo "  coder-model, Open WebUI, network ${MORPHEUS_EXTERNAL_DOCKER_NETWORK:-ai_default}"
 echo
-echo "See docs/runbooks/ubuntu-operator.md for daily use and stop criteria."
+echo "See docs/runbooks/UBUNTU_OPERATOR.md for daily use and stop criteria."

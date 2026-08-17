@@ -4,7 +4,7 @@ Status: follow-up required after the current implementation run
 
 Audited source: `c955adf6f0fa63983d34f3b58f027d5fcef43ab9`
 
-Repository visibility at audit time: GitHub reported `jpvelasco/morpheus` as
+Repository visibility at audit time: GitHub reported the repository as
 `PRIVATE`. This document nevertheless contains no secrets, credentials, prompt
 content, private runtime data, or authorization for live-host changes.
 
@@ -272,5 +272,5 @@ Closure requires:
 - requirement status and owning-test metadata that match the full specification;
 - updated human-readable ledgers with no contradictory active milestone.
 
-No finding authorizes live-host mutation, adoption of `history-coder`, external
+No finding authorizes live-host mutation, adoption of `coder-model`, external
 cache mutation, publication, licensing changes, or signing-credential access.

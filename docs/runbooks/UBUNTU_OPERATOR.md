@@ -4,7 +4,7 @@ Morpheus on ubuntu-1 is a **read-only operator control plane** beside the
 existing inference stack. It answers: is inference usable, which model is
 served, host GPU/disk when the agent is up, and what is blocked.
 
-It does **not** install models, manage `history-coder`, manage Open WebUI, or
+It does **not** install models, manage `coder-model`, manage Open WebUI, or
 replace Docker for external services.
 
 ## Scope stop-line
@@ -15,7 +15,7 @@ workflows, research, image generation) are out of scope unless reopened later.
 
 ## Never do
 
-- Restart, recreate, stop, or reconfigure `history-coder` or Open WebUI via Morpheus
+- Restart, recreate, stop, or reconfigure `coder-model` or Open WebUI via Morpheus
 - Enable lifecycle purge on production data without a disposable lab
 - Point lifecycle compose at the external inference project as if Morpheus owned it
 - Commit `morpheus.env`, API keys, or agent keys
@@ -23,7 +23,7 @@ workflows, research, image generation) are out of scope unless reopened later.
 ## Prerequisites
 
 - Docker Engine + Compose on ubuntu-1
-- Existing shared network (default `ai_default`) with `history-coder`
+- Existing shared network (default `ai_default`) with `coder-model`
 - Candidate artifacts under `artifacts/candidate-aa7174a/candidate/` **or**
   already-loaded image tags
 - CPython 3.12 available as `python3` (or `MORPHEUS_AGENT_PYTHON`) for agent install
@@ -63,7 +63,7 @@ morpheus doctor
 ```
 
 Expect inference readiness against the live vLLM endpoint configured as
-`MORPHEUS_LLM_BASE_URL` (default `http://history-coder:8000/v1` on `ai_default`).
+`MORPHEUS_LLM_BASE_URL` (default `http://coder-model:8000/v1` on `ai_default`).
 
 GPU, storage, and host diagnostics need the **runtime agent socket**. The
 install script sets `run/` to mode `0750` so the API container can open the
@@ -88,7 +88,7 @@ Confirm the agent is running: `kill -0 "$(cat /home/operator/morpheus-runtime/ru
 
 Keep using Docker / existing tools for:
 
-- restarting or tuning `history-coder`
+- restarting or tuning `coder-model`
 - Open WebUI admin and chat
 - deep log dives on external containers
 
@@ -134,7 +134,7 @@ docker compose --project-name morpheus \
 # Stop agent; remove runtime root only if you accept losing local Morpheus state
 ```
 
-Confirm `history-coder` and Open WebUI still run and were not recreated.
+Confirm `coder-model` and Open WebUI still run and were not recreated.
 
 ## Live read-only checks (optional)
 

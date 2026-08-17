@@ -37,7 +37,7 @@ flowchart LR
         Selector[Constraint and Ranking Engine]
         Campaigns[Benchmark Orchestrator]
         Managed[Managed Inference Runtime]
-        Store[History and Operational Store]
+        Store[History Import and Operational Store]
         Advisor[Optional Diagnostic Advisor]
         Telemetry[Optional Telemetry Proxy]
         Search[Optional SearXNG]
@@ -84,7 +84,7 @@ dependency, deployment prerequisite, or control path.
 ### 3.1 Externally Owned
 
 - the `ai` Compose project;
-- `history-coder` and its image, model revision, command, caches, and ports;
+- `coder-model` and its image, model revision, command, caches, and ports;
 - the existing `open-webui` container and `/mnt/data/AI/open-webui` data;
 - the `ai_default` Docker network;
 - `/mnt/data/AI/docker-compose.yml`;
@@ -362,7 +362,7 @@ Morpheus uses two networks:
 
 1. `morpheus_internal`, owned by Morpheus, for control-plane and sidecar traffic.
 2. `ai_default`, external and not owned, only for services that must reach
-   `history-coder` or be reached by Open WebUI through Docker DNS.
+   `coder-model` or be reached by Open WebUI through Docker DNS.
 
 Default host bindings:
 

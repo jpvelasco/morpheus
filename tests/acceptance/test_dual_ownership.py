@@ -20,14 +20,14 @@ pytestmark = pytest.mark.acceptance
 DIGEST = "d" * 64
 
 
-def test_RUNM_001_observe_mode_stays_read_only_for_existing_ubuntu-1_operations() -> None:
+def test_RUNM_001_observe_mode_stays_read_only_for_existing_ubuntu_one_operations() -> None:
     policy = OwnershipPolicy(project_id="morpheus-ubuntu-1")
     owned = ResourceIdentity(
         kind=ResourceKind.CONTAINER,
         name="morpheus-agent",
         labels={"io.morpheus.project": "morpheus-ubuntu-1"},
     )
-    external = ResourceIdentity(kind=ResourceKind.CONTAINER, name="history-coder", labels={})
+    external = ResourceIdentity(kind=ResourceKind.CONTAINER, name="coder-model", labels={})
 
     assert policy.allows(action=ResourceAction.INSPECT, resource=owned) is True
     for action in ResourceAction:
@@ -56,18 +56,18 @@ def test_RUNM_001_managed_promotion_requires_its_own_confirmation() -> None:
 
 
 def test_RUNM_001_adoption_requires_capture_preflight_and_confirmation() -> None:
-    external = InferenceIdentity(identity_id="history-coder", mode=OwnershipMode.EXTERNAL_OBSERVED)
+    external = InferenceIdentity(identity_id="coder-model", mode=OwnershipMode.EXTERNAL_OBSERVED)
     candidate = AdoptionCandidate(
-        candidate_id="adopt-history-coder-0001",
+        candidate_id="adopt-coder-model-0001",
         external_identity=external,
         pre_state_digest=DIGEST,
-        pre_state_scope=("container:history-coder", "port:8000"),
+        pre_state_scope=("container:coder-model", "port:8000"),
         proposed_target=ManagedTarget(
             identity_id="morpheus-libri-gguf-1",
             deployment_plan_id="plan-libri-gguf-q4-0001",
             owned_root="/mnt/data/morpheus/models",
         ),
-        confirmation="adopt history-coder",
+        confirmation="adopt coder-model",
         recovery_plan_id="recovery-cleanup-0001",
     )
     record = MachineRecord(

@@ -10,7 +10,7 @@ uses older terminology.
 These are immediate Morpheus inputs because they are already tuned for our machine and workflow.
 
 - `open-webui` front end
-- `history-coder` vLLM service
+- `coder-model` vLLM service
 - The current vLLM launch configuration in `/mnt/data/AI/docker-compose.yml`
 - Prefix caching enabled on the running vLLM service
 - Chunked prefill enabled on the running vLLM service
@@ -21,7 +21,7 @@ These are immediate Morpheus inputs because they are already tuned for our machi
 - The `enable_thinking=false` chat template override
 - The current benchmark and verification commands we already used
 - The recent speed observations and log-based performance notes
-- The current ports and runtime wiring for `open-webui` and `history-coder`
+- The current ports and runtime wiring for `open-webui` and `coder-model`
 
 ## Ideas Learned From ODS
 

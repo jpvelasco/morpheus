@@ -212,7 +212,7 @@ network-disabled supply-chain scan then reported zero Gitleaks findings across
 history, worktree, and candidate archives; zero high/critical Trivy findings on
 repository, candidate filesystem, and both OCI images; and CycloneDX plus SPDX
 SBOMs for every declared artifact. Human license review was approved for that
-candidate (reviewer JP Velasco; no exceptions; no forbidden licenses) and
+candidate (reviewer: project maintainer; no exceptions; no forbidden licenses) and
 `validation/security/run.sh finalize` produced a passing supply-chain
 manifest.
 
@@ -223,7 +223,7 @@ dashboard, and telemetry became healthy; the core probe verified auth, model
 discovery, dashboard framing headers, and non-streaming/streaming completions.
 Hardening checks confirmed non-root users, read-only roots, `cap_drop ALL`,
 `no-new-privileges`, tmpfs, memory limits, loopback-only publications, and no
-Docker socket. Selected `history-coder` and Open WebUI identity fields were
+Docker socket. Selected `coder-model` and Open WebUI identity fields were
 unchanged before and after; the disposable project containers, volume, and
 network were removed. Evidence:
 `artifacts/release-validation/cont002-aa7-cand-evidence/`.
@@ -233,7 +233,7 @@ A disposable lifecycle lab then drove the authenticated runtime agent and
 idempotent reinstall, start, core smoke (API/dashboard/telemetry), named
 backup, restore-preflight, stop, and default uninstall that preserved
 Morpheus-owned data markers while removing project containers. Every step
-reported `protected_external_runtime: unchanged`; selected `history-coder` and
+reported `protected_external_runtime: unchanged`; selected `coder-model` and
 Open WebUI identity fields matched before/after. Evidence:
 `artifacts/release-validation/life003-aa7-lab/`. External-network integrity
 hashing no longer includes live endpoint membership so expected Morpheus
@@ -288,7 +288,7 @@ for `validated` status remains a later, separately authorized validation step.
    ubuntu-1, ubuntu-2, Windows, and Apple Silicon macOS profiles through
    read-only lanes; define native platform ports and versioned catalogs.
 4. **Phase 13 — benchmark foundation:** normalize and import the existing
-   history result history before creating new model-management workflows.
+   imported result history before creating new model-management workflows.
 
 The optional search, voice, workflow, research, RAG, and image-generation suite
 is not on this critical path. Any product-source change after the existing v0.1

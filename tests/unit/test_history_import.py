@@ -1,4 +1,4 @@
-"""Unit tests: checksummed history import with explicit limitation mapping."""
+"""Unit tests: checksummed History import with explicit limitation mapping."""
 
 from __future__ import annotations
 
@@ -8,12 +8,12 @@ from pathlib import Path
 import pytest
 
 from morpheus.core.benchstore import BenchmarkStore
-from morpheus.core.history import (
-    historyImportContext,
+from morpheus.core.history_import import (
+    HistoryImportContext,
     import_history,
     parse_history_line,
 )
-from morpheus.core.history import _line_digest as line_digest
+from morpheus.core.history_import import _line_digest as line_digest
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "history"
 
@@ -29,8 +29,8 @@ GOLDEN = (
 )
 
 
-def context() -> historyImportContext:
-    return historyImportContext(
+def context() -> HistoryImportContext:
+    return HistoryImportContext(
         machine_id="fixture-machine",
         benchmark_revision="bench-2026.2",
         ownership_target="DEV",
@@ -42,7 +42,7 @@ def store(tmp_path) -> BenchmarkStore:
     return BenchmarkStore(tmp_path)
 
 
-class TestParsehistoryLine:
+class TestParseHistoryLine:
     def test_valid_line(self) -> None:
         line, limitation = parse_history_line(
             '{"campaign": "speed", "model": "m", "engine": "e", "t": 1.5}'
@@ -109,7 +109,7 @@ class TestParsehistoryLine:
         assert line.error == "timeout"
 
 
-class TestImporthistory:
+class TestImportHistory:
     @pytest.mark.parametrize("name", GOLDEN)
     def test_golden_import(self, store: BenchmarkStore, name: str) -> None:
         raw = (FIXTURES / f"{name}.jsonl").read_text(encoding="utf-8")
@@ -158,7 +158,7 @@ class TestImporthistory:
             assert store.read_raw(digest) in raw.splitlines()
 
     def test_import_requires_bounded_context(self, store: BenchmarkStore) -> None:
-        bad = historyImportContext(
+        bad = HistoryImportContext(
             machine_id="not a bounded id",
             benchmark_revision="bench-2026.2",
             ownership_target="DEV",

@@ -20,7 +20,7 @@ critical path, and this document does not yet constitute v0.2 release evidence.
 
 ## 1. Non-Negotiable Boundaries
 
-- The active `history-coder` vLLM service and Open WebUI are externally owned.
+- The active `coder-model` vLLM service and Open WebUI are externally owned.
 - Ordinary CI, VM, browser, fault, load, and soak tests use disposable fakes or
   Morpheus-owned services.
 - Live tests are opt-in and read-only unless the user explicitly authorizes a

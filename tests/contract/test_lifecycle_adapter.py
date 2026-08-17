@@ -47,7 +47,7 @@ class FakeCommandRunner:
             return ""
         if command[:3] == ("docker", "container", "inspect"):
             target = command[-1]
-            if target in {"history-coder", "open-webui"}:
+            if target in {"coder-model", "open-webui"}:
                 return json.dumps(
                     {
                         "id": target,
@@ -227,7 +227,7 @@ def test_INV_002_forged_or_protected_compose_resource_blocks_every_mutation(
 ) -> None:
     coordinator, _, runner, _, _ = lifecycle(tmp_path)
     runner.container_present = True
-    runner.inspect_name = "history-coder"
+    runner.inspect_name = "coder-model"
 
     with pytest.raises(PermissionError, match="not authorized"):
         coordinator.execute(LifecycleRequest(LifecycleAction.INSTALL, version="0.1.0"))
@@ -271,7 +271,7 @@ def test_INV_001_external_identity_capture_is_selected_and_never_reads_environme
     assert inspect_commands
     serialized = " ".join(" ".join(command) for command in inspect_commands)
     assert ".Config.Env" not in serialized
-    assert "history-coder" in serialized
+    assert "coder-model" in serialized
     assert "open-webui" in serialized
 
 

@@ -126,7 +126,7 @@ control. Planning language must not be mistaken for deployed behavior.
 | API | `http://127.0.0.1:7400/` |
 | Env / API key | `/home/operator/morpheus-runtime/morpheus.env` (mode 0600) |
 | Host agent | `/home/operator/morpheus-runtime/agent/current`, socket under `run/` |
-| Install path | `deploy/ubuntu-1/install.sh` + `docs/runbooks/ubuntu-operator.md` |
+| Install path | `deploy/ubuntu-1/install.sh` + `docs/runbooks/UBUNTU_OPERATOR.md` |
 | Candidate | rewritten source `fa5fe3ca2e393d6d20c1afa89dff2452650bf180`; deployed artifacts retain legacy build ID `aa7174aff3194ffeb1ca455d53005f242abe6d82` under `artifacts/candidate-aa7174a/` |
 
 Agent socket directory must be mode `0750` so the API container (host GID) can
@@ -153,7 +153,7 @@ Morpheus is an independent project. Do not import, vendor, symlink, or depend
 on ODS source code. ODS may be consulted for ideas and upstream project names,
 but Morpheus implementations and contracts must be written for this system.
 
-The active `history-coder` vLLM service, existing Open WebUI container, their
+The active `coder-model` vLLM service, existing Open WebUI container, their
 Compose project, model caches, and persistent data are externally owned. Never
 restart, recreate, stop, reconfigure, or write to them unless the user gives an
 explicit state-changing instruction in the current request.
@@ -167,7 +167,7 @@ recommendation.
 
 - Follow `docs/PRODUCT_SPECIFICATION.md`, `docs/ARCHITECTURE.md`, and
   `docs/IMPLEMENTATION_PLAN.md` when product work is authorized.
-- Prefer `docs/runbooks/ubuntu-operator.md` for host operator install/use.
+- Prefer `docs/runbooks/UBUNTU_OPERATOR.md` for host operator install/use.
 - Use TDD: failing requirement test, minimal implementation, refactor.
 - Keep core domain logic pure and dependency-free.
 - Put external behavior behind typed adapter protocols.

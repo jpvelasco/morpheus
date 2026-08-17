@@ -33,7 +33,7 @@ recommendations or installed manifests retroactively.
 
 Benchmark campaigns store immutable raw observations and normalized summaries.
 Comparisons classify results as directly comparable, normalized/estimated, or
-invalid. Imported history history retains its original files and limitations.
+invalid. Imported history retains its original files and limitations.
 Measured target-host results may calibrate future estimates only after their
 configuration and benchmark provenance pass validation.
 

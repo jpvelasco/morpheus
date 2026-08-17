@@ -7,10 +7,10 @@ from morpheus.core.models import ModelIdentity
 def test_RUN_001_model_identity_deduplicates_aliases_without_losing_order() -> None:
     model = ModelIdentity(
         root="nvidia/Qwen3.6-27B-NVFP4",
-        aliases=("qwen36-27b-nvfp4", "history36-coder-q4km", "qwen36-27b-nvfp4"),
+        aliases=("qwen36-27b-nvfp4", "coder36-q4km", "qwen36-27b-nvfp4"),
         context_window=131072,
     )
-    assert model.aliases == ("qwen36-27b-nvfp4", "history36-coder-q4km")
+    assert model.aliases == ("qwen36-27b-nvfp4", "coder36-q4km")
 
 
 def test_RUN_005_failed_optional_dependency_does_not_hide_core_capability() -> None:
