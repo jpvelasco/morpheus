@@ -75,8 +75,12 @@ per claim.
 Gate totals: 1587 collected backend (1578 passed, 9 skipped, 91%
 coverage), 131 vitest (99.01%), 48 Playwright e2e, 17 cargo tests.
 All planned requirements are flipped to `implemented` at 0.2.0 in
-`requirements.json` (85 implemented, 12 deferred); HOST-003 and PLAT-004
-retain `requires_live_evidence` and `requires_hardware_evidence` — the
+`requirements.json` (97 implemented, 0 deferred); the deferred queue
+(SRCH-002, VOICE-003, VOICE-004, RSCH-001/002, RAG-001/002/003,
+IMG-001..004) shipped as PRs #37-#48, each with pure core contracts,
+typed decisions, contract/unit tests, runbook sections, and local gates
+at >=90% coverage. HOST-003, PLAT-004, and AID-001 retain
+`requires_live_evidence` and `requires_hardware_evidence` — the
 physical qualification lanes (Phase 18.2-18.4) are their remaining gates.
 AID-001 retains
 `requires_live_evidence: true`; live HOST-RO validation happens in the
