@@ -1,70 +1,93 @@
+"""Unit tests: GPU opt-in and headroom resource policy (VOICE-004)."""
+
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+import pytest
 
-from morpheus.core.gpu import GpuObservation, GpuPolicy, GpuProcess, GpuTransition, TransitionState
+from morpheus.core.gpu_policy import (
+    GpuHeadroomPolicy,
+    evaluate_gpu_use,
+)
 
-NOW = datetime(2026, 7, 15, tzinfo=UTC)
-
-
-def observation(
-    *,
-    free_mib: int = 20_000,
-    temperature_c: int = 40,
-    processes: tuple[GpuProcess, ...] = (),
-    observed_at: datetime = NOW,
-) -> GpuObservation:
-    return GpuObservation(
-        total_mib=32_607,
-        used_mib=32_607 - free_mib,
-        temperature_c=temperature_c,
-        processes=processes,
-        observed_at=observed_at,
-    )
+ENABLED = GpuHeadroomPolicy(
+    enabled=True,
+    required_free_mib=4096,
+    max_temperature_c=80,
+)
 
 
-def test_IMG_002_allows_only_fresh_headroom_without_foreign_processes() -> None:
-    decision = GpuPolicy(min_free_mib=16_000, max_temperature_c=75).evaluate(observation(), now=NOW)
-    assert decision.allowed is True
-    assert decision.blockers == ()
-
-
-def test_IMG_002_rejects_current_inference_coexistence() -> None:
-    process = GpuProcess(pid=123, name="VLLM::EngineCore", owner="external")
-    decision = GpuPolicy(min_free_mib=16_000, max_temperature_c=75).evaluate(
-        observation(free_mib=831, processes=(process,)), now=NOW
+def test_gpu_use_is_denied_when_acceleration_is_not_opted_in() -> None:
+    policy = GpuHeadroomPolicy(enabled=False, required_free_mib=4096)
+    decision = evaluate_gpu_use(
+        policy,
+        requested_mib=1024,
+        free_mib=100_000,
+        temperature_c=50,
     )
     assert decision.allowed is False
-    assert "insufficient_free_memory" in decision.blockers
-    assert "external_gpu_process" in decision.blockers
+    assert any("opt" in reason for reason in decision.reasons)
 
 
-def test_IMG_002_rejects_hot_or_stale_observation() -> None:
-    policy = GpuPolicy(min_free_mib=16_000, max_temperature_c=75)
-    decision = policy.evaluate(
-        observation(temperature_c=80, observed_at=NOW - timedelta(seconds=31)), now=NOW
+def test_gpu_use_allowed_within_headroom() -> None:
+    decision = evaluate_gpu_use(
+        ENABLED,
+        requested_mib=4096,
+        free_mib=32_768,
+        temperature_c=60,
     )
-    assert decision.blockers == ("gpu_observation_stale", "gpu_temperature_high")
+    assert decision.allowed is True
+    assert decision.reasons == ()
 
 
-def test_IMG_003_transition_requires_exact_confirmation_and_valid_edges() -> None:
-    transition = GpuTransition.new(baseline_id="baseline-123")
-    rejected = transition.confirm("wrong")
-    assert rejected.state is TransitionState.AWAITING_CONFIRMATION
-    assert rejected.error_code == "confirmation_mismatch"
-
-    confirmed = transition.confirm(transition.confirmation_phrase)
-    assert confirmed.state is TransitionState.PREFLIGHT
-    image_ready = confirmed.advance(TransitionState.INFERENCE_STOPPED).advance(
-        TransitionState.IMAGE_READY
+def test_gpu_use_denied_when_headroom_would_be_violated() -> None:
+    decision = evaluate_gpu_use(
+        ENABLED,
+        requested_mib=30_000,
+        free_mib=32_768,
+        temperature_c=60,
     )
-    restored = image_ready.advance(TransitionState.RESTORING).advance(TransitionState.COMPLETE)
-    assert restored.state is TransitionState.COMPLETE
+    assert decision.allowed is False
+    assert any("memory" in reason for reason in decision.reasons)
 
 
-def test_IMG_004_failure_stops_with_recovery_state_and_baseline() -> None:
-    transition = GpuTransition.new(baseline_id="baseline-123")
-    failed = transition.confirm(transition.confirmation_phrase).fail("comfy_start_failed")
-    assert failed.state is TransitionState.RECOVERY_REQUIRED
-    assert failed.baseline_id == "baseline-123"
-    assert failed.error_code == "comfy_start_failed"
+def test_gpu_use_denied_when_temperature_exceeds_ceiling() -> None:
+    decision = evaluate_gpu_use(
+        ENABLED,
+        requested_mib=1024,
+        free_mib=100_000,
+        temperature_c=81,
+    )
+    assert decision.allowed is False
+    assert any("temperature" in reason for reason in decision.reasons)
+
+
+def test_gpu_use_allows_unknown_temperature() -> None:
+    decision = evaluate_gpu_use(
+        ENABLED,
+        requested_mib=1024,
+        free_mib=100_000,
+        temperature_c=None,
+    )
+    assert decision.allowed is True
+
+
+def test_gpu_use_denies_zero_or_negative_request() -> None:
+    with pytest.raises(ValueError, match="requested"):
+        evaluate_gpu_use(ENABLED, requested_mib=0, free_mib=100_000)
+    with pytest.raises(ValueError, match="requested"):
+        evaluate_gpu_use(ENABLED, requested_mib=-1, free_mib=100_000)
+
+
+def test_gpu_use_denies_negative_free_memory_observation() -> None:
+    with pytest.raises(ValueError, match="free"):
+        evaluate_gpu_use(ENABLED, requested_mib=1024, free_mib=-1)
+
+
+def test_headroom_policy_rejects_negative_headroom() -> None:
+    with pytest.raises(ValueError, match="headroom"):
+        GpuHeadroomPolicy(enabled=True, required_free_mib=-1)
+
+
+def test_headroom_policy_rejects_non_positive_temperature_ceiling() -> None:
+    with pytest.raises(ValueError, match="temperature"):
+        GpuHeadroomPolicy(enabled=True, required_free_mib=4096, max_temperature_c=0)
