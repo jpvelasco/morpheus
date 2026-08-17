@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hmac
+import json
 import os
 from typing import Annotated, Any
 
@@ -12,6 +13,11 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from morpheus.api.body_limit import BodyLimitMiddleware
 from morpheus.core.concurrency import ConcurrencyLimiter, FixedWindowRateLimiter
+from morpheus.core.voice_contract import (
+    VoiceContractError,
+    verify_speech_response,
+    verify_stt_payload,
+)
 
 
 class SpeechRequest(BaseModel):
@@ -121,9 +127,10 @@ def create_voice_app(
             await request_limiter.release()
         if response.status_code >= 400:
             return JSONResponse(status_code=502, content={"error": {"code": "stt_unavailable"}})
-        payload = response.json()
-        text = payload.get("text") if isinstance(payload, dict) else None
-        if not isinstance(text, str):
+        try:
+            payload = response.json()
+            text = verify_stt_payload(payload)
+        except (ValueError, json.JSONDecodeError):
             return JSONResponse(status_code=502, content={"error": {"code": "stt_incompatible"}})
         return {"text": text}
 
@@ -154,8 +161,12 @@ def create_voice_app(
             await request_limiter.release()
         if response.status_code >= 400:
             return JSONResponse(status_code=502, content={"error": {"code": "tts_unavailable"}})
-        content_type = response.headers.get("Content-Type", "").split(";", 1)[0]
-        if not content_type.startswith("audio/") or not response.content:
+        try:
+            content_type = verify_speech_response(
+                content_type=response.headers.get("Content-Type", ""),
+                content=response.content,
+            )
+        except VoiceContractError:
             return JSONResponse(status_code=502, content={"error": {"code": "tts_incompatible"}})
         return Response(content=response.content, media_type=content_type)
 
