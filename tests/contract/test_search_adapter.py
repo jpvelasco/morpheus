@@ -4,6 +4,7 @@ import httpx
 import pytest
 
 from morpheus.adapters.services.search import SearchClient, SearchContractError
+from morpheus.core.search_contract import SearchQueryContract, documented_query_url
 
 pytestmark = pytest.mark.contract
 
@@ -53,3 +54,20 @@ async def test_SRCH_001_bounds_query_size() -> None:
     ) as http:
         with pytest.raises(ValueError, match="between 1 and 512"):
             await SearchClient(base_url="http://search.test", client=http).search("x" * 513)
+
+
+@pytest.mark.asyncio
+async def test_SRCH_002_client_requests_the_documented_query_url() -> None:
+    seen: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(str(request.url))
+        return httpx.Response(
+            200,
+            json={"results": [{"title": "T", "url": "https://example.test/r", "content": "C"}]},
+        )
+
+    contract = SearchQueryContract(base_url="http://search.test")
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http:
+        await SearchClient(base_url="http://search.test", client=http).search("local AI")
+    assert seen[0] == documented_query_url(contract, "local AI")
