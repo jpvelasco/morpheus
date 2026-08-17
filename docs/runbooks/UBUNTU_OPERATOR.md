@@ -189,6 +189,23 @@ TTS: http://127.0.0.1:7420/v1/audio/speech           (application/json: model, i
   (`documented_stt_url`, `documented_tts_url`, `verify_stt_payload`,
   `verify_speech_response`)
 
+## Research: pinned Perplexica wiring
+
+When the research control is enabled, Morpheus deploys a pinned Perplexica
+service (digest-pinned, profile-gated, loopback port 7412, Morpheus-owned
+`research_data` volume) wired to SearXNG and the configured
+OpenAI-compatible model (RSCH-001):
+
+```
+[API_ENDPOINTS] SEARXNG = "http://search:8080"   OPENAI = "http://coder-model:8000/v1"
+[MODEL]         NAME = <configured model id>
+```
+
+The wiring contract is enforced by `morpheus.core.research_deployment`
+(`validated_research_deployment`, `render_perplexica_config`): the image
+must be sha256-digest pinned, endpoints must be http(s) without credentials,
+and the model id must be bounded.
+
 ## Live read-only checks (optional)
 
 ```bash
