@@ -705,8 +705,10 @@
     {
       "id": "IMG-001",
       "phase": 9,
-      "status": "deferred",
+      "status": "implemented",
       "owning_tests": [
+        "tests/unit/test_image_paths.py",
+        "tests/contract/test_image_contract.py",
         "tests/contract/test_comfy_adapter.py"
       ],
       "risk": "critical",
@@ -716,7 +718,7 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": true,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
       "implementation_tasks": []
     },

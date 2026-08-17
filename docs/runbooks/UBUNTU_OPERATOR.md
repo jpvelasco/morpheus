@@ -234,6 +234,16 @@ schema-version-1 collection metadata; payload verification rejects
 vectors without a matching collection schema version or embedding model
 id, and retrieval must filter on the pinned version.
 
+## Image generation: upstream integration with owned paths
+
+Image generation integrates upstream ComfyUI through its documented API
+(`POST /prompt`, `GET /history/{prompt_id}`, `GET /view`) and only with
+Morpheus-owned models, input, output, and workflow paths (IMG-001):
+`morpheus.core.image_paths.validate_owned_image_paths` requires every
+ComfyUI root under the Morpheus data root, and
+`verify_workflow_references` rejects any workflow path reference that is
+absolute, parent-traversing, or null-byte.
+
 ## Live read-only checks (optional)
 
 ```bash
