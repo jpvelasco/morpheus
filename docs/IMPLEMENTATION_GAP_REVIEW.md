@@ -52,7 +52,7 @@ protect; they do not receive independent status rows or inflate these counts.
 ## v0.2 Prioritized Implementation Backlog
 
 The order below is dependency-based and follows the v0.2 implementation plan.
-The running v0.1 Batwing status plane remains observe-only throughout ordinary
+The running v0.1 ubuntu-1 status plane remains observe-only throughout ordinary
 development.
 
 | Order | Phase | Requirements | Outcome |
@@ -60,7 +60,7 @@ development.
 | 1 | 11 | RUNM-001 | Exactly two observed/managed ownership modes, workflow-scoped adoption records, and immutable v0.2 contracts without changing deployed behavior. |
 | 2 | 11.5 | VSLICE-001 delivery gate; no status row | Real disposable Ubuntu CPU discovery-to-rollback walking skeleton, self-assessment, and bounded evidence-driven replan. |
 | 3 | 12 | HOST-001, HOST-002, SEL-001, PLAT-001, PLAT-002 | Read-only normalized host profiles, native OS capability contracts, and versioned catalogs. |
-| 4 | 13 | BENCH-001 through BENCH-005 | Durable benchmark provenance, Qwopus import, safe campaigns, comparisons, and regression records. |
+| 4 | 13 | BENCH-001 through BENCH-005 | Durable benchmark provenance, history import, safe campaigns, comparisons, and regression records. |
 | 5 | 14 | SEL-002 through SEL-005 | Deterministic compatibility filtering and explainable developer-workload ranking. |
 | 6 | 15 | RUNM-002 through RUNM-006, PLAT-003, GATE-001 | Target-native backend packaging, a bounded stable managed endpoint, and verified model/engine installation, serving, rollback, and recovery. |
 | 7 | 16 | UI-003, OUI-001 through OUI-006, DESK-001, DESK-002 | Tauri and browser operations UI with backend compatibility/bootstrap. |

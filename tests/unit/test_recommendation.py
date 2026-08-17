@@ -82,7 +82,7 @@ def record(created_at: datetime | None = None) -> RecommendationRecord:
     return build_recommendation(
         profile=PROFILE,
         operator=None,
-        reference_machine_id="batwing",
+        reference_machine_id="ubuntu-1",
         budget=BUDGET,
         ranked=RANKED,
         excluded=EXCLUDED,
@@ -114,7 +114,7 @@ class TestRecord:
             build_recommendation(
                 profile=PROFILE,
                 operator=None,
-                reference_machine_id="batwing",
+                reference_machine_id="ubuntu-1",
                 budget=BUDGET,
                 ranked=(),
                 excluded=(),
@@ -127,7 +127,7 @@ class TestRecord:
                 created_at=datetime(2026, 8, 1),  # noqa: DTZ001 - intentionally naive
                 profile=PROFILE,
                 operator=None,
-                reference_machine_id="batwing",
+                reference_machine_id="ubuntu-1",
                 budget=BUDGET,
                 ranked=RANKED,
                 excluded=(),
@@ -142,7 +142,7 @@ class TestRecord:
         item = build_recommendation(
             profile=PROFILE,
             operator=OperatorConstraints(max_context=8192, allowed_engines=("llama.cpp",)),
-            reference_machine_id="batwing",
+            reference_machine_id="ubuntu-1",
             budget=BUDGET,
             ranked=RANKED,
             excluded=(),

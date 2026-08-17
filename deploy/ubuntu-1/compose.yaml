@@ -1,4 +1,4 @@
-# Batwing operator overlay: consume frozen candidate images (no build).
+# ubuntu-1 operator overlay: consume frozen candidate images (no build).
 # Used with deploy/compose.yaml + validation/candidate/compose.yaml.
 services:
   api:

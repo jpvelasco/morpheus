@@ -27,15 +27,15 @@ pre-state and recovery plan.
 
 The initial deployment target is the current server:
 
-- inference container: `qwopus-coder`
-- inference API on shared Docker network: `http://qwopus-coder:8000/v1`
+- inference container: `coder-model`
+- inference API on shared Docker network: `http://coder-model:8000/v1`
 - host inference API: `http://127.0.0.1:8082/v1`
 - served model: `qwen36-27b-nvfp4`
 - chat interface: existing Open WebUI on host port `3000`
 - external Docker network: `ai_default`
 
 These values describe the deployed v0.1 baseline. They are not hard-coded v0.2
-assumptions. Batwing and Batmobile remain named Linux validation machines. A
+assumptions. ubuntu-1 and ubuntu-2 remain named Linux validation machines. A
 stable v0.2 release additionally requires a qualified Windows 11 x86-64 host and
 an Apple Silicon macOS host, each with checksummed machine, install,
 engine, benchmark, lifecycle, access, and recovery evidence.
@@ -171,7 +171,7 @@ The following are out of scope for the focused v0.2 release:
 - GPU driver, Docker Engine, or NVIDIA Container Toolkit installation;
 - training, fine-tuning, or automatic quantization/conversion pipelines;
 - silent model download, promotion, replacement, or deletion;
-- implicit management of `qwopus-coder`, Open WebUI, or the `ai` Compose project;
+- implicit management of `coder-model`, Open WebUI, or the `ai` Compose project;
 - replacing Open WebUI with a Morpheus chat product;
 - becoming a broad AI application suite equivalent to ODS;
 - prioritizing search, voice, research, workflow, RAG, or image-generation
@@ -516,7 +516,7 @@ into typed capabilities used by model and engine constraints. Missing access is
 reported as unknown evidence and never treated as absent hardware or zero
 capacity.
 
-**HOST-003 Target validation.** Batwing, Batmobile, one Windows 11 x86-64 host,
+**HOST-003 Target validation.** ubuntu-1, ubuntu-2, one Windows 11 x86-64 host,
 and one Apple Silicon macOS host each have reproducible discovery and smoke
 evidence. Additional platform combinations are described as unvalidated until
 their own hardware, engine, install, benchmark, lifecycle, and recovery lanes
@@ -561,7 +561,7 @@ candidate without falsifying the recorded recommendation.
 
 Recommendation exit criteria:
 
-- deterministic fixtures cover Batwing-like, Batmobile-like, CPU-only,
+- deterministic fixtures cover ubuntu-1-like, ubuntu-2-like, CPU-only,
   insufficient-storage, unsupported-format, stale-catalog, and ambiguous cases;
 - resource estimates declare safety margins and are calibrated against measured
   startup and benchmark observations;
@@ -630,7 +630,7 @@ workload parameters, warm-up, timestamps, errors, and environmental caveats.
 
 **BENCH-003 Durable result store.** Raw observations, normalized summaries, and
 comparisons are stored with versioned schemas and retention/export policy. The
-existing `qwopus-tool-tests` JSONL history can be imported without rewriting or
+existing `history-tool-tests` JSONL history can be imported without rewriting or
 misrepresenting its original evidence.
 
 **BENCH-004 Comparison and regression.** Operators can compare campaigns across
@@ -646,7 +646,7 @@ started through a routine dashboard refresh or diagnostic action.
 
 Benchmark exit criteria:
 
-- the canonical suite can reproduce the current Qwopus coding, tools, speed, and
+- the canonical suite can reproduce the current history coding, tools, speed, and
   long-context comparisons with a documented import mapping;
 - results survive restart, backup, restore, schema migration, and export;
 - incomplete, interrupted, cache-contaminated, or configuration-mismatched runs
@@ -738,7 +738,7 @@ host/LAN exposure tests.
 **ACCESS-003 Evidence-bounded support.** A target is advertised as supported only
 for the exact operating system, architecture, accelerator, engine, install,
 benchmark, lifecycle, access, and recovery combinations covered by retained
-evidence. Batwing and Batmobile prove named Linux paths only; Windows and macOS
+evidence. ubuntu-1 and ubuntu-2 prove named Linux paths only; Windows and macOS
 support require their own physical evidence.
 
 Secure-access exit criteria:

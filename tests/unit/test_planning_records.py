@@ -61,7 +61,7 @@ def _workload() -> WorkloadProfile:
 
 def _machine() -> MachineProfile:
     return MachineProfile(
-        machine_id="machine-batwing-0001",
+        machine_id="machine-ubuntu-1-0001",
         platform="linux",
         architecture="x86_64",
         accelerator="nvidia",
@@ -121,7 +121,7 @@ def _diagnosis() -> DiagnosisRecord:
 def _recommendation() -> Recommendation:
     return Recommendation(
         recommendation_id="recommendation-0001",
-        machine_id="machine-batwing-0001",
+        machine_id="machine-ubuntu-1-0001",
         plan_ids=(PLAN_ID,),
         evidence_ranked=True,
         weights=(("speed", 0.5), ("quality", 0.5)),

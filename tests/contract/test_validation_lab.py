@@ -77,7 +77,7 @@ def test_cloud_init_is_secret_free_and_installs_declared_prerequisites() -> None
     } <= packages
 
     users = {user["name"]: user for user in config["users"] if isinstance(user, dict)}
-    validation_user = users["batjp"]
+    validation_user = users["operator"]
     assert validation_user["lock_passwd"] is True
     assert validation_user["ssh_authorized_keys"] == ["__SSH_PUBLIC_KEY__"]
 

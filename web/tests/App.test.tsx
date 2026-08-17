@@ -412,7 +412,7 @@ test('REC-001 recommendations tab shows exclusions and tradeoffs', async () => {
       record_id: 'a'.repeat(64),
       created_at: '2026-08-01T12:00:00+00:00',
       profile: { id: 'developer-default', version: '2026.2', name: 'Developer default' },
-      reference_machine_id: 'batwing',
+      reference_machine_id: 'ubuntu-1',
       ranked: [{
         candidate: { model_id: 'qwen2.5-7b-instruct', quantization: 'awq', engine_id: 'vllm', context_window: 8192, concurrency: 1 },
         score: 0.42,

@@ -128,7 +128,7 @@ def test_LOAD_001_dev_rehearsal_refuses_existing_resources_and_always_cleans_up(
     assert "WORKLOAD_PROFILE=dev" in source
     assert "resource_snapshot.py" in source
     assert "summarize.py" in source
-    assert "qwopus-coder" not in source
+    assert "coder-model" not in source
     assert "open-webui" not in source
 
 

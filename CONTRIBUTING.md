@@ -36,7 +36,7 @@ tests that only restate implementation details.
 
 ## Safety Boundary
 
-Normal tests must not call or mutate the production `qwopus-coder` or
+Normal tests must not call or mutate the production `coder-model` or
 `open-webui` services. Live tests are opt-in, clearly labeled, read-only by
 default, and require an explicit environment guard before any stateful action.
 

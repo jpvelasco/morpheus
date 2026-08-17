@@ -639,7 +639,7 @@ implementation has difficulty satisfying it.
 
 ## 20. v0.2 Delivery Strategy
 
-The v0.2 plan preserves the running Batwing v0.1 status plane while building a
+The v0.2 plan preserves the running ubuntu-1 v0.1 status plane while building a
 managed-runtime path in disposable environments. Product work follows this
 order:
 
@@ -656,7 +656,7 @@ contract and ownership
   -> Ubuntu, Windows, and Apple Silicon macOS qualification
 ```
 
-No phase requires adoption of the current Batwing coder. Observe mode remains
+No phase requires adoption of the current ubuntu-1 coder. Observe mode remains
 the recovery and comparison path until the managed candidate has independently
 passed its target gates and the operator separately authorizes promotion or
 adoption.
@@ -669,8 +669,8 @@ resource headroom. Every default is versioned and operator-adjustable.
 Stable v0.2 is one product contract with native target adapters, not one
 identical runtime stack. Native `llama.cpp` is the common engine baseline. vLLM
 is an additional stable Linux NVIDIA tier; Ollama is optional, while Windows
-vLLM through WSL2 and Apple vLLM-Metal/MLX begin as experimental. Batwing and
-Batmobile remain named Linux targets but do not satisfy Windows or macOS release
+vLLM through WSL2 and Apple vLLM-Metal/MLX begin as experimental. ubuntu-1 and
+ubuntu-2 remain named Linux targets but do not satisfy Windows or macOS release
 evidence.
 
 The dependency and parallel-work boundary is:
@@ -710,7 +710,7 @@ RUN-006, SEC-002, SEC-006, and REL-003.
 
 ### First tests
 
-- acceptance tests proving every existing Batwing operation remains read-only;
+- acceptance tests proving every existing ubuntu-1 operation remains read-only;
 - property tests proving resource names and endpoints cannot transfer ownership;
 - invalid state-transition tests across install, campaign, promotion, rollback,
   and adoption;
@@ -849,7 +849,7 @@ Requirements: HOST-001, HOST-002, SEL-001, PLAT-001, and PLAT-002.
 - implement portable system collection plus Linux/NVIDIA, Windows/DXGI/vendor,
   and Apple Metal collectors with explicit unavailable and permission states;
 - prepare guarded capture lanes and, when separately authorized and available,
-  capture initial privacy-reviewed profiles from Batwing, Batmobile, one Windows
+  capture initial privacy-reviewed profiles from ubuntu-1, ubuntu-2, one Windows
   11 x86-64 host, and one Apple Silicon macOS host.
 
 ### First tests
@@ -876,7 +876,7 @@ Requirements: HOST-001, HOST-002, SEL-001, PLAT-001, and PLAT-002.
   fixture behind;
 - no compatibility result installs software or probes with a completion request.
 
-## 24. Phase 13: Benchmark Data Foundation and Qwopus Import
+## 24. Phase 13: Benchmark Data Foundation and History Import
 
 Requirements: BENCH-001 through BENCH-005.
 
@@ -885,7 +885,7 @@ Requirements: BENCH-001 through BENCH-005.
 | Subphase | Primary IDs | Deliverable | Gate |
 |---:|---|---|---|
 | 13.1 | BENCH-002, BENCH-003 | immutable benchmark entities, schema migrations, content-addressed raw store, and reducers | round-trip, migration, backup, restore, and regeneration tests green |
-| 13.2 | BENCH-003 | checksummed Qwopus import and limitation mapping | every supported history shape imports without altering or inventing provenance |
+| 13.2 | BENCH-003 | checksummed history import and limitation mapping | every supported history shape imports without altering or inventing provenance |
 | 13.3 | BENCH-001, BENCH-005 | authorized campaign runner with limits, checkpoints, cancellation, and cleanup | disposable fixture campaigns survive interruption without leaked work |
 | 13.4 | BENCH-002, BENCH-004 | comparability, summaries, regressions, export, and cross-host review | decision tables and public query boundaries green |
 
@@ -894,7 +894,7 @@ Requirements: BENCH-001 through BENCH-005.
 - define the canonical developer benchmark suite and versioned run contracts;
 - persist raw samples, provenance, summaries, comparison classification,
   dispersion, errors, and regression decisions;
-- import existing `qwopus-tool-tests` JSONL and reports without altering their
+- import existing `history-tool-tests` JSONL and reports without altering their
   source files or inventing missing provenance;
 - correlate machine, model, engine, configuration, software, and benchmark
   revisions;
@@ -912,7 +912,7 @@ Requirements: BENCH-001 through BENCH-005.
 
 ### Exit criteria
 
-- all existing Qwopus campaigns are discoverable with original checksums and
+- all existing history campaigns are discoverable with original checksums and
   explicit limitations;
 - one new fixture campaign produces raw, summary, and comparison records through
   public application boundaries;
@@ -947,7 +947,7 @@ Requirements: SEL-002 through SEL-005.
 ### First tests
 
 - deterministic Ubuntu/NVIDIA, Windows/NVIDIA, Apple Silicon, CPU-only, and
-  Batwing/Batmobile ranking fixtures;
+  ubuntu-1/ubuntu-2 ranking fixtures;
 - tables for required tool/structured-output/long-context features, memory and
   storage pressure, unsupported engines, trust/license policy, and stale catalogs;
 - monotonicity tests for harder resource limits and changed workload weights;
@@ -994,7 +994,7 @@ LiteLLM or broad multi-provider control plane.
 - stage candidates, validate OpenAI-compatible developer features, benchmark,
   promote, observe, upgrade, roll back, and remove managed runtimes;
 - preserve direct bypass and last-known-good recovery;
-- design but do not automatically execute adoption of Batwing's current coder;
+- design but do not automatically execute adoption of ubuntu-1's current coder;
 - build a separately versioned frozen backend for each target and register it as
   a per-user systemd service, Windows background application, or macOS LaunchAgent;
   keep elevated always-on service mode deferred;
@@ -1076,8 +1076,8 @@ TEL-001 through TEL-005, RUN-003, RUN-004, and PERF-003.
 - settings source/default/secret/diff/preflight/restart/rollback tests;
 - lifecycle refresh, cancellation, reconnect, duplicate submit, and session
   expiry during long operations;
-- visual evidence for an Ubuntu desktop client and for tunneled Batwing,
-  Batmobile, and mobile browser viewports;
+- visual evidence for an Ubuntu desktop client and for tunneled ubuntu-1,
+  ubuntu-2, and mobile browser viewports;
 - target-native desktop install, close/reopen, backend restart, reboot,
   version-mismatch, update rollback, and browser-fallback workflows.
 
@@ -1149,14 +1149,14 @@ performance, backup, and release requirements.
 | Subphase | Primary IDs | Deliverable | Gate |
 |---:|---|---|---|
 | 18.1 | HOST-003, PLAT-004, ACCESS-003 | frozen target/support matrix, native package manifests, runbooks, and evidence tasks | every claim maps to an exact artifact, machine, lane, and rollback path |
-| 18.2 | HOST-003, PLAT-004, ACCESS-003 | Ubuntu, Batwing, and Batmobile physical lanes | named Linux discovery, managed-runtime, lifecycle, access, and recovery evidence green |
+| 18.2 | HOST-003, PLAT-004, ACCESS-003 | Ubuntu, ubuntu-1, and ubuntu-2 physical lanes | named Linux discovery, managed-runtime, lifecycle, access, and recovery evidence green |
 | 18.3 | HOST-003, PLAT-004, ACCESS-003 | Windows 11 x86-64 physical lane | native `llama.cpp`, desktop/backend, package, lifecycle, access, and recovery evidence green |
 | 18.4 | HOST-003, PLAT-004, ACCESS-003 | Apple Silicon macOS physical lane | native `llama.cpp`, desktop/backend, package, lifecycle, access, and recovery evidence green |
 | 18.5 | all selected v0.2 requirements | cross-target comparison, independent operator walkthrough, and developer/source release report | all three stable OS lanes green and unsupported combinations explicit |
 
 ### Objectives
 
-- run clean target installs on Batwing and Batmobile, one Windows 11 x86-64
+- run clean target installs on ubuntu-1 and ubuntu-2, one Windows 11 x86-64
   NVIDIA host, and one Apple Silicon macOS host;
 - qualify discovery, recommendation, acquisition, engine startup, API features,
   benchmark campaigns, operations UI, logs, analytics, settings, diagnosis,
@@ -1174,7 +1174,7 @@ performance, backup, and release requirements.
 - Ubuntu 26.04 x86-64, Windows 11 x86-64, and macOS 14+ on Apple Silicon each
   have one documented native `llama.cpp` developer-inference path with tested
   last-known-good recovery; Linux NVIDIA additionally qualifies vLLM;
-- Batwing and Batmobile retain their separate named-machine evidence;
+- ubuntu-1 and ubuntu-2 retain their separate named-machine evidence;
 - recommendation claims match actual target evidence and expose material
   differences between the machines;
 - all observed external resources remain unchanged unless a distinct adoption

@@ -152,7 +152,7 @@ def main() -> int:
     engine_digest = _ensure_engine(environment)
 
     machine = MachineProfile(
-        machine_id="machine-batmobile-vslice",
+        machine_id="machine-ubuntu-2-vslice",
         platform="linux",
         architecture="x86_64",
         accelerator="cpu",

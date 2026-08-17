@@ -56,7 +56,7 @@ def test_CFG_003_rejects_unsafe_or_ambiguous_endpoint(url: str) -> None:
     [
         "http://127.0.0.1:8082/v1",
         "https://[::1]:8082/v1",
-        "http://qwopus-coder:8000/v1",
+        "http://coder-model:8000/v1",
     ],
 )
 def test_CFG_003_accepts_supported_endpoint_shapes(url: str) -> None:

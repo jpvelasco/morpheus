@@ -153,7 +153,7 @@ def evidence(
     value: float,
     *,
     provenance: str = "measured",
-    machine_id: str | None = "batwing",
+    machine_id: str | None = "ubuntu-1",
 ) -> MetricEvidence:
     return MetricEvidence(
         metric=metric,
@@ -200,7 +200,7 @@ def test_only_viable_tuples_are_ranked() -> None:
         viable,
         profile=SEED_PROFILES[0],
         evidence_by_candidate=build_evidence(viable),
-        reference_machine_id="batwing",
+        reference_machine_id="ubuntu-1",
     )
     ranked_ids = {item.candidate for item in ranking}
     assert ranked_ids == set(viable)
@@ -223,7 +223,7 @@ def test_extreme_weights_cannot_resurrect_rejected_tuple() -> None:
         viable,
         profile=extreme,
         evidence_by_candidate=build_evidence(viable),
-        reference_machine_id="batwing",
+        reference_machine_id="ubuntu-1",
     )
     assert all(item.candidate not in rejected for item in ranking)
 
@@ -235,13 +235,13 @@ def test_ranking_is_deterministic() -> None:
         viable,
         profile=SEED_PROFILES[1],
         evidence_by_candidate=evidence_map,
-        reference_machine_id="batwing",
+        reference_machine_id="ubuntu-1",
     )
     second = rank_candidates(
         tuple(reversed(viable)),
         profile=SEED_PROFILES[1],
         evidence_by_candidate=evidence_map,
-        reference_machine_id="batwing",
+        reference_machine_id="ubuntu-1",
     )
     assert first == second
     assert [item.score for item in first] == sorted((item.score for item in first), reverse=True)
@@ -254,13 +254,13 @@ def test_improving_evidence_never_lowers_score() -> None:
         viable,
         profile=SEED_PROFILES[0],
         evidence_by_candidate={candidate: (evidence("decode_throughput", 10.0),)},
-        reference_machine_id="batwing",
+        reference_machine_id="ubuntu-1",
     )[0]
     high = rank_candidates(
         viable,
         profile=SEED_PROFILES[0],
         evidence_by_candidate={candidate: (evidence("decode_throughput", 190.0),)},
-        reference_machine_id="batwing",
+        reference_machine_id="ubuntu-1",
     )[0]
     assert high.score >= low.score
 
@@ -272,7 +272,7 @@ def test_calibration_and_confidence_are_bounded() -> None:
         viable,
         profile=SEED_PROFILES[0],
         evidence_by_candidate={candidate: (evidence("decode_throughput", 75.0),)},
-        reference_machine_id="batwing",
+        reference_machine_id="ubuntu-1",
     )[0]
     assert 0.0 <= ranking.score <= 1.0
     for contribution in ranking.contributions:
@@ -290,7 +290,7 @@ def test_foreign_machine_evidence_excluded_and_flagged() -> None:
         evidence_by_candidate={
             candidate: (evidence("decode_throughput", 190.0, machine_id="elsewhere"),)
         },
-        reference_machine_id="batwing",
+        reference_machine_id="ubuntu-1",
     )[0]
     contribution = next(
         item for item in ranking.contributions if item.metric == "decode_throughput"
@@ -307,13 +307,13 @@ def test_estimated_evidence_is_diluted_not_dropped() -> None:
         viable,
         profile=SEED_PROFILES[0],
         evidence_by_candidate={candidate: (evidence("stability", 1.0),)},
-        reference_machine_id="batwing",
+        reference_machine_id="ubuntu-1",
     )[0]
     estimated = rank_candidates(
         viable,
         profile=SEED_PROFILES[0],
         evidence_by_candidate={candidate: (evidence("stability", 1.0, provenance="estimated"),)},
-        reference_machine_id="batwing",
+        reference_machine_id="ubuntu-1",
     )[0]
     assert estimated.score < measured.score
     assert estimated.score > 0.0
@@ -327,7 +327,7 @@ def test_all_seed_profiles_rank_consistently() -> None:
             viable,
             profile=profile,
             evidence_by_candidate=evidence_map,
-            reference_machine_id="batwing",
+            reference_machine_id="ubuntu-1",
         )
         assert {item.candidate for item in ranking} == set(viable)
         assert len(ranking) == len(set(ranking))

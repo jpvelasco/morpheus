@@ -15,7 +15,7 @@ from morpheus.core.ownership import (
     lifecycle_identity_guard,
 )
 
-VALID_ID = "qwopus-coder"
+VALID_ID = "coder-model"
 VALID_PLAN = "plan-libri-gguf-q4-0001"
 VALID_ROOT = "/mnt/data/morpheus/models"
 VALID_DIGEST = "a" * 64
@@ -111,12 +111,12 @@ def test_RUNM_001_managed_target_rejects_unbounded_plan_and_root_values(value: s
 
 def test_RUNM_001_adoption_candidate_binds_external_identity_pre_state_and_managed_target() -> None:
     candidate = AdoptionCandidate(
-        candidate_id="adopt-qwopus-coder-0001",
+        candidate_id="adopt-coder-model-0001",
         external_identity=_external(),
         pre_state_digest=VALID_DIGEST,
-        pre_state_scope=("container:qwopus-coder", "port:8000"),
+        pre_state_scope=("container:coder-model", "port:8000"),
         proposed_target=_target(),
-        confirmation="adopt qwopus-coder",
+        confirmation="adopt coder-model",
         recovery_plan_id="recovery-cleanup-0001",
     )
 
@@ -127,12 +127,12 @@ def test_RUNM_001_adoption_candidate_binds_external_identity_pre_state_and_manag
 
 def test_RUNM_001_adoption_candidate_is_not_an_ordinary_identity() -> None:
     candidate = AdoptionCandidate(
-        candidate_id="adopt-qwopus-coder-0001",
+        candidate_id="adopt-coder-model-0001",
         external_identity=_external(),
         pre_state_digest=VALID_DIGEST,
-        pre_state_scope=("container:qwopus-coder",),
+        pre_state_scope=("container:coder-model",),
         proposed_target=_target(),
-        confirmation="adopt qwopus-coder",
+        confirmation="adopt coder-model",
         recovery_plan_id="recovery-cleanup-0001",
     )
 
@@ -142,12 +142,12 @@ def test_RUNM_001_adoption_candidate_is_not_an_ordinary_identity() -> None:
 def test_RUNM_001_adoption_candidate_rejects_managed_external_identity() -> None:
     with pytest.raises(ValueError, match="external_observed"):
         AdoptionCandidate(
-            candidate_id="adopt-qwopus-coder-0001",
+            candidate_id="adopt-coder-model-0001",
             external_identity=_managed(),
             pre_state_digest=VALID_DIGEST,
-            pre_state_scope=("container:qwopus-coder",),
+            pre_state_scope=("container:coder-model",),
             proposed_target=_target(),
-            confirmation="adopt qwopus-coder",
+            confirmation="adopt coder-model",
             recovery_plan_id="recovery-cleanup-0001",
         )
 
@@ -155,9 +155,9 @@ def test_RUNM_001_adoption_candidate_rejects_managed_external_identity() -> None
 @pytest.mark.parametrize(
     ("digest", "scope", "confirmation"),
     [
-        ("not-hex", ("container:qwopus-coder",), "adopt qwopus-coder"),
-        (VALID_DIGEST, (), "adopt qwopus-coder"),
-        (VALID_DIGEST, ("container:qwopus-coder",), ""),
+        ("not-hex", ("container:coder-model",), "adopt coder-model"),
+        (VALID_DIGEST, (), "adopt coder-model"),
+        (VALID_DIGEST, ("container:coder-model",), ""),
     ],
 )
 def test_RUNM_001_adoption_candidate_requires_exact_pre_state_and_confirmation(
@@ -165,7 +165,7 @@ def test_RUNM_001_adoption_candidate_requires_exact_pre_state_and_confirmation(
 ) -> None:
     with pytest.raises(ValueError):
         AdoptionCandidate(
-            candidate_id="adopt-qwopus-coder-0001",
+            candidate_id="adopt-coder-model-0001",
             external_identity=_external(),
             pre_state_digest=digest,
             pre_state_scope=scope,
@@ -177,12 +177,12 @@ def test_RUNM_001_adoption_candidate_requires_exact_pre_state_and_confirmation(
 
 def test_RUNM_001_proposed_managed_identity_is_a_new_identity_not_the_external_one() -> None:
     candidate = AdoptionCandidate(
-        candidate_id="adopt-qwopus-coder-0001",
+        candidate_id="adopt-coder-model-0001",
         external_identity=_external(),
         pre_state_digest=VALID_DIGEST,
-        pre_state_scope=("container:qwopus-coder",),
+        pre_state_scope=("container:coder-model",),
         proposed_target=_target(),
-        confirmation="adopt qwopus-coder",
+        confirmation="adopt coder-model",
         recovery_plan_id="recovery-cleanup-0001",
     )
 
@@ -191,12 +191,12 @@ def test_RUNM_001_proposed_managed_identity_is_a_new_identity_not_the_external_o
 
 def test_RUNM_001_lifecycle_boundary_rejects_adoption_candidates() -> None:
     candidate = AdoptionCandidate(
-        candidate_id="adopt-qwopus-coder-0001",
+        candidate_id="adopt-coder-model-0001",
         external_identity=_external(),
         pre_state_digest=VALID_DIGEST,
-        pre_state_scope=("container:qwopus-coder",),
+        pre_state_scope=("container:coder-model",),
         proposed_target=_target(),
-        confirmation="adopt qwopus-coder",
+        confirmation="adopt coder-model",
         recovery_plan_id="recovery-cleanup-0001",
     )
 
@@ -214,7 +214,7 @@ def test_RUNM_001_lifecycle_boundary_accepts_only_inference_identities() -> None
     with pytest.raises(TypeError):
         lifecycle_identity_guard(resource)  # type: ignore[arg-type]
     with pytest.raises(TypeError):
-        lifecycle_identity_guard("qwopus-coder")  # type: ignore[arg-type]
+        lifecycle_identity_guard("coder-model")  # type: ignore[arg-type]
 
 
 def test_RUNM_001_existing_resource_policy_stays_read_only_for_owned_resources() -> None:

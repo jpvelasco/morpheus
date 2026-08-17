@@ -62,7 +62,7 @@ evidence naming the machine), the read-only evidence scanner
 unit + contract suites proving absent evidence never becomes a claim and
 DEV/VM evidence never names a physical target.
 18.1 (HOST-003 + PLAT-004) shipped the frozen target/support matrix
-(`core/targets.py`: immutable declarations for batwing, batmobile,
+(`core/targets.py`: immutable declarations for ubuntu-1, ubuntu-2,
 windows-x64, and macos-arm64; every declared claim maps to an exact
 artifact kind, machine, lane (HOST-RO/HOST-MAINT), and rollback path;
 nothing outside the registry is advertised), target posture derivation
@@ -117,16 +117,16 @@ existing inference. It answers: is inference up, which model, GPU/disk via the
 agent, and basic diagnostics. It is **not** chat, model management, or vLLM
 control. Planning language must not be mistaken for deployed behavior.
 
-### Live install (Batwing)
+### Live install (ubuntu-1)
 
 | Item | Value |
 |---|---|
-| Runtime root | `/home/batjp/morpheus-runtime` |
+| Runtime root | `/home/operator/morpheus-runtime` |
 | Dashboard | `http://127.0.0.1:7401/` (loopback only; use SSH tunnel off-box) |
 | API | `http://127.0.0.1:7400/` |
-| Env / API key | `/home/batjp/morpheus-runtime/morpheus.env` (mode 0600) |
-| Host agent | `/home/batjp/morpheus-runtime/agent/current`, socket under `run/` |
-| Install path | `deploy/batwing/install.sh` + `docs/runbooks/BATWING_OPERATOR.md` |
+| Env / API key | `/home/operator/morpheus-runtime/morpheus.env` (mode 0600) |
+| Host agent | `/home/operator/morpheus-runtime/agent/current`, socket under `run/` |
+| Install path | `deploy/ubuntu-1/install.sh` + `docs/runbooks/UBUNTU_OPERATOR.md` |
 | Candidate | rewritten source `fa5fe3ca2e393d6d20c1afa89dff2452650bf180`; deployed artifacts retain legacy build ID `aa7174aff3194ffeb1ca455d53005f242abe6d82` under `artifacts/candidate-aa7174a/` |
 
 Agent socket directory must be mode `0750` so the API container (host GID) can
@@ -136,15 +136,15 @@ confirm the agent PID is alive.
 Daily CLI (after sourcing env or using agent venv):
 
 ```bash
-/home/batjp/morpheus-runtime/agent/current/bin/morpheus status
-/home/batjp/morpheus-runtime/agent/current/bin/morpheus models
-/home/batjp/morpheus-runtime/agent/current/bin/morpheus doctor
+/home/operator/morpheus-runtime/agent/current/bin/morpheus status
+/home/operator/morpheus-runtime/agent/current/bin/morpheus models
+/home/operator/morpheus-runtime/agent/current/bin/morpheus doctor
 ```
 
 ### Resume ledger
 
 Read `docs/RELEASE_STATE.md` for candidate evidence and milestone status. The
-v0.1 Batwing install remains the operational baseline; the active product queue
+v0.1 ubuntu-1 install remains the operational baseline; the active product queue
 starts with the unimplemented v0.2 Phase 11 contract milestone.
 
 ## Project Boundary
@@ -153,7 +153,7 @@ Morpheus is an independent project. Do not import, vendor, symlink, or depend
 on ODS source code. ODS may be consulted for ideas and upstream project names,
 but Morpheus implementations and contracts must be written for this system.
 
-The active `qwopus-coder` vLLM service, existing Open WebUI container, their
+The active `coder-model` vLLM service, existing Open WebUI container, their
 Compose project, model caches, and persistent data are externally owned. Never
 restart, recreate, stop, reconfigure, or write to them unless the user gives an
 explicit state-changing instruction in the current request.
@@ -167,7 +167,7 @@ recommendation.
 
 - Follow `docs/PRODUCT_SPECIFICATION.md`, `docs/ARCHITECTURE.md`, and
   `docs/IMPLEMENTATION_PLAN.md` when product work is authorized.
-- Prefer `docs/runbooks/BATWING_OPERATOR.md` for host operator install/use.
+- Prefer `docs/runbooks/UBUNTU_OPERATOR.md` for host operator install/use.
 - Use TDD: failing requirement test, minimal implementation, refactor.
 - Keep core domain logic pure and dependency-free.
 - Put external behavior behind typed adapter protocols.

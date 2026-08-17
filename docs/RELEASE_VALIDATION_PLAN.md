@@ -13,14 +13,14 @@ The checklist below remains the historical v0.1 release lane. The reopened v0.2
 product requirements are phased in `IMPLEMENTATION_PLAN.md` Sections 20 through
 32, include an early Ubuntu CPU walking skeleton and bounded replan, and
 culminate in Ubuntu, Windows, and Apple Silicon macOS qualification under Phase
-18. Public platform signing is a separate optional final lane. Batwing and
-Batmobile remain named Linux evidence targets.
+18. Public platform signing is a separate optional final lane. ubuntu-1 and
+ubuntu-2 remain named Linux evidence targets.
 No unchecked v0.1 optional-service item is implicitly promoted into the v0.2
 critical path, and this document does not yet constitute v0.2 release evidence.
 
 ## 1. Non-Negotiable Boundaries
 
-- The active `qwopus-coder` vLLM service and Open WebUI are externally owned.
+- The active `coder-model` vLLM service and Open WebUI are externally owned.
 - Ordinary CI, VM, browser, fault, load, and soak tests use disposable fakes or
   Morpheus-owned services.
 - Live tests are opt-in and read-only unless the user explicitly authorizes a
@@ -51,7 +51,7 @@ Execution environments:
 |---|---|---|
 | DEV | Local checkout or CI | Repository and disposable test state only |
 | VM | A disposable target-native lab; the current v0.1 lane is the Ubuntu `morpheus-validation` guest | Any declared lab mutation |
-| HOST-RO | A physical qualification target; Batwing is the current v0.1 target | Read-only observations only |
+| HOST-RO | A physical qualification target; ubuntu-1 is the current v0.1 target | Read-only observations only |
 | HOST-MAINT | A physical target in an approved maintenance window | Only the explicitly authorized operation |
 
 Phase 18 adds target-native Windows and macOS lab/host lanes using the same
@@ -81,13 +81,13 @@ Every evidence-producing run uses an identifier such as
 
 ## 3. Validation Lab Prerequisites
 
-### 3.1 Batwing Host
+### 3.1 ubuntu-1 Host
 
 Current verified state:
 
 - [x] Ubuntu 26.04 LTS on x86-64 with AMD-V and IOMMU enabled.
 - [x] KVM, QEMU, libvirt, `virt-install`, OVMF, SWTPM, and cloud-image tools.
-- [x] `batjp` has direct `libvirt` and `docker` group access.
+- [x] `operator` has direct `libvirt` and `docker` group access.
 - [x] Libvirt `default` NAT network is active and persistent on
   `192.168.122.0/24`; it does not overlap the LAN or Docker networks.
 - [x] Libvirt `default` storage pool is active, persistent, empty, and has about
@@ -110,8 +110,8 @@ Create one reproducible Ubuntu 26.04 cloud-image guest with:
 - 12 vCPUs, 32 GiB RAM, and a 160 GiB sparse qcow2 disk;
 - UEFI, virtio disk/network, QEMU guest agent, and serial console;
 - libvirt NAT only, no LAN bridge, port forward, shared host directory, GPU, or
-  Docker socket from Batwing;
-- a dedicated SSH key and an unprivileged `batjp` user with sudo;
+  Docker socket from ubuntu-1;
+- a dedicated SSH key and an unprivileged `operator` user with sudo;
 - Docker Engine, Compose, and Buildx, Git, Make, curl, jq, rsync, OpenSSH, CA
   certificates, pipx, and a project-pinned `uv`;
 - automatic security updates disabled during a single reproducibility run but
@@ -125,7 +125,7 @@ Record the official cloud-image URL, SHA-256, release date, package manifest,
 cloud-init input digest, and resulting baseline disk digest. Preserve the base
 volume as read-only and clone it for every clean-install scenario.
 
-Batwing status on 2026-07-15: complete. The powered-off, non-autostarting
+ubuntu-1 status on 2026-07-15: complete. The powered-off, non-autostarting
 `morpheus-validation-base` domain has a read-only 160 GiB disk definition, no
 seed attached, and cleaned cloud-init, machine, and SSH identity. The
 checksum-verified Ubuntu release image, secret-free cloud-init inputs, package
@@ -162,7 +162,7 @@ The VM must provide:
 - generated lab-only API, agent, session, upstream, and workflow keys;
 - canary prompt, response, document, audio, and secret values that are safe to
   destroy and are never used outside the VM;
-- a second network perspective: Batwing probes the guest's libvirt address to
+- a second network perspective: ubuntu-1 probes the guest's libvirt address to
   prove loopback-only publications are unreachable externally;
 - separate volumes for baseline state, upgrade state, backup output, and
   disposable optional-service data.
@@ -179,7 +179,7 @@ The VM must provide:
   and dirty developer trees produce identical build inputs. Environment: DEV.
 - [x] **LAB-003 — Build the fixture external stack.** Implement deterministic
   OpenAI, metrics, slow/error, and streaming fixtures plus a disposable external
-  network. It must never resolve or route to Batwing's external AI services.
+  network. It must never resolve or route to ubuntu-1's external AI services.
   Environment: VM.
 - [x] **LAB-004 — Give concurrent scenario clones unique identity.** Regenerate
   hostname, machine ID, cloud-init instance identity, and SSH host keys without
@@ -239,7 +239,7 @@ environment, safety classification, and evidence shape.
   capabilities, `no-new-privileges`, bounded tmpfs, non-root users, resource
   limits, restart behavior, and absence of the Docker socket.
 - [ ] **NET-001 — Default exposure test.** From inside the VM, prove services
-  work through loopback. From Batwing, prove those ports are unreachable on the
+  work through loopback. From ubuntu-1, prove those ports are unreachable on the
   guest's libvirt address. Enumerate all listening sockets and container port
   publications. Requirements: SEC-007 and release criterion 6.
 - [ ] **SEC-EARLY-001 — Early supply-chain gate.** Run dependency audits, secret
@@ -296,7 +296,7 @@ real older baseline exists for future upgrade tests.
 
 ## 7. P3 — Live Read-Only, Optional Services, and Browsers
 
-### 7.1 Batwing Live Read-Only Lane
+### 7.1 ubuntu-1 Live Read-Only Lane
 
 - [x] **LIVE-001 — Implement hard live guards.** `tests/live` must require
   `MORPHEUS_LIVE_TESTS=1`, reject mutation by default, use allowlisted hosts and
@@ -385,7 +385,7 @@ items remain unchecked until the exact candidate runs against its disposable
 API boundary and the retained screenshots receive release review; BROW-006 in
 particular still requires real response-header, cookie, CSRF, and CORS evidence.
 
-P3 exit gate: guarded live read-only checks preserve Batwing's external state;
+P3 exit gate: guarded live read-only checks preserve ubuntu-1's external state;
 every CPU optional profile passes in the VM; browser and accessibility gates are
 green; GPU work remains explicitly blocked or separately approved.
 
@@ -419,7 +419,7 @@ green; GPU work remains explicitly blocked or separately approved.
   periodic workload and faults for 24 hours. Preserve time-series summaries and
   start/end logical state, not private request bodies.
 - [ ] **LIVE-PERF-001 — Representative external performance, separately
-  authorized.** Any real completion or sustained load against Batwing vLLM is
+  authorized.** Any real completion or sustained load against ubuntu-1 vLLM is
   outside HOST-RO and requires explicit workload, limits, abort criteria, timing,
   pre-state, and post-state approval.
 

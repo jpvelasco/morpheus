@@ -35,7 +35,7 @@ async def test_RUN_001_groups_aliases_by_root_model() -> None:
 
     assert len(models) == 1
     assert models[0].root == "nvidia/Qwen3.6-27B-NVFP4"
-    assert models[0].aliases == ("qwen36-27b-nvfp4", "qwopus36-coder-q4km")
+    assert models[0].aliases == ("qwen36-27b-nvfp4", "coder36-q4km")
     assert models[0].context_window == 131072
 
 

@@ -13,7 +13,7 @@ unversioned compatibility list cannot select a serious developer inference
 stack safely.
 
 Morpheus already has typed health and telemetry foundations, and the separate
-`qwopus-tool-tests` directory contains useful historical coding, tool-use,
+`history-tool-tests` directory contains useful historical coding, tool-use,
 speed, and long-context results. Those results are valuable evidence but do not
 yet share a complete machine/model/engine/configuration provenance schema.
 
@@ -33,7 +33,7 @@ recommendations or installed manifests retroactively.
 
 Benchmark campaigns store immutable raw observations and normalized summaries.
 Comparisons classify results as directly comparable, normalized/estimated, or
-invalid. Imported Qwopus history retains its original files and limitations.
+invalid. Imported history retains its original files and limitations.
 Measured target-host results may calibrate future estimates only after their
 configuration and benchmark provenance pass validation.
 

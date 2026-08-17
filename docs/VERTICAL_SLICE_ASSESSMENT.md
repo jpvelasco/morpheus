@@ -2,7 +2,7 @@
 
 - Date: 2026-08-13
 - Branch: `agent/phase-11-5-walking-skeleton`
-- Host: Batmobile — Windows 11 Pro, Docker Desktop 29.6.2, AMD Ryzen 7 2700X, CPU-only (GPU explicitly out of scope for 11.5)
+- Host: ubuntu-2 — Windows 11 Pro, Docker Desktop 29.6.2, AMD Ryzen 7 2700X, CPU-only (GPU explicitly out of scope for 11.5)
 - Driver: `validation/vslice/run_real_slice.py` (`uv run --python 3.12 python -m validation.vslice.run_real_slice [--fresh]`)
 - Harness: `validation/vslice/harness.py` (pure domain) + `validation/vslice/docker_environment.py` (Docker adapter)
 
