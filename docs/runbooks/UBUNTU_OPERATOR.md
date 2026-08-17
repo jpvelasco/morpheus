@@ -226,6 +226,14 @@ storage path is validated against the Morpheus-owned data root
 (`morpheus.core.rag_ownership.validate_rag_storage`), and Open WebUI
 database paths are rejected.
 
+Ingestion and retrieval use documented service APIs and versioned
+collection metadata (RAG-003): the documented Qdrant REST shape
+(`morpheus.core.rag_contract.documented_ingest_url` /
+`documented_search_url`, collection-scoped points endpoints) plus
+schema-version-1 collection metadata; payload verification rejects
+vectors without a matching collection schema version or embedding model
+id, and retrieval must filter on the pinned version.
+
 ## Live read-only checks (optional)
 
 ```bash
