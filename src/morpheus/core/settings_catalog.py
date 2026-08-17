@@ -58,6 +58,7 @@ LABELS: dict[str, str] = {
     "enable_telemetry": "Enable telemetry",
     "enable_workflows": "Enable workflows",
     "enable_research": "Enable research",
+    "enable_rag": "Enable RAG",
     "enable_image_generation": "Enable image generation",
     "enable_gpu_acceleration": "Enable GPU acceleration",
     "gpu_headroom_free_mib": "GPU free-memory headroom (MiB)",
@@ -115,6 +116,10 @@ DESCRIPTIONS: dict[str, str] = {
     "enable_telemetry": "Enable the telemetry control.",
     "enable_workflows": "Enable the workflows control.",
     "enable_research": "Enable the research control.",
+    "enable_rag": (
+        "Enable the RAG control; off by default because Open WebUI already "
+        "maintains local vector state."
+    ),
     "enable_image_generation": "Enable the image generation control.",
     "enable_gpu_acceleration": "Opt in to GPU acceleration for owned services.",
     "gpu_headroom_free_mib": "Free GPU memory that must remain after any GPU use.",
