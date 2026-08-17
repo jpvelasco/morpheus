@@ -257,6 +257,13 @@ authorize_transition` only issues a `TransitionSession` when the operator
 confirms in a separate session; normal operations are always denied with
 the transition note.
 
+The transition workflow records the verified pre-state and proves that
+inference returned to the same image, model revision, arguments, and a
+healthy endpoint afterward (IMG-004):
+`morpheus.core.recovery_evidence.build_recovery_evidence` produces a
+schema-version-1 evidence record listing every verified field; secret-shaped
+argument values are rejected and never embedded.
+
 ## Live read-only checks (optional)
 
 ```bash
