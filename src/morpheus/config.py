@@ -61,6 +61,9 @@ class MorpheusSettings(BaseModel):
     enable_workflows: bool = False
     enable_research: bool = False
     enable_image_generation: bool = False
+    enable_gpu_acceleration: bool = False
+    gpu_headroom_free_mib: int = Field(default=4096, ge=0, le=512 * 1024)
+    gpu_max_temperature_c: float | None = Field(default=None, gt=0, le=150)
     request_timeout_seconds: float = Field(default=10.0, gt=0, le=120)
     max_request_bytes: int = Field(default=2_097_152, ge=1024, le=64 * 1024 * 1024)
     telemetry_retention_days: int = Field(default=30, ge=1, le=365)
