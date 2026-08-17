@@ -220,6 +220,12 @@ because Open WebUI already maintains local vector state. Enabling
 enablement policy (`morpheus.core.rag_policy.evaluate_rag_enablement`)
 returns a typed denial otherwise, and the RAG capability stays disabled.
 
+When RAG is enabled, vector and embedding data is owned by Morpheus and
+never reads or mutates Open WebUI's database (RAG-002): every declared RAG
+storage path is validated against the Morpheus-owned data root
+(`morpheus.core.rag_ownership.validate_rag_storage`), and Open WebUI
+database paths are rejected.
+
 ## Live read-only checks (optional)
 
 ```bash
