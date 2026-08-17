@@ -269,6 +269,7 @@ def test_UI_003_controls_report_core_ladder_and_disabled_features() -> None:
         "telemetry",
         "workflows",
         "research",
+        "rag",
         "image_generation",
     ]
     by_control = {entry["control"]: entry for entry in payload["controls"]}
@@ -397,6 +398,7 @@ def test_UI_003_controls_cover_only_morpheus_owned_services() -> None:
         "telemetry",
         "workflows",
         "research",
+        "rag",
         "image_generation",
     }
 

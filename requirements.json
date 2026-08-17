@@ -652,8 +652,11 @@
     {
       "id": "RAG-001",
       "phase": 8,
-      "status": "deferred",
-      "owning_tests": [],
+      "status": "implemented",
+      "owning_tests": [
+        "tests/unit/test_rag_policy.py",
+        "tests/unit/test_config.py"
+      ],
       "risk": "low",
       "required_environments": [
         "DEV",
@@ -661,7 +664,7 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
       "implementation_tasks": []
     },

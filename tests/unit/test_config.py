@@ -136,7 +136,15 @@ def test_CFG_004_startup_report_has_feature_decisions() -> None:
 
     assert report["features"]["search"] is True
     assert report["features"]["image_generation"] is False
+    assert report["features"]["rag"] is False
     assert "api_key" not in report
+
+
+def test_RAG_001_rag_is_off_by_default_and_opt_in() -> None:
+    defaults = MorpheusSettings()
+    assert defaults.enable_rag is False
+    enabled = MorpheusSettings(enable_rag=True)
+    assert enabled.enable_rag is True
 
 
 def test_SEC_006_canonicalizes_the_configured_owned_data_root(tmp_path: Path) -> None:
