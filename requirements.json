@@ -562,9 +562,10 @@
     {
       "id": "RSCH-001",
       "phase": 7,
-      "status": "deferred",
+      "status": "implemented",
       "owning_tests": [
-        "tests/contract/test_optional_compose.py"
+        "tests/unit/test_research_deployment.py",
+        "tests/contract/test_research_deployment.py"
       ],
       "risk": "high",
       "required_environments": [
@@ -572,7 +573,7 @@
       ],
       "requires_live_evidence": false,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
       "implementation_tasks": []
     },
