@@ -391,8 +391,10 @@
     {
       "id": "VOICE-003",
       "phase": 5,
-      "status": "deferred",
+      "status": "implemented",
       "owning_tests": [
+        "tests/unit/test_voice_contract.py",
+        "tests/contract/test_voice_adapter.py",
         "tests/contract/test_voice_gateway.py"
       ],
       "risk": "high",
@@ -402,7 +404,7 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": null,
+      "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
       "implementation_tasks": []
     },

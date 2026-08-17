@@ -54,6 +54,31 @@ async def test_VOICE_004_rejects_oversized_audio_before_network() -> None:
 
 
 @pytest.mark.asyncio
+async def test_VOICE_003_adapter_uses_the_documented_urls() -> None:
+    from morpheus.core.voice_contract import (
+        VoiceEndpointContract,
+        documented_stt_url,
+        documented_tts_url,
+    )
+
+    seen: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(str(request.url))
+        if request.url.path == "/v1/audio/transcriptions":
+            return httpx.Response(200, json={"text": "fixture"})
+        return httpx.Response(200, content=b"ID3audio", headers={"Content-Type": "audio/mpeg"})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as http:
+        client = VoiceClient(base_url="http://voice.test/v1", client=http)
+        await client.transcribe(filename="s.wav", audio=b"RIFF", content_type="audio/wav")
+        await client.speak(text="hello", voice="af_heart", model="kokoro")
+    contract = VoiceEndpointContract(base_url="http://voice.test")
+    assert seen[0] == documented_stt_url(contract)
+    assert seen[1] == documented_tts_url(contract)
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("content_type", "body"),
     [("application/json", b"{}"), ("audio/mpeg", b"")],

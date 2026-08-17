@@ -156,6 +156,25 @@ http://searxng:8080/search?q={query}&format=json
 - verification is enforced by `morpheus.core.search_contract`
   (`documented_query_url`, `verify_search_payload`) at every search call
 
+## Voice: documented Open WebUI contract
+
+When the voice control is enabled, the voice gateway exposes an
+OpenAI-compatible audio surface the existing Open WebUI can use (VOICE-003).
+Documented endpoints (port 7420):
+
+```
+STT: http://127.0.0.1:7420/v1/audio/transcriptions   (multipart/form-data: file + model)
+TTS: http://127.0.0.1:7420/v1/audio/speech           (application/json: model, input, voice, response_format, speed)
+```
+
+- STT model: `whisper-1`; accepted uploads: audio/wav, audio/mpeg, audio/webm,
+  audio/ogg, audio/mp4, bounded by the configured upload limit
+- TTS model: `kokoro`; documented voices: `af_heart`, `af_bella`, `af_nicole`,
+  `af_aoede`, `am_michael`, `am_fenrir`, `bf_emma`, `bm_george`
+- verification is enforced by `morpheus.core.voice_contract`
+  (`documented_stt_url`, `documented_tts_url`, `verify_stt_payload`,
+  `verify_speech_response`)
+
 ## Live read-only checks (optional)
 
 ```bash
