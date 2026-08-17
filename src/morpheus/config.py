@@ -21,6 +21,7 @@ FEATURE_FIELDS = {
     "telemetry": "enable_telemetry",
     "workflows": "enable_workflows",
     "research": "enable_research",
+    "rag": "enable_rag",
     "image_generation": "enable_image_generation",
 }
 
@@ -61,6 +62,7 @@ class MorpheusSettings(BaseModel):
     enable_workflows: bool = False
     enable_research: bool = False
     enable_image_generation: bool = False
+    enable_rag: bool = False
     enable_gpu_acceleration: bool = False
     gpu_headroom_free_mib: int = Field(default=4096, ge=0, le=512 * 1024)
     gpu_max_temperature_c: float | None = Field(default=None, gt=0, le=150)

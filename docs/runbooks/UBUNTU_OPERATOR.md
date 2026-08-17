@@ -212,6 +212,14 @@ server's no-thinking behavior (RSCH-002): the request builder
 configured model id, and `verify_research_request` rejects any request that
 names a different model or asks for thinking.
 
+## RAG: explicit need only
+
+Qdrant or a separate embedding server is **not enabled by default** (RAG-001)
+because Open WebUI already maintains local vector state. Enabling
+`MORPHEUS_ENABLE_RAG` requires an explicit, operator-confirmed need; the
+enablement policy (`morpheus.core.rag_policy.evaluate_rag_enablement`)
+returns a typed denial otherwise, and the RAG capability stays disabled.
+
 ## Live read-only checks (optional)
 
 ```bash
