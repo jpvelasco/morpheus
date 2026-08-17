@@ -244,6 +244,12 @@ ComfyUI root under the Morpheus data root, and
 `verify_workflow_references` rejects any workflow path reference that is
 absolute, parent-traversing, or null-byte.
 
+Image generation start is blocked when configured free-memory,
+temperature, process, or ownership checks fail (IMG-002):
+`morpheus.core.image_gate.evaluate_image_start` combines the GPU headroom
+policy (VOICE-004), the process-ownership observation, and the owned-paths
+decision into one typed start decision with every blocker reported.
+
 ## Live read-only checks (optional)
 
 ```bash
