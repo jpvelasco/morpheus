@@ -660,8 +660,8 @@ contract and ownership
   -> benchmark data foundation
   -> deterministic recommendation
   -> cross-platform backend, packaging, and managed engines
-  -> Tauri desktop operations workspace
-  -> bounded AI diagnosis, browser, and SSH access
+  -> Tauri desktop operations workspace and bounded model console
+  -> bounded AI diagnosis/setup copilot, browser, and SSH access
   -> Ubuntu, Windows, and Apple Silicon macOS qualification
 ```
 
@@ -692,8 +692,8 @@ The dependency and parallel-work boundary is:
 | 13 | Phase 12 machine and catalog identities fixed | legacy import, result storage, and campaign policy |
 | 14 | Phase 12 catalogs plus Phase 13 comparable evidence | constraint filtering, scoring profiles, and explanations |
 | 15 | Phase 14 immutable deployment plans | engine adapters, acquisition, lifecycle, and target-native backend packaging |
-| 16 | Phase 15 compatibility and lifecycle APIs fixed | React workspaces, metrics/logs, Tauri shell, and workstation packaging |
-| 17 | Phase 16 authorization and evidence-query APIs fixed | diagnostic providers and local/remote access lanes |
+| 16 | Phase 15 compatibility and lifecycle APIs fixed | React workspaces, model console, metrics/logs, Tauri shell, and workstation packaging |
+| 17 | Phase 16 authorization and evidence-query APIs fixed | diagnostic/setup-copilot providers and local/remote access lanes |
 | 18 | all selected requirements implemented | independent physical target evidence lanes and release integration |
 
 An entry gate is a merge dependency, not permission to use a live target.
@@ -1041,8 +1041,8 @@ LiteLLM or broad multi-provider control plane.
 
 ## 27. Phase 16: Focused Operations Workspace
 
-Requirements: OUI-001 through OUI-006, DESK-001, DESK-002, UI-001 through UI-005,
-TEL-001 through TEL-005, RUN-003, RUN-004, and PERF-003.
+Requirements: OUI-001 through OUI-006, CHAT-001, DESK-001, DESK-002, UI-001
+through UI-005, TEL-001 through TEL-005, RUN-003, RUN-004, and PERF-003.
 
 ### Delivery subphases
 
@@ -1050,7 +1050,7 @@ TEL-001 through TEL-005, RUN-003, RUN-004, and PERF-003.
 |---:|---|---|---|
 | 16.1 | UI-003, OUI-001 | versioned operations query models, navigation, partial states, and compatibility APIs | component, API, accessibility, and stale/error fixtures green |
 | 16.2 | OUI-002, OUI-003, OUI-004 | metrics rollups, approved redacted logs/events, analytics, and comparisons | retention, redaction, units, gaps, bounds, and correlation suites green |
-| 16.3 | OUI-005, OUI-006 | settings, managed workflows, progress/cancellation, and recovery UI | plan preview, confirmation, restart, rollback, reconnect, and session-expiry suites green |
+| 16.3 | OUI-005, OUI-006, CHAT-001 | settings, managed workflows, bounded model console, progress/cancellation, and recovery UI | plan preview, target identity, content privacy, streaming/cancellation, confirmation, restart, rollback, reconnect, and session-expiry suites green |
 | 16.4 | DESK-001, DESK-002 | minimal-capability Tauri shell with local/browser/SSH-profile parity | capability, close/reopen, backend mismatch, and browser fallback suites green |
 | 16.5 | DESK-002 | checksummed Linux, Windows, and macOS developer packages and package-trust-aware bootstrap/update | native install/repair/update/rollback tests green; unattended unsigned update impossible |
 
@@ -1072,6 +1072,9 @@ TEL-001 through TEL-005, RUN-003, RUN-004, and PERF-003.
   retention;
 - expose model/engine plans, benchmark history, comparisons, analytics, settings,
   lifecycle progress, and recovery;
+- add a memory-only model console bound to one explicitly selected canonical
+  managed or external-observed target, with visible target/model identity and no
+  implicit completion or tool execution;
 - generate settings forms from typed schemas with plan preview and rollback;
 - retain accessibility, responsive behavior, honest partial states, and strict
   browser authorization.
@@ -1085,6 +1088,9 @@ TEL-001 through TEL-005, RUN-003, RUN-004, and PERF-003.
 - settings source/default/secret/diff/preflight/restart/rollback tests;
 - lifecycle refresh, cancellation, reconnect, duplicate submit, and session
   expiry during long operations;
+- model-console target/ownership/model identity, streaming, cancellation,
+  timeout, mismatch, external-observed submission, inert tool-call rendering,
+  and content-canary cases;
 - visual evidence for an Ubuntu desktop client and for tunneled ubuntu-1,
   ubuntu-2, and mobile browser viewports;
 - target-native desktop install, close/reopen, backend restart, reboot,
@@ -1096,6 +1102,9 @@ TEL-001 through TEL-005, RUN-003, RUN-004, and PERF-003.
   performing, what changed, and how to recover without reading raw Docker state;
 - request metrics and benchmark history are real application data, not static
   cards or ignored artifacts;
+- the model console provides an end-to-end interactive validation path without
+  persisting conversation content, executing tools, or claiming general-purpose
+  Open WebUI parity;
 - no UI action bypasses ownership, typed plans, confirmation, or agent policy;
 - Windows, Linux, and macOS desktop artifacts pass checksum, capability,
   accessibility, security, polling/event, render, and backend-compatibility
@@ -1104,14 +1113,15 @@ TEL-001 through TEL-005, RUN-003, RUN-004, and PERF-003.
 
 ## 28. Phase 17: AI-Assisted Diagnosis and Secure Access
 
-Requirements: AID-001 through AID-004, ACCESS-001, ACCESS-002, and DESK-003.
+Requirements: AID-001 through AID-004, CHAT-002, ACCESS-001, ACCESS-002, and
+DESK-003.
 
 ### Delivery subphases
 
 | Subphase | Primary IDs | Deliverable | Gate |
 |---:|---|---|---|
 | 17.1 | AID-001 | bounded redacted diagnostic evidence packages and ordinary non-AI diagnosis | canary, size, provenance, and prompt/log-injection corpora green |
-| 17.2 | AID-002, AID-003, AID-004 | disabled, local, and external provider adapters with grounded structured findings | timeout, malformed, hallucination, refusal, cost, consent, and advisory-boundary suites green |
+| 17.2 | AID-002, AID-003, AID-004, CHAT-002 | disabled, local, and external provider adapters with grounded structured findings and bounded setup conversation | timeout, malformed, hallucination, refusal, cost, consent, content privacy, and advisory-boundary suites green |
 | 17.3 | ACCESS-001, DESK-003 | loopback and operator-established SSH-tunnel access profiles | teardown, revocation, reconnect, cookie, CSRF, and parity suites green |
 | 17.4 | ACCESS-002, DESK-003 | optional TLS-authenticated network profile and remote desktop/browser parity | exposure, certificate, origin, proxy-header, brute-force, and recovery suites green |
 
@@ -1122,6 +1132,9 @@ Requirements: AID-001 through AID-004, ACCESS-001, ACCESS-002, and DESK-003.
 - require explicit data-destination, retention, timeout, and cost policy;
 - return structured grounded findings with citations, confidence, and missing
   evidence;
+- present the same bounded provider/evidence path as an optional setup copilot
+  over machine, catalog, recommendation, configuration-preview, diagnostic, and
+  runbook evidence while keeping ordinary setup provider-independent;
 - keep every suggestion advisory and route proposed checks or changes through
   typed Morpheus policy;
 - qualify SSH-tunnel access and an optional TLS-authenticated network profile;
@@ -1134,6 +1147,8 @@ Requirements: AID-001 through AID-004, ACCESS-001, ACCESS-002, and DESK-003.
 - provider timeout, refusal, malformed output, hallucinated evidence, unsafe
   action, and cost/size-limit cases;
 - deterministic grounding and uncertainty evaluation fixtures;
+- setup-copilot provider/destination labeling, unavailable-provider, local and
+  external consent, content-canary, and typed-proposal re-entry cases;
 - proof that diagnostic output cannot call the runtime agent or lifecycle port;
 - SSH teardown, session revocation, TLS, origin, cookie, CSRF, proxy-header,
   brute-force, and exposure tests.
@@ -1144,6 +1159,8 @@ Requirements: AID-001 through AID-004, ACCESS-001, ACCESS-002, and DESK-003.
 - every material AI claim cites available evidence or is labeled unsupported;
 - no prompt, response, secret, raw credential, or unapproved log content reaches
   any provider;
+- setup and model-console operation remain complete when the copilot is disabled
+  or unavailable, and no helper model is bundled or downloaded implicitly;
 - local/SSH remains the default and optional network access is independently
   secured and documented.
 
@@ -1204,7 +1221,15 @@ source primitives exist:
 - independent RAG;
 - ComfyUI and inference-to-image transitions;
 - a broad multi-provider or fleet-wide control plane;
-- chat, training, fine-tuning, and quantization production workflows.
+- a general-purpose chat replacement, persistent conversation library, personas,
+  sharing, plugins, or model-directed tool execution;
+- training, fine-tuning, and quantization production workflows.
+
+ADR-0011 explicitly reopens only the bounded CHAT-001 model console and CHAT-002
+setup copilot. CHAT-001 joins Phase 16 after canonical target identity and the
+managed application boundary exist; CHAT-002 joins Phase 17 through the same
+provider, privacy, grounding, and advisory path as diagnosis. Neither feature
+authorizes a broad provider control plane or a bundled helper-model download.
 
 Reopening one of these areas requires a concrete need, interaction analysis with
 managed inference, updated requirements and priority, and explicit review. It

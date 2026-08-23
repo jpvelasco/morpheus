@@ -21,7 +21,9 @@ Morpheus is an independent appliance for selecting, installing, benchmarking,
 serving, and operating serious local developer-focused AI inference. It discovers
 the current machine, filters model and engine combinations by hard compatibility
 constraints, ranks viable candidates against an operator-selected workload,
-and preserves the evidence behind every recommendation.
+and preserves the evidence behind every recommendation. Its bounded model
+console closes the setup loop by letting the operator interact with the exact
+selected endpoint without turning Morpheus into a general-purpose chat product.
 
 Morpheus supports two explicit operating modes. **Observe mode** retains the
 v0.1 behavior: an existing OpenAI-compatible runtime remains externally owned
@@ -106,7 +108,11 @@ The operator needs to:
 - see whether inference and optional services are actually usable;
 - identify the loaded model and its supported context;
 - inspect GPU, memory, disk, request, and error signals;
+- interactively verify the selected endpoint and model while retaining visible
+  ownership, deployment-plan, and provider identity;
 - diagnose failures without disclosing secrets or conversation content;
+- optionally ask a provider-backed setup copilot to explain evidence and propose
+  ordinary, non-executing Morpheus plan previews;
 - enable or disable Morpheus-owned capabilities safely;
 - back up and restore Morpheus state;
 - know that the existing AI service will not be changed.
@@ -124,6 +130,12 @@ The chat user needs optional access through the existing Open WebUI to:
 - observable, reliable LLM requests;
 - deep research workflows;
 - image generation when GPU capacity is deliberately made available.
+
+Open WebUI remains the general-purpose chat client. The Morpheus model console
+is an operator workflow for bounded interactive validation, and the optional
+setup copilot discusses Morpheus evidence and configuration. Neither surface
+replaces Open WebUI's conversation, document, persona, sharing, or plugin
+features.
 
 ### 3.3 Developer
 
@@ -156,6 +168,9 @@ The developer needs:
 - Morpheus-owned model and engine installation with staged promotion and rollback;
 - repeatable benchmark campaigns with durable history and comparison;
 - live inference metrics, redacted logs, analytics, settings, and lifecycle UI;
+- a bounded model console for interactive endpoint/model validation;
+- an optional setup copilot that shares the diagnosis provider, privacy, and
+  advisory boundaries;
 - configurable local or API-assisted diagnosis constrained to sanitized evidence;
 - loopback and SSH-tunnel operation by default, with separately approved secure
   network access.
@@ -189,7 +204,8 @@ The following are out of scope for the focused v0.2 release:
 - training, fine-tuning, or automatic quantization/conversion pipelines;
 - silent model download, promotion, replacement, or deletion;
 - implicit management of `coder-model`, Open WebUI, or the `ai` Compose project;
-- replacing Open WebUI with a Morpheus chat product;
+- replacing Open WebUI with a general-purpose Morpheus chat product, persistent
+  conversation library, persona system, or tool/plugin ecosystem;
 - configuring, installing, or orchestrating Codex, Grok CLI, Zero, OpenClaude,
   Tonos, or other developer-facing harnesses;
 - becoming a broad AI application suite equivalent to ODS;
@@ -686,8 +702,8 @@ Benchmark exit criteria:
 **OUI-001 Operational navigation.** The authenticated operations application,
 delivered through the desktop shell or loopback browser surface, provides clear
 workspaces for Overview, Hardware, Models, Engines, Runtime, Benchmarks,
-Analytics, Logs and Events, Diagnostics, Settings, and Recovery without becoming
-a replacement chat interface.
+Analytics, Logs and Events, Diagnostics, Settings, Recovery, and a bounded Model
+Console without becoming a general-purpose replacement chat interface.
 
 **OUI-002 Live and historical metrics.** Operators can inspect accelerator
 memory, utilization, temperature and power when available; host memory and
@@ -723,7 +739,48 @@ Operations-workspace exit criteria:
   or external resource names;
 - high-impact actions are visually and technically separated from observation.
 
-### 7.17 AI-Assisted Diagnosis
+### 7.17 Integrated Model Console and Setup Copilot
+
+**CHAT-001 Integrated model console.** The operations application provides a
+bounded, non-persistent chat playground against one explicitly selected
+OpenAI-compatible inference target. Before submission it displays the canonical
+target and ownership mode, requested model, endpoint destination, and managed
+deployment-plan identity when applicable; each response displays the reported
+model and mismatch state. Discovery, page load, health polling, and diagnostics
+never send a completion implicitly. The console streams and cancels requests and
+may display structured or tool-call output, but it never executes model-requested
+tools or converts model output into an operation.
+
+**CHAT-002 Optional setup copilot.** Operators can converse about bounded
+machine evidence, catalogs, recommendations, configuration previews,
+diagnostics, and runbooks through the same provider, grounding, consent, cost,
+privacy, and advisory boundaries as AI-assisted diagnosis. Provider mode is
+disabled, an explicitly selected local OpenAI-compatible target, or a configured
+external API. A copilot proposal can become only an ordinary non-executing typed
+Morpheus check or plan preview that re-enters policy, preflight, confirmation,
+audit, and recovery. Setup remains complete without a provider. A bundled or
+automatically downloaded helper model is deferred pending separate license,
+catalog, packaging, storage, and resource-contention review.
+
+Model-console and setup-copilot exit criteria:
+
+- managed and external-observed target fixtures prove exact canonical identity,
+  explicit submission, requested/reported model handling, streaming,
+  cancellation, timeout, and safe error behavior;
+- prompts and responses are memory-only by default and privacy canaries are
+  absent from application logs, metrics, events, operational history, support
+  bundles, and setup-copilot evidence packages;
+- external-observed submission is an explicit user-requested workload and never
+  grants ownership or lifecycle authority;
+- local and external setup providers are visibly distinguished by model,
+  destination, retention implications, timeout, cost limit, and consent state;
+- unavailable or failed providers do not block model setup, the model console,
+  ordinary diagnostics, or managed operation;
+- adversarial model output cannot execute a tool or bypass typed plan policy;
+- the UI distinguishes “talk to the selected model” from “ask Morpheus about
+  setup” and does not claim Open WebUI conversation-feature parity.
+
+### 7.18 AI-Assisted Diagnosis
 
 **AID-001 Diagnostic evidence package.** Morpheus builds a bounded, redacted
 package from structured health, machine profile, deployment manifest, metrics,
@@ -731,9 +788,12 @@ events, selected log excerpts, benchmark regressions, and known runbooks without
 including prompts, responses, secrets, or unrestricted host data.
 
 **AID-002 Configurable provider.** Diagnosis can be disabled, use an explicitly
-selected local model, or use a configured external API. Provider capabilities,
-data destination, retention implications, timeout, cost limits, and consent are
-shown before evidence leaves the host.
+selected local OpenAI-compatible target, or use a configured external API. A
+local target retains its canonical ownership and model identity; selecting an
+external-observed target is an explicit user-requested workload and grants no
+management authority. Provider capabilities, data destination, retention
+implications, timeout, cost limits, and consent are shown before evidence leaves
+the host.
 
 **AID-003 Explainable findings.** Responses separate observations, inferences,
 confidence, missing evidence, likely causes, and proposed checks and cite the
@@ -752,7 +812,7 @@ AI-diagnosis exit criteria:
 - deterministic fixtures evaluate evidence grounding, uncertainty, and unsafe
   recommendation rejection before any live provider is enabled.
 
-### 7.18 Secure Access and Target Portability
+### 7.19 Secure Access and Target Portability
 
 **ACCESS-001 Local and SSH access.** Loopback binding with authenticated browser
 sessions and documented SSH tunneling remains the default on every target.
@@ -777,7 +837,7 @@ Secure-access exit criteria:
 - support reports never claim broader hardware or engine compatibility than the
   attached target evidence.
 
-### 7.19 Cross-Platform Backend and Desktop
+### 7.20 Cross-Platform Backend and Desktop
 
 **PLAT-001 Normalized platform capabilities.** The machine profile identifies
 operating-system family and version, architecture, accelerator and compute API,

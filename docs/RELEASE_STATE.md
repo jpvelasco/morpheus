@@ -35,17 +35,22 @@ private request data, host addresses, or unredacted evidence.
   Silicon macOS. ubuntu-1 and ubuntu-2 remain named Linux qualification
   machines. The accepted plan adds evidence-ranked selection, managed inference,
   benchmark history, a Tauri desktop plus independent backend, operations, and
-  bounded AI-assisted diagnosis. The planning handoff was consistency-audited
+  bounded AI-assisted diagnosis. ADR-0011 additionally accepts a bounded,
+  memory-only model console followed by an optional setup copilot; it does not
+  reopen general-purpose chat or authorize a bundled helper-model download. The
+  planning handoff was consistency-audited
   and refined on 2026-08-12 with an early vertical slice, bounded self-replan,
   smaller delivery subphases, and optional distribution signing. Substantial
   v0.2 component implementation now exists, but the final run did not satisfy
   several architecture and phase-integration gates. No live v0.2 adoption or
   target mutation has occurred.
-- **Implementation inventory:** 59 implemented, 26 planned, 12 deferred, and 0
+- **Implementation inventory:** 59 implemented, 28 planned, 12 deferred, and 0
   validated; see
   [`requirements.json`](../requirements.json) and the
-  [implementation gap review](IMPLEMENTATION_GAP_REVIEW.md). The 26 planned
-  rows represent incomplete product composition, not erased component work.
+  [implementation gap review](IMPLEMENTATION_GAP_REVIEW.md). Twenty-six planned
+  rows represent incomplete product composition, not erased component work;
+  CHAT-001 and CHAT-002 are newly accepted planned scope with no implementation
+  claim.
   The 12 optional-scope rows are restored to deferred because no ADR reopened
   that priority boundary and their full product paths do not exist.
 - **External harness qualification:** ADR-0010 records Tonos and similar tools
@@ -296,8 +301,11 @@ public/application boundaries and their affected gates pass.
    benchmark records and produce the canonical plan losslessly.
 4. **R3 — durable managed application service.** Replace DEV-only workflow
    simulation and inert settings/control paths with real owned operations.
-5. **R4 through R7 — native lifecycle, observability, desktop, and diagnosis.**
-   These may fan out only after the R3 application boundary is fixed.
+5. **R4 through R7 — native lifecycle, observability, desktop/model console,
+   diagnosis, and setup copilot.** These may fan out only after the R3
+   application boundary is fixed. CHAT-001 and CHAT-002 remain planned and must
+   consume the canonical target/provider and advisory boundaries rather than
+   introducing competing identities or control paths.
 6. **R8/R9 — focused-scope and product-boundary closure.** Keep optional scope
    deferred and prove each status at its real boundary.
 7. **R10 — physical qualification.** Blocked until R9 and separately authorized.
