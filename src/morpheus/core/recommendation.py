@@ -23,7 +23,7 @@ from morpheus.core.solver import (
     estimate_resource_use,
     filter_viable,
 )
-from morpheus.core.workload import OperatorConstraints, WorkloadProfile
+from morpheus.core.workload import OperatorConstraints, WorkloadPolicy
 
 SCHEMA_VERSION = 1
 _ASCII = frozenset(chr(code) for code in range(32, 127))
@@ -70,7 +70,7 @@ class RecommendationRecord:
 
     record_id: str
     created_at: datetime
-    profile: WorkloadProfile
+    profile: WorkloadPolicy
     operator: OperatorConstraints | None
     reference_machine_id: str
     budget: dict[str, int | str]
@@ -124,7 +124,7 @@ class RecommendationRecord:
         return cls(
             record_id=payload["record_id"],
             created_at=created.astimezone(UTC),
-            profile=WorkloadProfile.from_dict(payload["profile"]),
+            profile=WorkloadPolicy.from_dict(payload["profile"]),
             operator=_operator_from_dict(payload["operator"]) if payload.get("operator") else None,
             reference_machine_id=payload["reference_machine_id"],
             budget=dict(payload["budget"]),
@@ -297,7 +297,7 @@ class RecommendationStore:
 
 def build_recommendation(
     *,
-    profile: WorkloadProfile,
+    profile: WorkloadPolicy,
     operator: OperatorConstraints | None,
     reference_machine_id: str,
     budget: dict[str, int | str],
@@ -424,7 +424,7 @@ def budget_from_host(host: dict[str, Any]) -> HardwareBudget | None:
 
 def recommend_for_host(
     *,
-    profile: WorkloadProfile,
+    profile: WorkloadPolicy,
     budget: HardwareBudget,
     catalog: CatalogCollection,
     operator: OperatorConstraints | None = None,

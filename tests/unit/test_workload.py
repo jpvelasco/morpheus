@@ -7,7 +7,7 @@ from morpheus.core.workload import (
     WEIGHT_METRICS,
     OperatorConstraints,
     WorkloadError,
-    WorkloadProfile,
+    WorkloadPolicy,
     monotonic_budget_holds,
     normalize_weights,
 )
@@ -38,21 +38,21 @@ class TestWorkloadProfile:
 
     def test_round_trip(self) -> None:
         profile = SEED_PROFILES[0]
-        assert WorkloadProfile.from_dict(profile.to_dict()) == profile
+        assert WorkloadPolicy.from_dict(profile.to_dict()) == profile
 
     def test_round_trip_rejects_bad_weights(self) -> None:
         payload = SEED_PROFILES[0].to_dict()
         payload["weights"] = [["unknown_metric", 1.0]]
         with pytest.raises(WorkloadError):
-            WorkloadProfile.from_dict(payload)
+            WorkloadPolicy.from_dict(payload)
 
     def test_rejects_blank_id(self) -> None:
         with pytest.raises(WorkloadError):
-            WorkloadProfile(id="", version="1", name="x", weights=(("tool_use", 1.0),))
+            WorkloadPolicy(id="", version="1", name="x", weights=(("tool_use", 1.0),))
 
     def test_rejects_whitespace_id(self) -> None:
         with pytest.raises(WorkloadError):
-            WorkloadProfile(
+            WorkloadPolicy(
                 id="dev default",
                 version="1",
                 name="x",
@@ -61,7 +61,7 @@ class TestWorkloadProfile:
 
     def test_rejects_zero_context(self) -> None:
         with pytest.raises(WorkloadError):
-            WorkloadProfile(
+            WorkloadPolicy(
                 id="dev",
                 version="1",
                 name="x",
@@ -73,7 +73,7 @@ class TestWorkloadProfile:
         assert SEED_PROFILES[0].weight("unknown_metric") == 0.0
 
     def test_weight_lookup_normalized(self) -> None:
-        profile = WorkloadProfile(
+        profile = WorkloadPolicy(
             id="dev",
             version="1",
             name="x",
@@ -83,7 +83,7 @@ class TestWorkloadProfile:
 
     def test_same_inputs_same_profile(self) -> None:
         first = SEED_PROFILES[1].to_dict()
-        second = WorkloadProfile.from_dict(first).to_dict()
+        second = WorkloadPolicy.from_dict(first).to_dict()
         assert first == second
 
 

@@ -10,7 +10,7 @@ from morpheus.agent.protocol import AgentOperation, AgentResponse
 from morpheus.api.app import create_app
 from morpheus.config import MorpheusSettings
 from morpheus.core.health import Evidence, HealthState
-from morpheus.core.models import ModelIdentity
+from morpheus.core.models import ServedModel
 
 MORPHEUS_OWNED_REQUIREMENTS = frozenset({"RUN-005", "SEC-001", "UI-002", "UI-004"})
 pytestmark = pytest.mark.contract
@@ -112,7 +112,7 @@ def client(
             expires_at=NOW + timedelta(seconds=30),
         ),
         model_results=(
-            ModelIdentity(
+            ServedModel(
                 root="nvidia/Qwen3.6-27B-NVFP4",
                 aliases=("qwen36-27b-nvfp4",),
                 context_window=131072,

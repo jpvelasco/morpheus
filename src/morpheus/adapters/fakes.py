@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
 from morpheus.core.health import Evidence
-from morpheus.core.models import ModelIdentity
+from morpheus.core.models import ServedModel
 
 
 @dataclass(slots=True)
@@ -23,13 +23,13 @@ class FakeClock:
 @dataclass(slots=True)
 class FakeInference:
     health_result: Evidence
-    model_results: tuple[ModelIdentity, ...]
+    model_results: tuple[ServedModel, ...]
     chunks: list[bytes] = field(default_factory=list)
 
     async def health(self) -> Evidence:
         return self.health_result
 
-    async def models(self) -> tuple[ModelIdentity, ...]:
+    async def models(self) -> tuple[ServedModel, ...]:
         return self.model_results
 
     async def forward_chat(self, body: bytes) -> AsyncIterator[bytes]:

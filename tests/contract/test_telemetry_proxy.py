@@ -14,7 +14,7 @@ from morpheus.adapters.fakes import FakeClock, FakeInference
 from morpheus.config import MorpheusSettings
 from morpheus.core.concurrency import ConcurrencyLimiter
 from morpheus.core.health import Evidence, HealthState
-from morpheus.core.models import ModelIdentity
+from morpheus.core.models import ServedModel
 from morpheus.core.telemetry import TelemetryEvent
 from morpheus.ports.protocols import InferencePort
 from morpheus.telemetry.app import _finalize_stream, create_proxy_app
@@ -57,7 +57,7 @@ def proxy(
             source="fixture",
             expires_at=now,
         ),
-        model_results=(ModelIdentity(root=None, aliases=("alias",)),),
+        model_results=(ServedModel(root=None, aliases=("alias",)),),
         chunks=chunks,
     )
     store = MemoryTelemetryStore()
@@ -98,7 +98,7 @@ def failing_inference(error: BaseException | None) -> FailingInference:
             source="fixture",
             expires_at=now,
         ),
-        model_results=(ModelIdentity(root=None, aliases=("alias",)),),
+        model_results=(ServedModel(root=None, aliases=("alias",)),),
         error=error,
     )
 

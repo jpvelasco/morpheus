@@ -7,7 +7,7 @@ from typing import Any, Protocol
 
 from morpheus.agent.protocol import AgentOperation, AgentResponse
 from morpheus.core.health import Evidence
-from morpheus.core.models import ModelIdentity
+from morpheus.core.models import ServedModel
 
 
 class Clock(Protocol):
@@ -19,7 +19,7 @@ class Clock(Protocol):
 class InferencePort(Protocol):
     async def health(self) -> Evidence: ...
 
-    async def models(self) -> tuple[ModelIdentity, ...]: ...
+    async def models(self) -> tuple[ServedModel, ...]: ...
 
     def forward_chat(self, body: bytes) -> AsyncIterator[bytes]: ...
 

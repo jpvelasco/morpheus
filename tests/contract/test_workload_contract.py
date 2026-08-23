@@ -26,7 +26,7 @@ from morpheus.core.solver import (
 )
 from morpheus.core.workload import (
     SEED_PROFILES,
-    WorkloadProfile,
+    WorkloadPolicy,
     monotonic_budget_holds,
 )
 
@@ -290,7 +290,7 @@ def test_operator_cap_outranks_budget() -> None:
 def test_seed_profiles_normalize_and_round_trip() -> None:
     for profile in SEED_PROFILES:
         assert sum(weight for _, weight in profile.weights) == pytest.approx(1.0)
-        assert WorkloadProfile.from_dict(profile.to_dict()) == profile
+        assert WorkloadPolicy.from_dict(profile.to_dict()) == profile
 
 
 def test_identical_inputs_produce_identical_partitions() -> None:
@@ -307,7 +307,7 @@ def test_partition_is_consistent_across_profiles() -> None:
     assert all(len(tuples) == len(set(tuples)) for tuples in viable_by_profile.values())
 
 
-def profile_requirements(profile: WorkloadProfile) -> WorkloadRequirements:
+def profile_requirements(profile: WorkloadPolicy) -> WorkloadRequirements:
     return WorkloadRequirements(
         features=profile.features,
         context_tokens=profile.context_tokens,

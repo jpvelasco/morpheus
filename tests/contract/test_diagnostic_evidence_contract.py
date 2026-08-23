@@ -20,7 +20,7 @@ from morpheus.adapters.persistence.sqlite import SqliteStore
 from morpheus.api.app import create_app
 from morpheus.config import MorpheusSettings
 from morpheus.core.health import Evidence, HealthState
-from morpheus.core.models import ModelIdentity
+from morpheus.core.models import ServedModel
 
 pytestmark = pytest.mark.contract
 
@@ -48,7 +48,7 @@ def client(tmp_path: Path) -> TestClient:
                 expires_at=NOW,
             ),
             model_results=(
-                ModelIdentity(
+                ServedModel(
                     root="fixture-model", aliases=("fixture-model",), context_window=4096
                 ),
             ),

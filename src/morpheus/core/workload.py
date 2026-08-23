@@ -54,7 +54,7 @@ def normalize_weights(pairs: tuple[tuple[str, float], ...]) -> tuple[tuple[str, 
 
 
 @dataclass(frozen=True, slots=True)
-class WorkloadProfile:
+class WorkloadPolicy:
     id: str
     version: str
     name: str
@@ -87,7 +87,7 @@ class WorkloadProfile:
         }
 
     @classmethod
-    def from_dict(cls, payload: dict[str, Any]) -> WorkloadProfile:
+    def from_dict(cls, payload: dict[str, Any]) -> WorkloadPolicy:
         return cls(
             id=str(payload["id"]),
             version=str(payload["version"]),
@@ -99,8 +99,8 @@ class WorkloadProfile:
         )
 
 
-SEED_PROFILES: tuple[WorkloadProfile, ...] = (
-    WorkloadProfile(
+SEED_PROFILES: tuple[WorkloadPolicy, ...] = (
+    WorkloadPolicy(
         id="developer-default",
         version="2026.2",
         name="Developer default",
@@ -120,7 +120,7 @@ SEED_PROFILES: tuple[WorkloadProfile, ...] = (
         context_tokens=8192,
         concurrency=1,
     ),
-    WorkloadProfile(
+    WorkloadPolicy(
         id="agentic-light",
         version="2026.2",
         name="Agentic light",
@@ -135,7 +135,7 @@ SEED_PROFILES: tuple[WorkloadProfile, ...] = (
         context_tokens=16_384,
         concurrency=1,
     ),
-    WorkloadProfile(
+    WorkloadPolicy(
         id="long-context-batch",
         version="2026.2",
         name="Long-context batch",

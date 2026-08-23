@@ -9,7 +9,7 @@ import httpx
 
 from morpheus.core.concurrency import RetryPolicy
 from morpheus.core.health import Evidence, HealthState
-from morpheus.core.models import ModelIdentity
+from morpheus.core.models import ServedModel
 from morpheus.ports.protocols import Clock
 
 
@@ -41,10 +41,10 @@ class OpenAIInferenceAdapter:
     async def __aexit__(self, *args: object) -> None:
         await self._client.aclose()
 
-    async def models(self) -> tuple[ModelIdentity, ...]:
+    async def models(self) -> tuple[ServedModel, ...]:
         return await self._retry_policy.run(self._models_once, retryable=_retryable_models_error)
 
-    async def _models_once(self) -> tuple[ModelIdentity, ...]:
+    async def _models_once(self) -> tuple[ServedModel, ...]:
         response = await self._client.get(
             f"{self._base_url}/models", headers=self._headers, timeout=self._timeout
         )
@@ -71,7 +71,7 @@ class OpenAIInferenceAdapter:
                 current["contexts"].append(context)
 
         return tuple(
-            ModelIdentity(
+            ServedModel(
                 root=entry["root"],
                 aliases=tuple(entry["aliases"]),
                 context_window=max(entry["contexts"], default=None),
