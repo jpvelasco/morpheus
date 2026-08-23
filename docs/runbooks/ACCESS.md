@@ -1,5 +1,8 @@
 # Access Runbook (ACCESS-001/002)
 
+Status: Transport and browser-session profiles implemented; desktop and managed
+workflow parity remain planned under DESK-003/OUI-006 rectification
+
 Morpheus v0.2 serves loopback-only surfaces behind an authenticated
 browser session. Reach a remote host by establishing an SSH tunnel to the
 host; never bind the services to a peer-addressable interface in the
@@ -27,9 +30,11 @@ ssh -L 7400:127.0.0.1:7400 -L 7401:127.0.0.1:7401 operator@<host>
 ```
 
 Then open `http://127.0.0.1:7401/` locally. The backend does not know or
-care that the connection arrived through a tunnel; authorization,
-workflows, progress, cancellation, and recovery behave exactly as they do
-on the local machine.
+care that the connection arrived through a tunnel; authorization, cookie, CSRF,
+and origin behavior match local loopback access. The current managed workflow
+runner is a non-mutating DEV scaffold and loses sessions on restart, so its
+progress, cancellation, and recovery behavior must not be presented as complete
+desktop/tunnel parity yet.
 
 ## Tearing down
 

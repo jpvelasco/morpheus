@@ -4,6 +4,11 @@ This directory contains versioned, secret-free inputs for the isolated
 Morpheus release-validation lab. It does not contain a Morpheus installation or
 credentials.
 
+The v0.2 development line is currently under architecture rectification. Use
+this lab for explicitly scoped disposable R1-R9 work, but do not freeze a
+qualification candidate or run a physical lane until the entry gate in
+[`docs/RECTIFICATION_PLAN.md`](../docs/RECTIFICATION_PLAN.md) is green.
+
 The VM baseline is defined by
 [`vm/ubuntu-26.04-amd64.json`](vm/ubuntu-26.04-amd64.json). Its cloud image URL
 and SHA-256 are pinned to the official Ubuntu 26.04 release build dated

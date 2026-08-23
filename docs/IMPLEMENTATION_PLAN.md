@@ -1,12 +1,21 @@
 # Morpheus TDD Implementation Plan
 
-Status: Proposed v0.2; v0.1 foundation remains deployed
+Status: Accepted v0.2 phase plan; phase completion claims are under
+rectification; v0.1 foundation remains deployed
 
 Plan version: 0.2
 
 Requirements source: [PRODUCT_SPECIFICATION.md](PRODUCT_SPECIFICATION.md)
 
 Architecture source: [ARCHITECTURE.md](ARCHITECTURE.md)
+
+Active execution source: [RECTIFICATION_PLAN.md](RECTIFICATION_PLAN.md)
+
+The original phase order and exit criteria remain normative. The final
+implementation run produced many phase components without satisfying several
+integration gates. Execute rectification packages R0 through R9 before Phase 18
+physical qualification; do not restart this document at Phase 11 or treat later
+component merges as proof that their phase exited.
 
 ## 1. Delivery Policy
 

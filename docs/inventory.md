@@ -89,6 +89,9 @@ next step is the dual-mode contract foundation followed by a module that can:
 3. measure throughput,
 4. snapshot logs into `artifacts/`.
 
-The broader v0.2 workflow then adds normalized host discovery, catalog-backed
-model/engine recommendations, durable benchmark history, managed deployment
-plans, and operations views.
+The component implementation run added normalized host discovery, catalogs,
+benchmark stores, recommendation/deployment modules, and operations views, but
+it forked core identities and did not compose the intended product workflow.
+The next step is therefore R1 of `RECTIFICATION_PLAN.md`: consolidate the
+canonical identity and deployment-plan family before reconnecting
+recommendation, acquisition, campaigns, promotion, operations, and rollback.

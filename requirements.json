@@ -238,7 +238,7 @@
     {
       "id": "UI-003",
       "phase": 16,
-      "status": "implemented",
+      "status": "planned",
       "owning_tests": [
         "tests/unit/test_controls.py",
         "tests/contract/test_operations_contract.py",
@@ -252,9 +252,11 @@
       ],
       "requires_live_evidence": false,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [
+        "IMP-UI-003-02"
+      ]
     },
     {
       "id": "UI-004",
@@ -316,7 +318,7 @@
     {
       "id": "SRCH-002",
       "phase": 4,
-      "status": "implemented",
+      "status": "deferred",
       "owning_tests": [
         "tests/unit/test_search_contract.py",
         "tests/contract/test_search_adapter.py"
@@ -328,7 +330,7 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
       "implementation_tasks": []
     },
@@ -391,7 +393,7 @@
     {
       "id": "VOICE-003",
       "phase": 5,
-      "status": "implemented",
+      "status": "deferred",
       "owning_tests": [
         "tests/unit/test_voice_contract.py",
         "tests/contract/test_voice_adapter.py",
@@ -404,14 +406,14 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
       "implementation_tasks": []
     },
     {
       "id": "VOICE-004",
       "phase": 5,
-      "status": "implemented",
+      "status": "deferred",
       "owning_tests": [
         "tests/unit/test_gpu_policy.py",
         "tests/unit/test_config.py"
@@ -423,7 +425,7 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": true,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
       "implementation_tasks": []
     },
@@ -562,7 +564,7 @@
     {
       "id": "RSCH-001",
       "phase": 7,
-      "status": "implemented",
+      "status": "deferred",
       "owning_tests": [
         "tests/unit/test_research_deployment.py",
         "tests/contract/test_research_deployment.py"
@@ -573,14 +575,14 @@
       ],
       "requires_live_evidence": false,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
       "implementation_tasks": []
     },
     {
       "id": "RSCH-002",
       "phase": 7,
-      "status": "implemented",
+      "status": "deferred",
       "owning_tests": [
         "tests/unit/test_research_routing.py"
       ],
@@ -591,14 +593,14 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
       "implementation_tasks": []
     },
     {
       "id": "GATE-001",
       "phase": 15,
-      "status": "implemented",
+      "status": "planned",
       "owning_tests": [
         "tests/unit/test_compat.py",
         "tests/contract/test_compat_contract.py"
@@ -609,9 +611,11 @@
       ],
       "requires_live_evidence": false,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [
+        "IMP-GATE-001-02"
+      ]
     },
     {
       "id": "GATE-002",
@@ -652,7 +656,7 @@
     {
       "id": "RAG-001",
       "phase": 8,
-      "status": "implemented",
+      "status": "deferred",
       "owning_tests": [
         "tests/unit/test_rag_policy.py",
         "tests/unit/test_config.py"
@@ -664,14 +668,14 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
       "implementation_tasks": []
     },
     {
       "id": "RAG-002",
       "phase": 8,
-      "status": "implemented",
+      "status": "deferred",
       "owning_tests": [
         "tests/unit/test_rag_ownership.py"
       ],
@@ -681,14 +685,14 @@
       ],
       "requires_live_evidence": false,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
       "implementation_tasks": []
     },
     {
       "id": "RAG-003",
       "phase": 8,
-      "status": "implemented",
+      "status": "deferred",
       "owning_tests": [
         "tests/unit/test_rag_contract.py"
       ],
@@ -698,14 +702,14 @@
       ],
       "requires_live_evidence": false,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
       "implementation_tasks": []
     },
     {
       "id": "IMG-001",
       "phase": 9,
-      "status": "implemented",
+      "status": "deferred",
       "owning_tests": [
         "tests/unit/test_image_paths.py",
         "tests/contract/test_image_contract.py",
@@ -718,14 +722,14 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": true,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
       "implementation_tasks": []
     },
     {
       "id": "IMG-002",
       "phase": 9,
-      "status": "implemented",
+      "status": "deferred",
       "owning_tests": [
         "tests/unit/test_image_gate.py",
         "tests/unit/test_gpu_policy.py"
@@ -736,14 +740,14 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": true,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
       "implementation_tasks": []
     },
     {
       "id": "IMG-003",
       "phase": 9,
-      "status": "implemented",
+      "status": "deferred",
       "owning_tests": [
         "tests/unit/test_transition_authority.py"
       ],
@@ -753,14 +757,14 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": true,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
       "implementation_tasks": []
     },
     {
       "id": "IMG-004",
       "phase": 9,
-      "status": "implemented",
+      "status": "deferred",
       "owning_tests": [
         "tests/unit/test_recovery_evidence.py"
       ],
@@ -770,7 +774,7 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": true,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
       "implementation_tasks": []
     },
@@ -1161,7 +1165,7 @@
     {
       "id": "HOST-003",
       "phase": 18,
-      "status": "implemented",
+      "status": "planned",
       "owning_tests": [
         "tests/unit/test_targets.py",
         "tests/unit/test_support_matrix.py",
@@ -1174,9 +1178,11 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": true,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [
+        "IMP-HOST-003-02"
+      ]
     },
     {
       "id": "SEL-001",
@@ -1238,7 +1244,7 @@
     {
       "id": "SEL-004",
       "phase": 14,
-      "status": "implemented",
+      "status": "planned",
       "owning_tests": [
         "tests/unit/test_ranking.py",
         "tests/contract/test_ranking_contract.py",
@@ -1253,14 +1259,16 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": true,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [
+        "IMP-SEL-004-02"
+      ]
     },
     {
       "id": "SEL-005",
       "phase": 14,
-      "status": "implemented",
+      "status": "planned",
       "owning_tests": [
         "tests/contract/test_control_api.py",
         "tests/contract/test_recommendation_contract.py",
@@ -1273,14 +1281,16 @@
       ],
       "requires_live_evidence": false,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [
+        "IMP-SEL-005-02"
+      ]
     },
     {
       "id": "RUNM-001",
       "phase": 11,
-      "status": "implemented",
+      "status": "planned",
       "owning_tests": [
         "tests/unit/test_ownership_modes.py",
         "tests/unit/test_planning_records.py",
@@ -1296,14 +1306,16 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [
+        "IMP-RUNM-001-02"
+      ]
     },
     {
       "id": "RUNM-002",
       "phase": 15,
-      "status": "implemented",
+      "status": "planned",
       "owning_tests": [
         "tests/unit/test_vllm.py",
         "tests/contract/test_vllm_contract.py",
@@ -1318,14 +1330,16 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": true,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [
+        "IMP-RUNM-002-02"
+      ]
     },
     {
       "id": "RUNM-003",
       "phase": 15,
-      "status": "implemented",
+      "status": "planned",
       "owning_tests": [
         "tests/unit/test_service.py",
         "tests/contract/test_service_contract.py"
@@ -1337,14 +1351,16 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": true,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [
+        "IMP-RUNM-003-02"
+      ]
     },
     {
       "id": "RUNM-004",
       "phase": 15,
-      "status": "implemented",
+      "status": "planned",
       "owning_tests": [
         "tests/unit/test_service.py",
         "tests/contract/test_service_contract.py"
@@ -1356,14 +1372,16 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": true,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [
+        "IMP-RUNM-004-02"
+      ]
     },
     {
       "id": "RUNM-005",
       "phase": 15,
-      "status": "implemented",
+      "status": "planned",
       "owning_tests": [
         "tests/unit/test_service.py",
         "tests/contract/test_service_contract.py"
@@ -1375,14 +1393,16 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": true,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [
+        "IMP-RUNM-005-02"
+      ]
     },
     {
       "id": "RUNM-006",
       "phase": 15,
-      "status": "implemented",
+      "status": "planned",
       "owning_tests": [
         "tests/unit/test_compat.py",
         "tests/contract/test_compat_contract.py",
@@ -1396,9 +1416,11 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": true,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [
+        "IMP-RUNM-006-02"
+      ]
     },
     {
       "id": "PLAT-001",
@@ -1424,7 +1446,7 @@
     {
       "id": "PLAT-002",
       "phase": 12,
-      "status": "implemented",
+      "status": "planned",
       "owning_tests": [
         "tests/contract/test_platform_contract.py",
         "tests/unit/test_platform_adapters.py"
@@ -1437,14 +1459,16 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": true,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [
+        "IMP-PLAT-002-02"
+      ]
     },
     {
       "id": "PLAT-003",
       "phase": 15,
-      "status": "implemented",
+      "status": "planned",
       "owning_tests": [
         "tests/unit/test_packages.py",
         "tests/contract/test_packages_contract.py",
@@ -1459,14 +1483,16 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [
+        "IMP-PLAT-003-02"
+      ]
     },
     {
       "id": "PLAT-004",
       "phase": 18,
-      "status": "implemented",
+      "status": "planned",
       "owning_tests": [
         "tests/unit/test_targets.py",
         "tests/unit/test_support_matrix.py",
@@ -1479,14 +1505,16 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": true,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [
+        "IMP-PLAT-004-02"
+      ]
     },
     {
       "id": "BENCH-001",
       "phase": 13,
-      "status": "implemented",
+      "status": "planned",
       "owning_tests": [
         "tests/contract/test_campaign_contract.py",
         "tests/unit/test_campaign.py",
@@ -1500,9 +1528,11 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": true,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [
+        "IMP-BENCH-001-02"
+      ]
     },
     {
       "id": "BENCH-002",
@@ -1568,7 +1598,7 @@
     {
       "id": "BENCH-005",
       "phase": 13,
-      "status": "implemented",
+      "status": "planned",
       "owning_tests": [
         "tests/contract/test_campaign_contract.py",
         "tests/unit/test_campaign.py",
@@ -1582,9 +1612,11 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": true,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [
+        "IMP-BENCH-005-02"
+      ]
     },
     {
       "id": "OUI-001",
@@ -1610,7 +1642,7 @@
     {
       "id": "OUI-002",
       "phase": 16,
-      "status": "implemented",
+      "status": "planned",
       "owning_tests": [
         "tests/unit/test_metrics_history.py",
         "tests/unit/test_metrics_collector.py",
@@ -1627,14 +1659,16 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": true,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [
+        "IMP-OUI-002-02"
+      ]
     },
     {
       "id": "OUI-003",
       "phase": 16,
-      "status": "implemented",
+      "status": "planned",
       "owning_tests": [
         "tests/unit/test_events.py",
         "tests/contract/test_operations_contract.py",
@@ -1650,9 +1684,11 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [
+        "IMP-OUI-003-02"
+      ]
     },
     {
       "id": "OUI-004",
@@ -1679,7 +1715,7 @@
     {
       "id": "OUI-005",
       "phase": 16,
-      "status": "implemented",
+      "status": "planned",
       "owning_tests": [
         "tests/unit/test_settings_catalog.py",
         "tests/unit/test_settings_journal.py",
@@ -1695,14 +1731,16 @@
       ],
       "requires_live_evidence": false,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [
+        "IMP-OUI-005-02"
+      ]
     },
     {
       "id": "OUI-006",
       "phase": 16,
-      "status": "implemented",
+      "status": "planned",
       "owning_tests": [
         "tests/unit/test_workflows.py",
         "tests/unit/test_workflow_runner.py",
@@ -1720,14 +1758,16 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": true,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [
+        "IMP-OUI-006-02"
+      ]
     },
     {
       "id": "DESK-001",
       "phase": 16,
-      "status": "implemented",
+      "status": "planned",
       "owning_tests": [
         "tests/contract/test_desktop_handshake_contract.py",
         "tests/unit/test_compatibility.py"
@@ -1739,14 +1779,16 @@
       ],
       "requires_live_evidence": false,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [
+        "IMP-DESK-001-02"
+      ]
     },
     {
       "id": "DESK-002",
       "phase": 16,
-      "status": "implemented",
+      "status": "planned",
       "owning_tests": [
         "tests/unit/test_package_trust.py",
         "tests/unit/test_bootstrap.py",
@@ -1761,14 +1803,16 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [
+        "IMP-DESK-002-02"
+      ]
     },
     {
       "id": "DESK-003",
       "phase": 17,
-      "status": "implemented",
+      "status": "planned",
       "owning_tests": [
         "tests/unit/test_access.py",
         "tests/contract/test_access_contract.py"
@@ -1780,14 +1824,16 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [
+        "IMP-DESK-003-02"
+      ]
     },
     {
       "id": "AID-001",
       "phase": 17,
-      "status": "implemented",
+      "status": "planned",
       "owning_tests": [
         "tests/unit/test_runbooks.py",
         "tests/unit/test_diagnostic_evidence.py",
@@ -1802,14 +1848,16 @@
       ],
       "requires_live_evidence": true,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [
+        "IMP-AID-001-02"
+      ]
     },
     {
       "id": "AID-002",
       "phase": 17,
-      "status": "implemented",
+      "status": "planned",
       "owning_tests": [
         "tests/unit/test_diagnosis.py",
         "tests/unit/test_diagnosis_adapters.py",
@@ -1822,9 +1870,11 @@
       ],
       "requires_live_evidence": false,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [
+        "IMP-AID-002-02"
+      ]
     },
     {
       "id": "AID-003",
@@ -1849,7 +1899,7 @@
     {
       "id": "AID-004",
       "phase": 17,
-      "status": "implemented",
+      "status": "planned",
       "owning_tests": [
         "tests/unit/test_diagnosis.py",
         "tests/unit/test_diagnosis_adapters.py",
@@ -1862,9 +1912,11 @@
       ],
       "requires_live_evidence": false,
       "requires_hardware_evidence": false,
-      "first_satisfying_version": "0.2.0",
+      "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [
+        "IMP-AID-004-02"
+      ]
     },
     {
       "id": "ACCESS-001",

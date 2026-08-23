@@ -1,8 +1,15 @@
 # Morpheus Architecture
 
-Status: Proposed v0.2; v0.1 observe-mode deployment remains active
+Status: Accepted v0.2 target architecture; implementation is under
+rectification; v0.1 observe-mode deployment remains active
 
 Architecture version: 0.2
+
+Conformance status is recorded in
+[`RECTIFICATION_PLAN.md`](RECTIFICATION_PLAN.md). During rectification this
+document remains the target: do not preserve a competing implementation model
+by editing the architecture to match it without the change-control process in
+the implementation plan.
 
 ## 1. Architectural Objective
 
@@ -639,7 +646,8 @@ discovery result or convenience setting requested it.
 - [ADR-0008: Tiered cross-platform runtime support](adr/0008-tiered-cross-platform-runtime-support.md)
 - [ADR-0009: Dev-first packages and optional distribution signing](adr/0009-dev-first-packages-and-optional-distribution-signing.md)
 
-Additional decisions required before implementation reaches them:
+Open decisions that must be resolved or explicitly accepted before their
+affected rectification requirement returns to `implemented`:
 
 - database migration library;
 - telemetry database retention defaults;
@@ -647,3 +655,7 @@ Additional decisions required before implementation reaches them:
 - benchmark history and operational time-series retention defaults;
 - direct network access TLS and identity profile;
 - GPU transition mechanism for legacy image generation if that scope reopens;
+
+Existing code choices do not silently settle these decisions. Record a new ADR
+when a choice changes a persistent format, security profile, retention policy,
+or accepted scope boundary.

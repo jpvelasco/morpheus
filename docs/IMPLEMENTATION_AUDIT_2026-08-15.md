@@ -1,6 +1,7 @@
 # Morpheus v0.2 Implementation Audit — 2026-08-15
 
-Status: follow-up required after the current implementation run
+Status: Historical audit; reproduced against final implementation source and
+superseded for execution by `RECTIFICATION_PLAN.md`
 
 Audited source: `c955adf6f0fa63983d34f3b58f027d5fcef43ab9`
 
@@ -19,6 +20,21 @@ and not authorization to interrupt otherwise green, in-scope DEV work.
 Before acting on a finding, reproduce it against the then-current source. Close
 or supersede findings with code, tests, and evidence rather than deleting this
 historical snapshot.
+
+## 2026-08-22 Disposition
+
+All eight findings were reproduced against final GitHub source
+`9b4cda09d4b064f160902b9dd25387cf3129cdb3`; none is closed. Phase 16.3 added a
+workflow UI and runner, but its production route uses `DevWorkflowExecutor`,
+which intentionally performs no managed mutation, so AUD-003 remains critical.
+Later phases also introduced deferred-scope, desktop/native-package, diagnosis,
+and target-support overclaims.
+
+The current evidence, corrected requirement posture, dependency order, tests,
+and closure gates are in the active
+[`architecture rectification plan`](RECTIFICATION_PLAN.md). Preserve the detail
+below as historical finding provenance; do not use its old “after the current
+implementation run” wording as the active queue.
 
 ## Executive Assessment
 

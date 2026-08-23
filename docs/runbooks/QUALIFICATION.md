@@ -1,11 +1,20 @@
 # Qualification Runbook (HOST-003, PLAT-004)
 
+Status: Blocked until rectification R9 is green and a new candidate plus
+explicit HOST-RO/HOST-MAINT authorization exist
+
 Morpheus v0.2 qualifies exactly the targets in the frozen matrix
 (`core/targets.py`): ubuntu-1 and ubuntu-2 (Linux x86-64, NVIDIA CUDA,
 vLLM tier), one Windows 11 x86-64 host (native `llama.cpp`), and one
 Apple Silicon macOS host (native `llama.cpp`). Everything else is
 reported honestly as unvalidated; no support claim exists outside this
 registry.
+
+The registry and support-report derivation are implementation scaffolding, not
+proof that these target paths exist. The current source has no complete native
+Windows/macOS backend, desktop package, managed-engine application workflow, or
+physical qualification evidence. Follow R4, R6, R9, and R10 in
+`../RECTIFICATION_PLAN.md` before using this runbook.
 
 ## Reading the support report
 

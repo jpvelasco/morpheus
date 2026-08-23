@@ -15,6 +15,21 @@ intentionally deleted on 2026-08-10. The published repository therefore retains
 no pre-rewrite Git objects; only the operational legacy artifact identifiers
 documented below remain.
 
+## 2026-08-22 GitHub Refresh Reconciliation
+
+During the 2026-08-22 documentation refresh, GitHub reported a forced update of
+`origin/main` from local tip `712d3df` to remote tip `9b4cda0`. Git found no
+merge base between the two histories; the remote contained rewritten
+counterparts of earlier pull-request commits plus later work through PR #49.
+The clean local pre-refresh tip was preserved on the local archival branch
+`archive/local-main-before-refresh-20260822`, and local `main` was then aligned
+to `origin/main` without relabelling any artifact.
+
+This refresh discontinuity affects source commit identity only. Historical v0.1
+artifact manifests and the explicit legacy-to-rewritten candidate mapping below
+remain authoritative for their exact files. Do not infer an artifact rebuild or
+translate an embedded source ID merely because branch history changed.
+
 ## Deployed legacy candidate
 
 The running ubuntu-1 images were built before this identity migration. Their

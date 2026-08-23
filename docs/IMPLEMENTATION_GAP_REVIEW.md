@@ -1,124 +1,118 @@
 # Morpheus Implementation Gap Review
 
-Original v0.1 snapshot: 2026-07-15
-v0.2 scope reopening: 2026-08-11
+Review date: 2026-08-22
+
+Reviewed source: `9b4cda09d4b064f160902b9dd25387cf3129cdb3`
+
 Planning version: 0.2.0
+
 Source of truth: [`requirements.json`](../requirements.json)
+
+Active execution plan: [`RECTIFICATION_PLAN.md`](RECTIFICATION_PLAN.md)
 
 ## Status Semantics
 
-- `implemented` means the requirement's product behavior exists and has an
-  owning component test. It does not mean the release-level evidence is green.
-- `validated` requires a passing evidence manifest that names the requirement.
-- `planned` means an identified product behavior is absent or materially
-  incomplete. Every planned requirement has an `IMP-*` task below.
-- `deferred` means the product decision intentionally excludes the capability
-  until its documented trigger is met.
+- `implemented` means the complete specified product behavior exists at its
+  stable boundary and has meaningful owning tests.
+- `validated` requires retained passing evidence from every required
+  environment, linked by a green evidence manifest.
+- `planned` means product behavior is absent, materially incomplete, or only
+  exists as uncomposed component scaffolding. Every planned row has an active
+  `IMP-*` task.
+- `deferred` means the accepted focused-v0.2 scope intentionally excludes the
+  behavior until its documented trigger and change-control review occur.
 
-The original review compared 58 v0.1 requirements against the Python services,
-dashboard, Compose definitions, configuration, operator documentation, and
-tests. It found 44 implemented, 11 planned, 3 deferred, and 0 validated.
+A parser, pure policy record, fake or DEV-only executor, UI card, route schema,
+or existing test file is progress but does not by itself satisfy a product
+requirement. This strict interpretation restores the TDD and acceptance-boundary
+rules in the original implementation plan.
 
-The reopened v0.2 specification contains 97 requirements: 44 existing
-requirements remain implemented, 41 are planned, 12 are deferred, and 0 are
-formally validated. The new planned requirements define host discovery,
-model/engine selection, managed inference, benchmark history, the focused
-operations workspace, Tauri desktop, cross-platform backend, AI-assisted
-diagnosis, and secure target access. Existing tests therefore establish a useful
-v0.1 foundation without claiming that the v0.2 appliance exists.
+## Current Disposition
 
-The 97 status rows are functional requirements. INV-001 through INV-009 are
-mandatory cross-cutting constraints mapped to the functional requirements they
-protect; they do not receive independent status rows or inflate these counts.
+| Status | Count | Meaning now |
+|---|---:|---|
+| Implemented | 59 | Complete source behavior at the currently claimed boundary; not release-validated |
+| Planned | 26 | Requires architecture rectification or complete product composition |
+| Deferred | 12 | Outside the focused v0.2 critical path |
+| Validated | 0 | No requirement has the complete retained evidence matrix |
 
-## Complete Disposition
+Implemented: CFG-001 through CFG-004; RUN-001 through RUN-006; UI-001, UI-002,
+UI-004, UI-005; SRCH-001, SRCH-003; VOICE-001, VOICE-002; TEL-001 through
+TEL-005; FLOW-001, FLOW-002; GATE-002, GATE-003; OPS-001 through OPS-003;
+SEC-001 through SEC-007; REL-001 through REL-004; PERF-001 through PERF-003;
+HOST-001, HOST-002; SEL-001 through SEL-003; PLAT-001; BENCH-002 through
+BENCH-004; OUI-001, OUI-004; AID-003; ACCESS-001 through ACCESS-003.
 
-- Implemented: CFG-001 through CFG-004; RUN-001 through RUN-006;
-  UI-001, UI-002, UI-004, UI-005; SRCH-001, SRCH-003; VOICE-001, VOICE-002;
-  TEL-001 through TEL-005; FLOW-001, FLOW-002; GATE-002, GATE-003; OPS-001
-  through OPS-003; SEC-001 through SEC-007; REL-001 through REL-004; PERF-001
-  through PERF-003; RUNM-001.
-- Planned: UI-003; GATE-001; HOST-001 through HOST-003; SEL-001 through
-  SEL-005; RUNM-002 through RUNM-006; BENCH-001 through BENCH-005; OUI-001
-  through OUI-006; PLAT-001 through PLAT-004; DESK-001 through DESK-003;
-  AID-001 through AID-004; ACCESS-001 through ACCESS-003.
-- Deferred: SRCH-002; VOICE-003, VOICE-004; RSCH-001, RSCH-002; RAG-001
-  through RAG-003; IMG-001 through IMG-004. These are outside the focused v0.2
-  critical path. Existing implemented optional-service primitives are retained,
-  but feature-suite expansion is not an active product priority.
-- Validated: none. A requirement advances only when its linked ignored evidence
-  manifest is present, says `pass`, and names that requirement.
+Planned: UI-003; GATE-001; HOST-003; SEL-004, SEL-005; RUNM-001 through
+RUNM-006; PLAT-002 through PLAT-004; BENCH-001, BENCH-005; OUI-002, OUI-003,
+OUI-005, OUI-006; DESK-001 through DESK-003; AID-001, AID-002, AID-004.
 
-## v0.2 Prioritized Implementation Backlog
+Deferred: SRCH-002; VOICE-003, VOICE-004; RSCH-001, RSCH-002; RAG-001 through
+RAG-003; IMG-001 through IMG-004.
 
-The order below is dependency-based and follows the v0.2 implementation plan.
-The running v0.1 ubuntu-1 status plane remains observe-only throughout ordinary
-development.
+The counts above are derived from the manifest. If a later edit changes them,
+update this review and `RELEASE_STATE.md` in the same change.
 
-| Order | Phase | Requirements | Outcome |
-|---:|---:|---|---|
-| 1 | 11 | RUNM-001 | Exactly two observed/managed ownership modes, workflow-scoped adoption records, and immutable v0.2 contracts without changing deployed behavior. |
-| 2 | 11.5 | VSLICE-001 delivery gate; no status row | Real disposable Ubuntu CPU discovery-to-rollback walking skeleton, self-assessment, and bounded evidence-driven replan. |
-| 3 | 12 | HOST-001, HOST-002, SEL-001, PLAT-001, PLAT-002 | Read-only normalized host profiles, native OS capability contracts, and versioned catalogs. |
-| 4 | 13 | BENCH-001 through BENCH-005 | Durable benchmark provenance, history import, safe campaigns, comparisons, and regression records. |
-| 5 | 14 | SEL-002 through SEL-005 | Deterministic compatibility filtering and explainable developer-workload ranking. |
-| 6 | 15 | RUNM-002 through RUNM-006, PLAT-003, GATE-001 | Target-native backend packaging, a bounded stable managed endpoint, and verified model/engine installation, serving, rollback, and recovery. |
-| 7 | 16 | UI-003, OUI-001 through OUI-006, DESK-001, DESK-002 | Tauri and browser operations UI with backend compatibility/bootstrap. |
-| 8 | 17 | AID-001 through AID-004, ACCESS-001, ACCESS-002, DESK-003 | Bounded diagnosis and local/SSH-tunneled desktop/browser access. |
-| 9 | 18 | HOST-003, PLAT-004, ACCESS-003 | Ubuntu, Windows, and Apple Silicon macOS physical developer/source qualification and explicit tier claims. |
-| 10 | optional | no functional status row | Windows/Apple/Linux signing, notarization, and trusted unattended-update qualification only when external credentials exist. |
+## Why the Completion Claim Was Reversed
 
-Completed after the snapshot: **IMP-RUNM-001-01** introduced exactly two
-inference ownership modes (`external_observed`, `morpheus_managed`) with
-workflow-scoped adoption-candidate transfer records that are not identities or
-lifecycle targets, exact managed-target binding to one immutable deployment
-plan and owned root, a public lifecycle identity guard, nine immutable
-planning-record contracts (machine, model, engine, workload, deployment plan,
-campaign, comparison, diagnosis, recommendation) with a canonical versioned
-envelope codec, and the five separate state machines (acquisition/staging,
-campaign, promotion, rollback, adoption) with the architecture transition
-tables, terminal-state immutability, and audit results for undefined edges.
-Observe-mode v0.1 behavior is unchanged and its regression lanes stay green.
-Host-role evidence remains a later, separately authorized validation step.
+The final implementation run changed all 97 rows to `implemented`. The source
+contains substantial, well-tested component work, but the product specification
+and phase exit gates require composition through real application/public
+boundaries. The current source still has these blocking facts:
 
-**IMP-SEC-005-01** added the digest-pinned,
-offline candidate scan and two-format per-artifact SBOM gate, closed evidence
-verification, vulnerability-database inventory, redacted Git/worktree/artifact
-secret scans, filesystem and OCI vulnerability/misconfiguration scans, and a
-digest-bound human license review. Exact-candidate SUPPLY evidence remains a
-validation task rather than an implementation claim.
+- incompatible semantic `DeploymentPlan` and identity families are used by the
+  vertical slice, recommendation, and managed deployment components;
+- the recommendation API uses a hard-coded seed catalog, ignores benchmark
+  history, and uses an observation timestamp as machine identity;
+- managed workflow routes use `DevWorkflowExecutor`, which intentionally refuses
+  mutating steps, while sessions disappear on API restart;
+- the bounded managed gateway router exists only as a component and is not
+  mounted from a selected canonical managed deployment;
+- settings “apply” writes an overrides journal that is not a real startup source,
+  and the feature-controls page exposes state rather than owned actions;
+- metrics collect as a GET side effect and the event store has no production
+  producers or bounded message search;
+- native engine shutdown uses a direct child process handle instead of the
+  platform process-tree supervision port;
+- the Tauri shell performs only an unauthenticated health probe, native install
+  executors are absent, and `.mrpkg` scaffolding is not the declared native
+  package matrix;
+- diagnostic API evidence supplies empty metrics/log sections, local provider
+  mode is deliberately unwired, and proposals do not re-enter ordinary plans;
+- the optional-scope requirements were promoted without an ADR reopening the
+  focused-v0.2 priority boundary or implementing their complete product paths.
 
-**IMP-REL-003-01** added the disabled-by-default, signed runtime-agent
-lifecycle endpoint and separate operator CLI. Fixed release manifests drive
-no-build/no-pull Compose operations; ownership checks, atomic state, repeated
-operation outcomes, automatic upgrade backups, recovery, rollback,
-preserve-by-default uninstall, exact lab-only purge confirmation, and selected
-protected-runtime identity comparison have unit and contract coverage. VM
-lifecycle and external-integrity demonstrations remain release-validation
-tasks rather than source implementation claims.
+These facts reproduce AUD-001 through AUD-008 and add AUD-009 through AUD-012 in
+the rectification plan.
 
-**IMP-PERF-002-01** added a read-only observer for exact ownership-labeled
-containers, structured Docker stats parsing, logical-CPU normalization to
-whole-host percent, combined memory/CPU budget decisions, and closed JSON
-evidence writers. The versioned pinned-k6 workload declares fixed direct and
-telemetry targets, stream mix, latency shape, concurrency, warm-up, duration,
-abort limits, and DEV, qualification, and 24-hour profiles. Exact-candidate VM
-and target-host evidence remains required before PERF-001 or PERF-002 can be
-marked validated.
+## Rectification Backlog
 
-## Release-Validation Consequence
+| Order | Package | Primary requirements | Outcome |
+|---:|---|---|---|
+| 0 | R0 | all affected rows | truthful ledgers plus semantic test ownership and documentation consistency checks |
+| 1 | R1 | RUNM-001 | one canonical machine/model/engine/workload/recommendation/plan/campaign identity chain |
+| 2 | R2 | SEL-004, SEL-005 | retained catalog/machine/benchmark evidence, deterministic replay, and lossless plan selection |
+| 3 | R3 | UI-003, GATE-001, BENCH-001, BENCH-005, RUNM-003 through RUNM-006, OUI-005, OUI-006 | durable lifecycle-backed managed application workflows |
+| 4 | R4 | PLAT-002 through PLAT-004, RUNM-002 | real process-tree, per-user service, package, and target-native DEV/lab paths |
+| 5 | R5 | OUI-002, OUI-003 | complete background metric and approved event pipelines |
+| 6 | R6 | DESK-001 through DESK-003 | shared React Tauri app, authenticated bootstrap, native packages, and access parity |
+| 7 | R7 | AID-001, AID-002, AID-004 | complete evidence, usable provider paths, and advisory plan re-entry |
+| 8 | R8 | 12 deferred IDs | focused-scope enforcement; safe scaffolds stay incomplete and off by default |
+| 9 | R9 | all planned rows | public-boundary acceptance, mutation, coverage, clean-gate, and status closure |
+| 10 | R10 | HOST-003, PLAT-004, ACCESS-003 and release set | separately authorized physical qualification and release evidence |
 
-Validation tasks that exercise missing behavior are blocked by the matching
-`IMP-*` task, not failed as if the behavior existed. Independent lanes may run
-as soon as their own prerequisites are met. In particular, clean build/install,
-core container startup, read-only runtime discovery, evidence privacy, and
-external-resource integrity can proceed before optional research,
-multi-provider gateway breadth, voice-GPU, or image-generation implementation.
+R1 is the shared-contract gate. Do not fan out downstream schema work until it
+lands. R4 through R7 may run in parallel only after R3 fixes the application
+operation boundary.
 
-For v0.2, Phase 11 contracts are the next source milestone. Existing v0.1
-optional-service validation is not a prerequisite. Target-host mutation remains
-blocked until the managed-runtime contracts, disposable lifecycle lanes, exact
-resource bounds, rollback, and separate HOST-MAINT authorization are present.
-After Phase 11, VSLICE-001 is the mandatory integration/replan gate before
-horizontal Phase 12 work fans out. Missing public signing identities or
-notarization credentials never block the developer/source implementation path.
+## Release Consequence
+
+Morpheus is not source-complete and no v0.2 candidate should be frozen for
+physical qualification. The deployed v0.1 read-only surface and its historical
+candidate evidence remain valid for their exact artifacts; they are not evidence
+for this development line.
+
+Finish R0 through R9 in DEV and disposable environments, freeze a new clean
+candidate, then request explicit authorization for each R10 host lane. Missing
+public signing/notarization credentials never blocks the developer/source path.
+No item in this review authorizes mutation or adoption of the external runtime.

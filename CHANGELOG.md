@@ -7,6 +7,20 @@ first implementation artifact is released.
 
 ## Unreleased
 
+### Rectification
+
+- Re-audited the completed v0.2 component run at source `9b4cda0` against the
+  accepted specification, architecture, ADRs, and phase exit gates. All eight
+  August 15 findings remain open; additional deferred-scope, desktop/package,
+  diagnosis, and target-support overclaims are documented in the active
+  architecture rectification plan.
+- Reconciled the requirement ledger from the unsupported `97 implemented`
+  claim to 59 implemented, 26 planned, 12 deferred, and 0 validated. Existing
+  partial components and tests are preserved as implementation progress.
+- Made `docs/RELEASE_STATE.md` the sole current-state ledger, added an
+  agent-executable R0-R10 rectification order, and classified the original
+  long-horizon prompt and dated audit as historical inputs.
+
 ### Added
 
 - Phase 11 contract foundation: exactly two inference ownership modes
@@ -20,6 +34,12 @@ first implementation artifact is released.
   campaign, promotion, rollback, adoption) implementing the architecture
   transition tables, terminal-state immutability, and audit results for
   undefined edges.
+- Component scaffolds for the focused operations workspace, Tauri shell,
+  package trust/bootstrap planning, bounded diagnostic providers, access
+  profiles, and evidence-bounded support reports. Their incomplete product
+  composition is tracked by the planned rectification requirements.
+- Preparatory search, voice, research, RAG, and image policy/contract modules.
+  The affected optional product requirements remain deferred.
 - v0.2 focused developer-inference appliance specification and phased plan for
   Ubuntu, Windows, and Apple Silicon macOS, retaining ubuntu-1 and ubuntu-2 as
   named Linux qualification machines.

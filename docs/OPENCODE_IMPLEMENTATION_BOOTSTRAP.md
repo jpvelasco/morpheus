@@ -1,5 +1,13 @@
 # OpenCode Long-Horizon Implementation Bootstrap
 
+Status: Archived and superseded for execution on 2026-08-22
+
+Do **not** use the prompt below against the current repository. It drove the
+completed component implementation run and assumes a Phase 11 starting point.
+The current source requires the dependency-ordered
+[`architecture rectification plan`](RECTIFICATION_PLAN.md), beginning with R0
+and R1. This file is retained only to explain the original orchestration input.
+
 This is the operator bootstrap for implementing the complete Morpheus v0.2
 roadmap with OpenCode and DeepSeek V4 Flash.
 

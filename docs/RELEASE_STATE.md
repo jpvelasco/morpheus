@@ -7,6 +7,14 @@ private request data, host addresses, or unredacted evidence.
 
 ## Current Position
 
+- **Authoritative development source reviewed:**
+  `9b4cda09d4b064f160902b9dd25387cf3129cdb3` (final GitHub implementation
+  run, audited on 2026-08-22). The active worktree may contain the documentation
+  and requirement reconciliation that follows that source.
+- **Active source milestone:** architecture rectification R0 through R9; see
+  [`RECTIFICATION_PLAN.md`](RECTIFICATION_PLAN.md). R1 canonical identity/plan
+  consolidation is the first dependency-critical implementation package.
+
 - **Validated baseline source equivalent:** `aa094172764a4de3e5dc91324306b14857706c4e`
   (`security: bound API request work`). Its pre-publication build evidence
   retains legacy source ID `ae3a98d74b055672c37ae608805e21804d4e609b`.
@@ -18,10 +26,10 @@ private request data, host addresses, or unredacted evidence.
 - **Last committed handoff:** `47a36cd` (`docs: make release handoff
   self-contained`; 2026-07-15). Later freeze commits supersede that handoff for
   candidate identity while preserving its documentation role.
-- **Current release development line:** the rewritten pre-soak source is frozen
-  at `fa5fe3c`. Scanner-harness and rebuild-determinism tooling may still land
-  after that freeze without relabelling the already-built OCI and Python
-  artifacts; any change that alters product source requires a new candidate.
+- **Historical v0.1 release development line:** the rewritten pre-soak source is
+  frozen at `fa5fe3c`. Scanner-harness and rebuild-determinism tooling landed
+  around that freeze without relabelling the already-built OCI and Python
+  artifacts. The v0.2 development line is separate and has no frozen candidate.
 - **Active product direction:** v0.2 reopens Morpheus as a focused developer
   inference appliance with stable native paths on Ubuntu, Windows, and Apple
   Silicon macOS. ubuntu-1 and ubuntu-2 remain named Linux qualification
@@ -29,20 +37,20 @@ private request data, host addresses, or unredacted evidence.
   benchmark history, a Tauri desktop plus independent backend, operations, and
   bounded AI-assisted diagnosis. The planning handoff was consistency-audited
   and refined on 2026-08-12 with an early vertical slice, bounded self-replan,
-  smaller delivery subphases, and optional distribution signing; no v0.2 runtime
-  implementation or target mutation has started.
-- **Implementation inventory:** 97 implemented, 0 planned, 0 deferred; see
+  smaller delivery subphases, and optional distribution signing. Substantial
+  v0.2 component implementation now exists, but the final run did not satisfy
+  several architecture and phase-integration gates. No live v0.2 adoption or
+  target mutation has occurred.
+- **Implementation inventory:** 59 implemented, 26 planned, 12 deferred, and 0
+  validated; see
   [`requirements.json`](../requirements.json) and the
-  [implementation gap review](IMPLEMENTATION_GAP_REVIEW.md). All planned
-  v0.2 requirements are implemented at the source level (the deferred
-  queue SRCH-002 / VOICE-003 / VOICE-004 / RSCH-001 / RSCH-002 /
-  RAG-001 / RAG-002 / RAG-003 / IMG-001..004 shipped 2026-08-16 as
-  PRs #37-#48); the remaining gates
-  are the physical qualification lanes (HOST-RO/HOST-MAINT) and live
-  hardware evidence.
+  [implementation gap review](IMPLEMENTATION_GAP_REVIEW.md). The 26 planned
+  rows represent incomplete product composition, not erased component work.
+  The 12 optional-scope rows are restored to deferred because no ADR reopened
+  that priority boundary and their full product paths do not exist.
 - **Release posture:** not yet release-ready. A passing candidate does not
-  replace lifecycle, browser, load, fault, supply-chain finalize, or soak
-  evidence.
+  replace architecture conformance, lifecycle, browser, load, fault,
+  supply-chain finalize, physical qualification, or soak evidence.
 - **GPU posture:** GPU/image-generation work is deliberately excluded from the
   pre-soak core-release lane. It requires a later, separately authorized
   host-maintenance release candidate.
@@ -50,17 +58,17 @@ private request data, host addresses, or unredacted evidence.
 ## Handoff and Resume
 
 An agent starting from the repository should read this file first, then
-[`IMPLEMENTATION_GAP_REVIEW.md`](IMPLEMENTATION_GAP_REVIEW.md),
+[`RECTIFICATION_PLAN.md`](RECTIFICATION_PLAN.md),
 [`requirements.json`](../requirements.json), and
-[`validation/README.md`](../validation/README.md). Those files define the
-remaining requirements, priority, environment boundaries, evidence policy,
-and next task; no chat transcript is required to select the next source task.
+[`IMPLEMENTATION_GAP_REVIEW.md`](IMPLEMENTATION_GAP_REVIEW.md). Those files
+define the remaining requirements, priority, environment boundaries, evidence
+policy, and next task; no chat transcript is required.
 
-The P0 pre-soak source queue is complete. Build the candidate only from the
-clean source revision containing this ledger, record its full identity in the
-candidate manifest, run its early supply-chain gate, and begin clean-VM
-container and lifecycle validation. The older baseline evidence must not be
-relabelled as evidence for that new candidate.
+Do not build a v0.2 qualification candidate yet. Execute R0, then R1 through R9
+in dependency order. Existing component tests and historical candidate evidence
+must not be relabelled as evidence for the rectified source. Only after R9 is
+green should a clean candidate be frozen and the separately authorized R10
+physical/release lanes begin.
 
 Normal validation must never restart, reconfigure, or otherwise mutate the
 external inference or Open WebUI services. Use disposable stacks/VMs for all
@@ -68,7 +76,7 @@ mutating tests. Do not enable persistent user-service linger. GPU allocation,
 voice-GPU, and image-generation work are excluded until separately authorized
 host-maintenance work begins.
 
-## Completed Current-Candidate Evidence
+## Historical v0.1 Candidate Evidence
 
 | Milestone | Result | Notes |
 |---|---|---|
@@ -76,7 +84,7 @@ host-maintenance work begins.
 | Dashboard quality gate | Pass | Pinned offline Node image: formatting, type check, 31 tests, and production build passed. |
 | Reproducible candidate build | Pass | Two independent disposable VM builds used blocked outbound networking and produced five byte-identical artifacts: Python sdist/wheel, agent bundle, backend OCI image, and dashboard OCI image. |
 
-## Approved Candidate-Source Checkpoint
+## Historical v0.1 Candidate-Source Checkpoint
 
 At handoff commit `3d1feaa`, the Python quality gate passed with 345 tests and
 90.52% coverage; formatting, lint, type checking, Bandit, pip-audit, and the
@@ -269,48 +277,52 @@ workspace; refer to the candidate commit and task ID in its redacted manifest.
 
 ## Active Milestone
 
-**Phase 11 contract foundation is implemented; the next source milestone is the
-Phase 11.5 Ubuntu CPU walking skeleton.** RUNM-001 (exactly two ownership modes,
-workflow-scoped adoption records, immutable planning contracts, and separate
-state machines) is `implemented` with unit, contract, and acceptance coverage
-and a complete non-live gate that runs without GPU access or model downloads.
-Deployed ubuntu-1 v0.1 read-only behavior is preserved; required HOST-RO evidence
-for `validated` status remains a later, separately authorized validation step.
+**Architecture rectification is active; R0 documentation/status reconciliation
+is followed by R1 canonical identity and deployment-plan consolidation.** The
+final component run is not a phase-exit record. RUNM-001 and the other planned
+rows remain incomplete until their canonical behavior crosses the required
+public/application boundaries and their affected gates pass.
 
 ## v0.2 Queue
 
-1. **Phase 11 — contracts and ownership:** exactly two typed ownership modes,
-   workflow-scoped adoption transfer records, immutable planning records and
-   versioned envelopes, and five separate lifecycle state machines. **Done —
-   RUNM-001 `implemented`.**
-2. **Phase 11.5 — walking skeleton and replan:** run one real disposable Ubuntu
-   CPU `llama.cpp` discovery-to-rollback path, record the findings, apply a
-   bounded evidence-driven plan adjustment, and continue automatically when its
-   gate is green.
-3. **Phase 12 — portable discovery and catalogs:** prepare privacy-reviewed
-   ubuntu-1, ubuntu-2, Windows, and Apple Silicon macOS profiles through
-   read-only lanes; define native platform ports and versioned catalogs.
-4. **Phase 13 — benchmark foundation:** normalize and import the existing
-   imported result history before creating new model-management workflows.
+1. **R0 — truthful ledgers and semantic traceability.** Reconciled in this
+   documentation change; implementation must add the planned enforcement tests.
+2. **R1 — canonical identity and plan family.** Required before downstream fan-out.
+3. **R2 — evidence-backed recommendation.** Use retained catalog, machine, and
+   benchmark records and produce the canonical plan losslessly.
+4. **R3 — durable managed application service.** Replace DEV-only workflow
+   simulation and inert settings/control paths with real owned operations.
+5. **R4 through R7 — native lifecycle, observability, desktop, and diagnosis.**
+   These may fan out only after the R3 application boundary is fixed.
+6. **R8/R9 — focused-scope and product-boundary closure.** Keep optional scope
+   deferred and prove each status at its real boundary.
+7. **R10 — physical qualification.** Blocked until R9 and separately authorized.
 
-The optional search, voice, workflow, research, RAG, and image-generation suite
-is not on this critical path. Any product-source change after the existing v0.1
-freeze creates a distinct v0.2 candidate; existing artifacts retain their
-recorded identity.
+Any v0.2 product-source candidate is distinct from the existing v0.1 freeze;
+historical artifacts retain their recorded identities.
 
-Phase 16.2 then delivered the three data workspaces behind the Phase 16.1
+### Historical Component Implementation Record
+
+The following records useful components that landed during the implementation
+run. The word “added” does not mean the corresponding phase or requirement exit
+gate is satisfied after the 2026-08-22 audit.
+
+Phase 16.2 added three data workspaces behind the Phase 16.1
 operations navigation: OUI-002 bounded metrics rollups (per-signal units,
 freshness, gaps, retention, and a 240-bucket query bound), OUI-003 redacted
 logs and events (approved sources, normalized severity/correlation, redaction
-before persistence or display, bounded search and filtering), and OUI-004
+before persistence or display, and bounded filtering), and OUI-004
 analytics and comparisons (benchmark run history, usage and reliability
 scorecards, directly-comparable before/after comparisons, and regressions).
-Phase 16.3 added OUI-005 validated settings plans (pydantic-free catalog,
+Phase 16.3 added OUI-005 settings validation/preview components (pydantic-free catalog,
 plan preview, apply, and rollback through an atomic overrides journal) and
 OUI-006 managed workflow sessions (typed definitions, confirmation, progress,
-cancellation, and audit trail). Phase 16.4 added DESK-001's minimal-capability
+cancellation, and audit trail). The settings journal is not a startup source and
+the workflow production route uses a non-mutating DEV executor. Phase 16.4
+added DESK-001's minimal-capability
 Tauri 2 shell (`desktop/src-tauri/`) and DESK-002's authenticated
-`GET /api/v1/system/compatibility` handshake; the webview holds only core
+`GET /api/v1/system/compatibility` API contract; the shell does not yet call that
+handshake. The webview holds only core
 window/webview/event permissions — no shell, filesystem, HTTP, or process
 capability — enforced by a startup manifest check and Rust tests, with a
 bundled open-in-browser fallback page when no loopback backend is reachable.
@@ -323,15 +335,18 @@ running backend), the install adapter with a side-effect-free dev executor
 (`adapters/install/`), a Rust plan-gating module, and
 `desktop/package/package-dev.sh` bundling the compiled shell into a
 checksummed `.mrpkg` with per-file digests, an SPDX SBOM, and a SHA256SUMS
-sidecar. The complete non-live gate passes 1458 tests with 91.05 percent
+sidecar. Native lifecycle executors and the declared platform package formats
+remain planned. At that historical checkpoint the complete non-live gate passed
+1458 tests with 91.05 percent
 coverage; strict formatting, linting, Bandit, pip-audit, and offline package
 builds are green, the pinned frontend gate passes 131 unit tests at 99.01
 percent statement coverage with strict lint, typecheck, and production build,
-and the desktop gate passes 17 Rust tests under fmt/clippy `-D warnings` with
+and the desktop gate passed 17 Rust tests under fmt/clippy `-D warnings` with
 a pinned 1.97.1 toolchain. The browser lane keeps 48 passing Playwright e2e
 instances (sequentially flaky only on this harness's chromium-mobile infra
-under sustained load; each instance passes standalone). This is DEV
-implementation evidence; no v0.2 candidate exists yet.
+under sustained load; each instance passed standalone). These counts are
+historical component evidence, not current completion evidence; no v0.2
+candidate exists yet.
 
 Developer/source qualification uses checksummed, scanned, SBOM-backed native
 packages and never waits on public signing credentials. Windows signing, Apple

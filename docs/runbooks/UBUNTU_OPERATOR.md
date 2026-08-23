@@ -9,9 +9,10 @@ replace Docker for external services.
 
 ## Scope stop-line
 
-Product work for ubuntu-1 stops when this runbook’s install path works and daily
-checks use Morpheus instead of ad-hoc scripts. Optional sidecars (search, voice,
-workflows, research, image generation) are out of scope unless reopened later.
+The deployed v0.1 path stops when this runbook’s install and daily checks work;
+do not use it as a v0.2 development target. Optional sidecars (search, voice,
+n8n workflows, research, RAG, and image generation) remain outside the focused
+v0.2 critical path unless reopened through change control.
 
 ## Never do
 
