@@ -53,7 +53,7 @@ morpheus-voice = "morpheus.voice.app:run"
 packages = ["src/morpheus"]
 
 [tool.pytest.ini_options]
-addopts = "--strict-config --strict-markers"
+addopts = "--strict-config --strict-markers -p tests.counting_plugin"
 testpaths = ["tests"]
 pythonpath = ["."]
 markers = [
@@ -72,7 +72,6 @@ source = ["morpheus"]
 fail_under = 90
 show_missing = true
 skip_covered = true
-omit = ["src/morpheus/api/app.py", "src/morpheus/agent/app.py"]
 
 [tool.ruff]
 line-length = 100
