@@ -13,6 +13,7 @@
         "additionalProperties": false,
         "required": [
           "id",
+          "boundaries",
           "phase",
           "status",
           "owning_tests",
@@ -32,6 +33,13 @@
             "type": "array",
             "uniqueItems": true,
             "items": {"type": "string", "pattern": "^(tests|web/tests)/"}
+          },
+          "boundaries": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "enum": ["api", "cli", "agent", "browser", "desktop", "end_to_end"]
+            }
           },
           "risk": {"enum": ["low", "medium", "high", "critical"]},
           "required_environments": {
