@@ -24,6 +24,7 @@ from morpheus import __version__ as morpheus_version
 from morpheus.adapters.inference.openai import OpenAIInferenceAdapter
 from morpheus.adapters.metrics.collector import collect_metrics
 from morpheus.adapters.metrics.vllm import VllmMetricsAdapter
+from morpheus.adapters.persistence.records_store import RecordsStore
 from morpheus.adapters.persistence.settings import SettingsJournal, SettingsJournalError
 from morpheus.adapters.persistence.sqlite import SqliteStore
 from morpheus.adapters.runtime.agent import RuntimeAgentClient
@@ -55,6 +56,11 @@ from morpheus.core.catalog import SEED_CATALOG
 from morpheus.core.compatibility import compatibility_payload
 from morpheus.core.concurrency import ConcurrencyLimiter, FixedWindowRateLimiter, RetryPolicy
 from morpheus.core.controls import ComponentHealth
+from morpheus.core.deployment import (
+    DeploymentError,
+    DeploymentStore,
+    StageHooks,
+)
 from morpheus.core.diagnosis import DiagnosisConfig, DiagnosisMode
 from morpheus.core.diagnostic_evidence import (
     DiagnosticEvidence,
@@ -78,12 +84,27 @@ from morpheus.core.recommendation import (
     build_recommendation,
     recommend_for_host,
 )
+from morpheus.core.records import (
+    BenchmarkCampaign,
+    DeploymentPlan,
+    MachineProfile,
+    record_from_public_dict,
+)
+from morpheus.core.records import (
+    WorkloadProfile as CanonicalWorkloadProfile,
+)
 from morpheus.core.settings_catalog import detect_sources, settings_catalog
 from morpheus.core.targets import FROZEN_TARGETS
 from morpheus.core.workflows import WorkflowId, workflow_definitions
 from morpheus.core.workload import SEED_PROFILES, OperatorConstraints
 from morpheus.ops.diagnosis import DiagnosisService
 from morpheus.ops.diagnostics import DiagnosticEvidenceBuilder, DiagnosticEvidenceError
+from morpheus.ops.planning import (
+    PlanningIdentityError,
+    PlanningService,
+    machine_profile_from_budget,
+    require_managed_ownership,
+)
 from morpheus.ops.support import SupportReportService
 from morpheus.ports.protocols import Clock, InferencePort, RuntimeAgentPort
 
@@ -102,6 +123,65 @@ class SessionUnavailable(Exception):
 
 class OperationsDataError(Exception):
     """An operations query was rejected at the bounded data boundary."""
+
+
+class PlanNotFound(Exception):
+    """A plan identity does not resolve to a stored canonical plan."""
+
+
+class PlanSelectionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    machine_profile: dict[str, Any]
+    workload_profile: dict[str, Any]
+    catalog: list[dict[str, Any]] = Field(min_length=1, max_length=32)
+    ownership: str | None = "managed"
+
+
+class CampaignRegistrationRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    campaign: dict[str, Any]
+    ownership: str | None = "managed"
+
+
+class PlanPromoteRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    confirmed: bool = False
+    artifacts_verified: bool = False
+    campaign_id: str | None = None
+    ownership: str | None = "managed"
+
+
+class PlanRollbackRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    confirmed: bool = False
+    ownership: str | None = "managed"
+
+
+class _UnavailableStageHooks:
+    """Honest default hooks: this instance stages no runtime by itself."""
+
+    def validate(self, plan: DeploymentPlan) -> tuple[str, ...]:
+        del plan
+        return ("deployment runtime is not configured on this instance",)
+
+    def activate(self, plan: DeploymentPlan) -> None:
+        raise DeploymentError(
+            f"cannot activate plan {plan.plan_id}: no deployment runtime is configured"
+        )
+
+    def deactivate(self, plan: DeploymentPlan) -> None:
+        raise DeploymentError(
+            f"cannot deactivate plan {plan.plan_id}: no deployment runtime is configured"
+        )
+
+    def cleanup(self, plan: DeploymentPlan) -> None:
+        raise DeploymentError(
+            f"cannot clean up plan {plan.plan_id}: no deployment runtime is configured"
+        )
 
 
 class SessionLogin(BaseModel):
@@ -180,11 +260,24 @@ def create_app(
     inference: InferencePort,
     clock: Clock,
     runtime_agent: RuntimeAgentPort | None = None,
+    stage_hooks: StageHooks | None = None,
 ) -> FastAPI:
     app = FastAPI(title="Morpheus Control API", version="0.1.0", docs_url=None, redoc_url=None)
     app.state.settings = settings
     app.state.inference = inference
     app.state.clock = clock
+    records_store = RecordsStore(settings.data_dir / "records")
+    plan_store = DeploymentStore(settings.data_dir / "deployments")
+    workflow_audit_store = LazyAuditStore(
+        SqliteStore(settings.data_dir / "morpheus.sqlite3", owned_root=settings.data_dir)
+    )
+    planning = PlanningService(
+        records=records_store,
+        plans=plan_store,
+        clock=clock,
+        audit=workflow_audit_store,
+    )
+    active_hooks = stage_hooks or _UnavailableStageHooks()
     app.add_middleware(BodyLimitMiddleware, max_body_bytes=settings.max_request_bytes)
     session_secret = settings.session_secret.get_secret_value().encode()
     session_codec = (
@@ -196,9 +289,7 @@ def create_app(
     rate_limiter = FixedWindowRateLimiter(settings.max_requests_per_minute)
     workflow_runner = WorkflowRunner(
         executor=DevWorkflowExecutor(settings),
-        audit=LazyAuditStore(
-            SqliteStore(settings.data_dir / "morpheus.sqlite3", owned_root=settings.data_dir)
-        ),
+        audit=workflow_audit_store,
     )
     allowed_origins = [
         f"http://127.0.0.1:{settings.dashboard_port}",
@@ -370,6 +461,34 @@ def create_app(
                     "message": str(error),
                 }
             },
+        )
+
+    @app.exception_handler(PlanNotFound)
+    async def plan_not_found(request: Request, error: PlanNotFound) -> JSONResponse:
+        del request
+        return JSONResponse(
+            status_code=404,
+            content={"error": {"code": "plan_not_found", "message": str(error)}},
+        )
+
+    @app.exception_handler(PlanningIdentityError)
+    async def planning_identity_error(
+        request: Request, error: PlanningIdentityError
+    ) -> JSONResponse:
+        del request
+        return JSONResponse(
+            status_code=400,
+            content={
+                "error": {"code": "planning_identity_error", "message": str(error)},
+            },
+        )
+
+    @app.exception_handler(DeploymentError)
+    async def deployment_error(request: Request, error: DeploymentError) -> JSONResponse:
+        del request
+        return JSONResponse(
+            status_code=409,
+            content={"error": {"code": "deployment_conflict", "message": str(error)}},
         )
 
     @app.exception_handler(OperationsDataError)
@@ -1054,12 +1173,15 @@ def create_app(
             budget=budget,
             catalog=SEED_CATALOG,
             operator=operator,
-            reference_machine_id=host.get("observed_at", "local"),
         )
+        # RUNM-001: the recommendation references the exact persisted machine
+        # profile identity; observation time stays provenance, never identity.
+        machine = machine_profile_from_budget(budget)
+        records_store.save_machine_profile(machine)
         record = build_recommendation(
             profile=profile,
             operator=operator,
-            reference_machine_id=host.get("observed_at", "local"),
+            reference_machine_id=machine.machine_id,
             budget={
                 "ram_bytes": budget.ram_bytes,
                 "vram_bytes": budget.vram_bytes,
@@ -1071,6 +1193,99 @@ def create_app(
         )
         _store().store_record(record)
         return {"recommendation": record.to_dict()}
+
+    def _canonical_plan_or_404(plan_id: str) -> DeploymentPlan:
+        known = planning.plan(plan_id)
+        if known is None:
+            raise PlanNotFound(f"no canonical deployment plan {plan_id!r} is stored")
+        return known
+
+    @app.get("/api/v1/plans/state", dependencies=[Depends(require_api_key)])
+    async def plans_state() -> dict[str, Any]:
+        active = plan_store.active()
+        last_known_good = plan_store.last_known_good()
+        return {
+            "schema_version": 1,
+            "observed_at": clock.utc_now().isoformat(),
+            "active_plan_id": active.plan.plan_id if active else None,
+            "last_known_good_plan_id": (last_known_good.plan.plan_id if last_known_good else None),
+        }
+
+    @app.get("/api/v1/plans/selections/latest", dependencies=[Depends(require_api_key)])
+    async def latest_plan_selection() -> dict[str, Any]:
+        recommendation = planning.latest_recommendation()
+        if recommendation is None:
+            raise PlanNotFound("no canonical plan selection is stored yet")
+        return {"schema_version": 1, "recommendation": recommendation.public_dict()}
+
+    @app.post("/api/v1/plans/select", dependencies=[Depends(require_csrf)])
+    async def select_canonical_plan(body: PlanSelectionRequest) -> dict[str, Any]:
+        require_managed_ownership(body.ownership)
+        try:
+            machine = record_from_public_dict(MachineProfile, body.machine_profile)
+            workload = record_from_public_dict(CanonicalWorkloadProfile, body.workload_profile)
+            catalog = tuple(
+                record_from_public_dict(DeploymentPlan, entry) for entry in body.catalog
+            )
+        except (ValueError, KeyError, TypeError) as error:
+            raise PlanningIdentityError(
+                f"selection payload does not rebuild exact canonical records: {error}"
+            ) from error
+        recommendation = planning.select_plan(machine=machine, workload=workload, catalog=catalog)
+        plans_payload = [plan.public_dict() for plan in catalog]
+        return {
+            "schema_version": 1,
+            "recommendation": recommendation.public_dict(),
+            "selected_plan_id": recommendation.plan_ids[0],
+            "plans": plans_payload,
+        }
+
+    @app.post("/api/v1/plans/campaigns", dependencies=[Depends(require_csrf)])
+    async def register_campaign_record(body: CampaignRegistrationRequest) -> dict[str, Any]:
+        require_managed_ownership(body.ownership)
+        try:
+            campaign = record_from_public_dict(BenchmarkCampaign, body.campaign)
+        except (ValueError, KeyError, TypeError) as error:
+            raise PlanningIdentityError(
+                f"campaign payload does not rebuild an exact canonical record: {error}"
+            ) from error
+        stored = planning.register_campaign(campaign)
+        return {"schema_version": 1, "campaign_id": stored.campaign_id}
+
+    @app.get("/api/v1/plans/{plan_id}", dependencies=[Depends(require_api_key)])
+    async def get_canonical_plan(plan_id: str) -> dict[str, Any]:
+        known = _canonical_plan_or_404(plan_id)
+        return {"schema_version": 1, "plan": known.public_dict()}
+
+    @app.post("/api/v1/plans/{plan_id}/promote", dependencies=[Depends(require_csrf)])
+    async def promote_canonical_plan(plan_id: str, body: PlanPromoteRequest) -> dict[str, Any]:
+        known = _canonical_plan_or_404(plan_id)
+        require_managed_ownership(body.ownership)
+        snapshot = await planning.promote(
+            plan=known,
+            hooks=active_hooks,
+            confirmed=body.confirmed,
+            artifacts_verified=body.artifacts_verified,
+            campaign_id=body.campaign_id or "",
+        )
+        return {"schema_version": 1, "state": snapshot.state, "campaign_id": snapshot.campaign_id}
+
+    @app.post("/api/v1/plans/{plan_id}/rollback", dependencies=[Depends(require_csrf)])
+    async def rollback_canonical_plan(plan_id: str, body: PlanRollbackRequest) -> dict[str, Any]:
+        known = _canonical_plan_or_404(plan_id)
+        require_managed_ownership(body.ownership)
+        snapshot = await planning.rollback_plan(
+            plan=known,
+            hooks=active_hooks,
+            confirmed=body.confirmed,
+        )
+        requesting = plan_store.load(known)
+        rollback_state = requesting.rollback.state if requesting and requesting.rollback else None
+        return {
+            "schema_version": 1,
+            "state": rollback_state or snapshot.state,
+            "restored_plan_id": snapshot.plan.plan_id,
+        }
 
     return app
 

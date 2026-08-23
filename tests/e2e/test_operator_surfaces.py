@@ -8,7 +8,7 @@ from morpheus.adapters.fakes import FakeClock, FakeInference
 from morpheus.api.app import create_app
 from morpheus.config import MorpheusSettings
 from morpheus.core.health import Evidence, HealthState
-from morpheus.core.models import ModelIdentity
+from morpheus.core.models import ServedModel
 
 MORPHEUS_OWNED_REQUIREMENTS = frozenset({"UI-001"})
 
@@ -27,7 +27,7 @@ def test_UI_001_operator_overview_traverses_the_public_control_api() -> None:
                 source="e2e",
                 expires_at=now + timedelta(seconds=30),
             ),
-            model_results=(ModelIdentity(root=None, aliases=("model",)),),
+            model_results=(ServedModel(root=None, aliases=("model",)),),
         ),
         clock=FakeClock(now=now),
     )

@@ -18,7 +18,7 @@ from morpheus.core.paths import OwnedPathResolver
 from morpheus.core.telemetry import TelemetryEvent
 
 T = TypeVar("T")
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 MAX_METRIC_SAMPLES = 10_000
 
 
@@ -116,10 +116,19 @@ class SqliteStore:
                     workflow_id TEXT NOT NULL,
                     event TEXT NOT NULL,
                     step_id TEXT,
-                    message TEXT
+                    message TEXT,
+                    plan_id TEXT,
+                    ownership TEXT
                 )
                 """
             )
+            existing_columns = {
+                row[1] for row in connection.execute("PRAGMA table_info(workflow_audit)").fetchall()
+            }
+            if "plan_id" not in existing_columns:
+                connection.execute("ALTER TABLE workflow_audit ADD COLUMN plan_id TEXT")
+            if "ownership" not in existing_columns:
+                connection.execute("ALTER TABLE workflow_audit ADD COLUMN ownership TEXT")
             connection.execute(
                 "CREATE INDEX IF NOT EXISTS idx_workflow_audit_recorded "
                 "ON workflow_audit(recorded_at)"
@@ -373,15 +382,18 @@ class SqliteStore:
         event: str,
         step_id: str | None = None,
         message: str | None = None,
+        plan_id: str | None = None,
+        ownership: str | None = None,
     ) -> None:
         def insert(connection: sqlite3.Connection) -> None:
             connection.execute(
                 """
                 INSERT INTO workflow_audit (
-                    recorded_at, session_id, workflow_id, event, step_id, message
-                ) VALUES (?, ?, ?, ?, ?, ?)
+                    recorded_at, session_id, workflow_id, event, step_id, message,
+                    plan_id, ownership
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (recorded_at, session_id, workflow_id, event, step_id, message),
+                (recorded_at, session_id, workflow_id, event, step_id, message, plan_id, ownership),
             )
 
         await self._run(insert)
@@ -392,7 +404,8 @@ class SqliteStore:
         def select(connection: sqlite3.Connection) -> list[dict[str, Any]]:
             rows = connection.execute(
                 """
-                SELECT recorded_at, session_id, workflow_id, event, step_id, message
+                SELECT recorded_at, session_id, workflow_id, event, step_id, message,
+                       plan_id, ownership
                 FROM workflow_audit
                 ORDER BY recorded_at DESC
                 LIMIT ?
@@ -407,6 +420,8 @@ class SqliteStore:
                     "event": row["event"],
                     "step_id": row["step_id"],
                     "message": row["message"],
+                    "plan_id": row["plan_id"],
+                    "ownership": row["ownership"],
                 }
                 for row in rows
             ]

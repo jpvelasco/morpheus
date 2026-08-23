@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
+from morpheus.adapters.persistence.records_store import RecordsStore
+from morpheus.core.deployment import DeploymentStore
 from morpheus.core.records import (
     DeploymentPlan,
     MachineProfile,
@@ -18,6 +20,7 @@ from morpheus.core.state_machines import (
     decode_machine_record,
     encode_machine_record,
 )
+from morpheus.ops.planning import PlanningService
 
 ACQUISITION_SOURCE = "https://github.com/ggml-org/llama.cpp/releases/download/b10400/llama-b10400-bin-ubuntu-x64.tar.gz"
 MODEL_SOURCE = "https://huggingface.co/bartowski/SmolLM2-135M-Instruct-GGUF/resolve/f0a2b81d63eb57be0e90e82e327e03a7fc66a7dc/SmolLM2-135M-Instruct-Q4_K_M.gguf"
@@ -169,29 +172,23 @@ def _machine_edges(
 
 
 def select_plan(
-    machine: MachineProfile, workload: WorkloadProfile, catalog: tuple[DeploymentPlan, ...]
+    machine: MachineProfile,
+    workload: WorkloadProfile,
+    catalog: tuple[DeploymentPlan, ...],
+    *,
+    records_root: Path,
 ) -> Recommendation:
-    """Deterministic selection: compatible engine, capacity fit, then catalog order."""
-    platform = f"{machine.platform}-{machine.architecture}"
-    viable = [
-        plan
-        for plan in catalog
-        if platform in plan.engine.platforms
-        and plan.engine.kind == "llama.cpp"
-        and plan.memory_estimate_bytes <= machine.memory_bytes
-        and plan.disk_estimate_bytes <= machine.disk_bytes
-        and workload.max_concurrency <= plan.max_concurrency
-        and workload.context_tokens <= plan.context_tokens
-    ]
-    if not viable:
-        raise VSliceError("no viable deployment plan for this machine and workload")
-    return Recommendation(
-        recommendation_id="recommendation-vslice-0001",
-        machine_id=machine.machine_id,
-        plan_ids=tuple(plan.plan_id for plan in viable),
-        evidence_ranked=True,
-        weights=(("deterministic", 1.0),),
+    """Select through the production planning service (RUNM-001 parity).
+
+    The fixture must exercise the same public application service and canonical
+    records as the API: selection persists the machine profile, workload,
+    plans, and the timestamp-free canonical recommendation under ``records_root``.
+    """
+    service = PlanningService(
+        records=RecordsStore(records_root / "records"),
+        plans=DeploymentStore(records_root),
     )
+    return service.select_plan(machine=machine, workload=workload, catalog=catalog)
 
 
 def render_command(plan: DeploymentPlan) -> tuple[str, ...]:
@@ -353,7 +350,12 @@ def run_slice(environment: VSliceEnvironment, options: SliceOptions) -> VSliceRe
     (options.cache_root / "checkpoints").mkdir(parents=True, exist_ok=True)
     external_before = environment.snapshot_external()
 
-    recommendation = select_plan(options.machine, options.workload, options.catalog)
+    recommendation = select_plan(
+        options.machine,
+        options.workload,
+        options.catalog,
+        records_root=options.cache_root,
+    )
     plan_a = next(plan for plan in options.catalog if plan.plan_id == options.plan_a_id)
     plan_b = next(plan for plan in options.catalog if plan.plan_id == options.plan_b_id)
 

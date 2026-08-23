@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from morpheus.core.capabilities import Capability, CapabilityState, evaluate_capabilities
-from morpheus.core.models import ModelIdentity
+from morpheus.core.models import ServedModel
 
 
 def test_RUN_001_model_identity_deduplicates_aliases_without_losing_order() -> None:
-    model = ModelIdentity(
+    model = ServedModel(
         root="nvidia/Qwen3.6-27B-NVFP4",
         aliases=("qwen36-27b-nvfp4", "coder36-q4km", "qwen36-27b-nvfp4"),
         context_window=131072,

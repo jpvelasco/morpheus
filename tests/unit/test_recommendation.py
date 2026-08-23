@@ -78,11 +78,13 @@ RANKED = (
 EXCLUDED = ((Candidate("qwen2.5-7b-instruct", "f16", "vllm", 8192, 1), VIOLATIONS),)
 
 
-def record(created_at: datetime | None = None) -> RecommendationRecord:
+def record(
+    created_at: datetime | None = None, reference_machine_id: str = "ubuntu-1"
+) -> RecommendationRecord:
     return build_recommendation(
         profile=PROFILE,
         operator=None,
-        reference_machine_id="ubuntu-1",
+        reference_machine_id=reference_machine_id,
         budget=BUDGET,
         ranked=RANKED,
         excluded=EXCLUDED,
@@ -91,13 +93,20 @@ def record(created_at: datetime | None = None) -> RecommendationRecord:
 
 
 class TestRecord:
-    def test_record_id_is_content_digest(self) -> None:
+    def test_record_id_is_timestamp_free_content_digest(self) -> None:
         import hashlib
 
         item = record()
         assert len(item.record_id) == 64
-        payload = canonical_json(item.content_dict()).encode("utf-8")
+        payload = canonical_json(item.identity_dict()).encode("utf-8")
         assert item.record_id == hashlib.sha256(payload).hexdigest()
+        later = record(created_at=datetime(2026, 9, 1, tzinfo=UTC))
+        assert later.record_id == item.record_id
+        assert "created_at" not in canonical_json(later.identity_dict())
+
+    def test_any_identity_input_change_changes_the_digest(self) -> None:
+        shifted = record(reference_machine_id="ubuntu-2")
+        assert shifted.record_id != record().record_id
 
     def test_identical_inputs_produce_identical_records(self) -> None:
         first = record(created_at=datetime(2026, 8, 1, tzinfo=UTC))
@@ -183,8 +192,11 @@ class TestStore:
         store.initialize()
         older = record(created_at=datetime(2026, 8, 1, tzinfo=UTC))
         newer = record(created_at=datetime(2026, 8, 2, tzinfo=UTC))
-        store.store_record(older)
-        store.store_record(newer)
+        # Identical identity inputs share one record id; re-observation only
+        # refreshes provenance (created_at), never the identity.
+        first_id = store.store_record(older)
+        second_id = store.store_record(newer)
+        assert first_id == second_id == newer.record_id
         assert store.latest() == newer
 
     def test_latest_empty_store_is_none(self, tmp_path: Path) -> None:
@@ -215,6 +227,69 @@ class TestStore:
         store.initialize()
         with pytest.raises(RecommendationError):
             store.load_record("not-hex")
+
+    def _write_v1_store(self, root: Path, entries: list[dict]) -> RecommendationStore:
+        import hashlib
+
+        raw = root / "raw"
+        raw.mkdir(parents=True)
+        ids: list[str] = []
+        for entry in entries:
+            payload = entry["payload"]
+            legacy_id = hashlib.sha256(
+                canonical_json(payload).encode("utf-8")
+            ).hexdigest()  # v1 addressed the full payload including created_at
+            payload["record_id"] = legacy_id
+            (raw / legacy_id).write_text(canonical_json(payload), encoding="utf-8")
+            ids.append(legacy_id)
+        manifest = {
+            "schema_version": 1,
+            "created_at": "2026-08-01T00:00:00+00:00",
+            "store_digest": "0" * 64,
+            "entries": ids,
+        }
+        (root / "manifest.json").write_text(canonical_json(manifest), encoding="utf-8")
+
+    def test_v1_records_are_remapped_without_silent_reinterpretation(self, tmp_path: Path) -> None:
+        item = record(created_at=datetime(2026, 8, 1, tzinfo=UTC))
+        payload = item.to_dict()
+        payload["schema_version"] = 1
+        payload.pop("record_id")
+        root = tmp_path / "recs"
+        self._write_v1_store(root, [{"payload": payload}])
+
+        store = RecommendationStore(root)
+        store.initialize()
+
+        loaded = store.load_record(item.record_id)
+        assert loaded == item  # same identity inputs, timestamp-free address
+        manifest = (root / "manifest.json").read_text(encoding="utf-8")
+        assert '"schema_version": 2' in manifest
+        assert item.record_id in manifest
+
+    def test_unmigratable_v1_entries_are_invalidated_explicitly(self, tmp_path: Path) -> None:
+        bad = {
+            "schema_version": 9,
+            "created_at": "2026-08-01T00:00:00+00:00",
+            "profile": {},
+            "operator": None,
+            "reference_machine_id": "x",
+            "budget": {},
+            "ranked": [],
+            "excluded": [],
+            "summary": "broken",
+        }
+        root = tmp_path / "recs"
+        self._write_v1_store(root, [{"payload": dict(bad)}])
+
+        store = RecommendationStore(root)
+        store.initialize()
+
+        assert store.latest() is None
+        invalidated = list((root / "invalidated").glob("*.json"))
+        assert len(invalidated) == 1
+        manifest = (root / "manifest.json").read_text(encoding="utf-8")
+        assert "unmigratable" in manifest
 
     def test_backup_and_restore(self, tmp_path: Path) -> None:
         store = RecommendationStore(tmp_path / "recs")

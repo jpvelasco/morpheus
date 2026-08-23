@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True, slots=True)
-class ModelIdentity:
+class ServedModel:
     root: str | None
     aliases: tuple[str, ...]
     context_window: int | None = None

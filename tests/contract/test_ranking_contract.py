@@ -33,7 +33,7 @@ from morpheus.core.solver import (
 from morpheus.core.workload import (
     SEED_PROFILES,
     WEIGHT_METRICS,
-    WorkloadProfile,
+    WorkloadPolicy,
 )
 
 pytestmark = pytest.mark.contract
@@ -210,7 +210,7 @@ def test_only_viable_tuples_are_ranked() -> None:
 def test_extreme_weights_cannot_resurrect_rejected_tuple() -> None:
     viable = viable_for(CPU_BUDGET)
     rejected = [candidate for candidate in CANDIDATES if candidate not in set(viable)]
-    extreme = WorkloadProfile(
+    extreme = WorkloadPolicy(
         id="extreme",
         version="1",
         name="Extreme",

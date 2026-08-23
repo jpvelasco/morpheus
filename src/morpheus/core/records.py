@@ -724,3 +724,13 @@ def encode_record(record: Any) -> bytes:
 
 def decode_record(data: bytes) -> Any:
     return RecordEnvelope.decode(data).to_record()
+
+
+def record_from_public_dict(record_type: type[Any], payload: dict[str, Any]) -> Any:
+    """Rebuild one canonical record from its ``public_dict`` shape.
+
+    The payload must contain exactly the declared fields; nested records are
+    rebuilt by exact type. Partial or extended payloads raise instead of
+    defaulting, so a mapping can never silently drop identity data.
+    """
+    return _rebuild_record(record_type, payload)

@@ -17,8 +17,14 @@ private request data, host addresses, or unredacted evidence.
 - **Rectification progress:** 2026-08-23 — gate repair landed (#66); R0
   semantic traceability enforced (machine-readable `boundaries`, requirement-ID
   ownership metadata, public-lane owner rule, derived documentation counts,
-  composition-root coverage measurement, separate lane count reports). R0 exit
-  evidence is in review; R1 entry requires it green.
+  composition-root coverage measurement, separate lane count reports). R1
+  canonical identity frozen on this branch: one semantic `DeploymentPlan`
+  survives codec/repositories/API/restart, competing identity families are
+  retired with explicit lossy-migration rejection, content-derived ids exclude
+  observation timestamps, canonical record repositories exist behind typed
+  protocols, and the planning service carries selection through rollback with
+  identity enforcement at API/agent/audit boundaries. RUNM-001 stays `planned`
+  (browser/UI carriage is R3/R9 scope); no requirement status advanced.
 
 - **Validated baseline source equivalent:** `aa094172764a4de3e5dc91324306b14857706c4e`
   (`security: bound API request work`). Its pre-publication build evidence
@@ -299,13 +305,18 @@ public/application boundaries and their affected gates pass.
 
 ## v0.2 Queue
 
-1. **R0 — truthful ledgers and semantic traceability.** Reconciled in this
-   documentation change; implementation must add the planned enforcement tests.
-2. **R1 — canonical identity and plan family.** Required before downstream fan-out.
+1. **R0 — truthful ledgers and semantic traceability.** Landed (#67).
+2. **R1 — canonical identity and plan family.** Landed on
+   `rectify/r1-canonical-identity`: one semantic `DeploymentPlan`, timestamp-free
+   content identities, typed record repositories, planning application service,
+   and identity enforcement at API/agent/audit boundaries; VSLICE selects
+   through the same production service.
 3. **R2 — evidence-backed recommendation.** Use retained catalog, machine, and
-   benchmark records and produce the canonical plan losslessly.
+   benchmark records and produce the canonical plan losslessly; must consume the
+   frozen R1 contracts, not fork them.
 4. **R3 — durable managed application service.** Replace DEV-only workflow
-   simulation and inert settings/control paths with real owned operations.
+   simulation and inert settings/control paths with real owned operations on the
+   R1 plan/operation identities.
 5. **R4 through R7 — native lifecycle, observability, desktop/model console,
    diagnosis, and setup copilot.** These may fan out only after the R3
    application boundary is fixed. CHAT-001 and CHAT-002 remain planned and must

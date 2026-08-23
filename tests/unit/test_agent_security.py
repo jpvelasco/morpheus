@@ -74,6 +74,8 @@ def test_SEC_002_lifecycle_protocol_has_only_fixed_identifiers_and_actions() -> 
         "version",
         "backup_id",
         "confirmation",
+        # RUNM-001: optional canonical plan identity; observed markers rejected.
+        "plan_id",
     }
     assert {action.value for action in LifecycleAction} == {
         "backup",

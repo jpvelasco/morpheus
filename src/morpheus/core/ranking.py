@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from morpheus.core.solver import Candidate
-from morpheus.core.workload import WEIGHT_METRICS, WorkloadProfile
+from morpheus.core.workload import WEIGHT_METRICS, WorkloadPolicy
 
 _DIRECTION: dict[str, str] = {
     "coding_correctness": "higher_is_better",
@@ -139,7 +139,7 @@ def effective_confidence(evidence: MetricEvidence) -> float:
 def rank_candidates(
     viable: tuple[Candidate, ...],
     *,
-    profile: WorkloadProfile,
+    profile: WorkloadPolicy,
     evidence_by_candidate: dict[Candidate, tuple[MetricEvidence, ...]],
     reference_machine_id: str | None = None,
 ) -> tuple[RankedCandidate, ...]:
@@ -215,7 +215,7 @@ def rank_candidates(
     )
 
 
-def summarize(profile: WorkloadProfile, contributions: tuple[Contribution, ...]) -> str:
+def summarize(profile: WorkloadPolicy, contributions: tuple[Contribution, ...]) -> str:
     """One-line explanation: strongest metric, weakest metric, incomparables."""
     ranked = sorted(
         (item for item in contributions if item.comparability == "comparable"),

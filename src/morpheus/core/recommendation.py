@@ -23,9 +23,9 @@ from morpheus.core.solver import (
     estimate_resource_use,
     filter_viable,
 )
-from morpheus.core.workload import OperatorConstraints, WorkloadProfile
+from morpheus.core.workload import OperatorConstraints, WorkloadPolicy
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 _ASCII = frozenset(chr(code) for code in range(32, 127))
 
 Migration = Callable[[dict[str, Any]], dict[str, Any]]
@@ -49,6 +49,23 @@ def register_migration(from_version: int) -> Callable[[Migration], Migration]:
     return decorator
 
 
+@register_migration(1)
+def _migrate_v1_to_v2(payload: dict[str, Any]) -> dict[str, Any]:
+    """Re-address a v1 record so its id no longer includes ``created_at``.
+
+    The observation timestamp moves to provenance-only status (RUNM-001):
+    identical inputs produce one identity regardless of when they were
+    observed. No ranking field is altered.
+    """
+    migrated = dict(payload)
+    migrated["schema_version"] = SCHEMA_VERSION
+    identity = {
+        key: value for key, value in migrated.items() if key not in {"created_at", "record_id"}
+    }
+    migrated["record_id"] = sha256_hex(canonical_json(identity).encode("utf-8"))
+    return migrated
+
+
 def migrate(payload: dict[str, Any], from_version: int) -> dict[str, Any]:
     current = from_version
     while current < SCHEMA_VERSION:
@@ -70,7 +87,7 @@ class RecommendationRecord:
 
     record_id: str
     created_at: datetime
-    profile: WorkloadProfile
+    profile: WorkloadPolicy
     operator: OperatorConstraints | None
     reference_machine_id: str
     budget: dict[str, int | str]
@@ -113,6 +130,15 @@ class RecommendationRecord:
             "summary": self.summary,
         }
 
+    def identity_dict(self) -> dict[str, Any]:
+        """Content that determines the record id: no observation timestamps.
+
+        ``created_at`` stays in the payload as provenance but never feeds the
+        content-derived identity (RUNM-001): identical inputs replay to one
+        record id regardless of when they were observed.
+        """
+        return {key: value for key, value in self.content_dict().items() if key != "created_at"}
+
     def to_dict(self) -> dict[str, Any]:
         return {"record_id": self.record_id, **self.content_dict()}
 
@@ -124,7 +150,7 @@ class RecommendationRecord:
         return cls(
             record_id=payload["record_id"],
             created_at=created.astimezone(UTC),
-            profile=WorkloadProfile.from_dict(payload["profile"]),
+            profile=WorkloadPolicy.from_dict(payload["profile"]),
             operator=_operator_from_dict(payload["operator"]) if payload.get("operator") else None,
             reference_machine_id=payload["reference_machine_id"],
             budget=dict(payload["budget"]),
@@ -208,12 +234,64 @@ class RecommendationStore:
                 "created_at": datetime.now(UTC).isoformat(),
                 "store_digest": sha256_hex(b""),
                 "entries": [],
+                "invalidated": [],
             }
             self._write_json(manifest_path, payload)
+            return
+        manifest = self._read_json(manifest_path)
+        version = manifest.get("schema_version")
+        if version == SCHEMA_VERSION:
+            return
+        if version != 1:
+            raise RecommendationError(
+                f"recommendation store schema version {version!r} is not supported; "
+                f"refusing to reinterpret it"
+            )
+        self._migrate_store_v1_to_v2(manifest, manifest_path)
+
+    def _migrate_store_v1_to_v2(self, manifest: dict[str, Any], manifest_path: Path) -> None:
+        """Re-address v1 entries explicitly; nothing is silently reinterpreted.
+
+        Records whose payloads cannot be migrated are moved to ``invalidated/``
+        with a reason document instead of being loaded as if they were v2.
+        """
+        invalidated: list[dict[str, str]] = []
+        winners: dict[str, dict[str, Any]] = {}
+        for old_id in sorted(manifest.get("entries", [])):
+            source = self._path(f"raw/{old_id}")
+            try:
+                payload = self._read_document(f"raw/{old_id}")
+                migrated = migrate(payload, int(payload.get("schema_version", 1)))
+                record = RecommendationRecord.from_dict(migrated)
+            except (RecommendationError, ValueError, KeyError, TypeError) as error:
+                invalidated.append({"record_id": str(old_id), "reason": f"unmigratable: {error}"})
+                if source.exists():
+                    self._write_json(
+                        self._path(f"invalidated/{old_id}.json"),
+                        {"record_id": old_id, "reason": str(error), "payload": None},
+                    )
+                    source.unlink()
+                continue
+            created = record.created_at
+            previous = winners.get(record.record_id)
+            if previous is None or created > RecommendationRecord.from_dict(previous).created_at:
+                winners[record.record_id] = migrated
+            if source.exists():
+                source.unlink()
+        for record_id, payload in winners.items():
+            self._write_json(self._path(f"raw/{record_id}"), payload)
+        migrated_manifest = {
+            "schema_version": SCHEMA_VERSION,
+            "created_at": manifest.get("created_at"),
+            "store_digest": sha256_hex(canonical_json({"entries": sorted(winners)}).encode()),
+            "entries": sorted(winners),
+            "invalidated": [*manifest.get("invalidated", []), *invalidated],
+        }
+        self._write_json(manifest_path, migrated_manifest)
 
     def store_record(self, record: RecommendationRecord) -> str:
-        """Store a record content-addressed by its canonical payload digest."""
-        digest = sha256_hex(canonical_json(record.content_dict()).encode("utf-8"))
+        """Store a record content-addressed by its timestamp-free identity."""
+        digest = sha256_hex(canonical_json(record.identity_dict()).encode("utf-8"))
         if digest != record.record_id:
             raise RecommendationError("record digest does not match its content")
         payload = record.to_dict()
@@ -221,7 +299,15 @@ class RecommendationStore:
         if target.exists():
             stored = self._read_json(target)
             if stored != payload:
-                raise RecommendationError(f"content-addressed collision at {digest}")
+                stored_identity = {
+                    key: value
+                    for key, value in stored.items()
+                    if key not in {"created_at", "record_id"}
+                }
+                if stored_identity != record.identity_dict():
+                    raise RecommendationError(f"content-addressed collision at {digest}")
+                # Same identity, fresher provenance: keep the newer observation time.
+                self._write_json(target, payload)
         else:
             self._write_json(target, payload)
         entries_path = self._path("manifest.json")
@@ -237,7 +323,12 @@ class RecommendationStore:
         payload = self._read_document(f"raw/{record_id}")
         if payload.get("schema_version", SCHEMA_VERSION) != SCHEMA_VERSION:
             payload = migrate(payload, payload["schema_version"])
-        return RecommendationRecord.from_dict(payload)
+        record = RecommendationRecord.from_dict(payload)
+        if record.record_id != record_id:
+            raise RecommendationError(
+                f"stored document {record.record_id} does not match requested identity {record_id}"
+            )
+        return record
 
     def latest(self) -> RecommendationRecord | None:
         manifest_path = self._path("manifest.json")
@@ -297,7 +388,7 @@ class RecommendationStore:
 
 def build_recommendation(
     *,
-    profile: WorkloadProfile,
+    profile: WorkloadPolicy,
     operator: OperatorConstraints | None,
     reference_machine_id: str,
     budget: dict[str, int | str],
@@ -305,7 +396,7 @@ def build_recommendation(
     excluded: tuple[tuple[Candidate, tuple[ConstraintViolation, ...]], ...],
     created_at: datetime | None = None,
 ) -> RecommendationRecord:
-    """Build an immutable record whose id is the digest of its content."""
+    """Build an immutable record whose id is the digest of its timestamp-free content."""
     if not ranked:
         raise RecommendationError("recommendation must rank at least one tuple")
     summary = _record_summary(ranked, excluded)
@@ -321,7 +412,7 @@ def build_recommendation(
         excluded=excluded,
         summary=summary,
     )
-    digest = sha256_hex(canonical_json(record.content_dict()).encode("utf-8"))
+    digest = sha256_hex(canonical_json(record.identity_dict()).encode("utf-8"))
     return RecommendationRecord(
         record_id=digest,
         created_at=created,
@@ -424,7 +515,7 @@ def budget_from_host(host: dict[str, Any]) -> HardwareBudget | None:
 
 def recommend_for_host(
     *,
-    profile: WorkloadProfile,
+    profile: WorkloadPolicy,
     budget: HardwareBudget,
     catalog: CatalogCollection,
     operator: OperatorConstraints | None = None,

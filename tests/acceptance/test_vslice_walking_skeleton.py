@@ -302,7 +302,7 @@ def test_vslice_013_selection_is_deterministic_and_filters_incompatible_engines(
             engine_id="engine-vllm-vslice",
             kind="vllm",
             artifact_digest=DIGEST_B,
-            platforms=("linux-x86_64",),
+            platforms=("linux-aarch64",),
         ),
         workload=plan_a.workload,
         settings=(("context_length", 2048),),
@@ -320,8 +320,12 @@ def test_vslice_013_selection_is_deterministic_and_filters_incompatible_engines(
         source_evidence_digest=DIGEST_B,
     )
 
-    first = select_plan(_machine(), _workload(), (plan_a, plan_b, incompatible))
-    second = select_plan(_machine(), _workload(), (plan_a, plan_b, incompatible))
+    first = select_plan(
+        _machine(), _workload(), (plan_a, plan_b, incompatible), records_root=tmp_path
+    )
+    second = select_plan(
+        _machine(), _workload(), (plan_a, plan_b, incompatible), records_root=tmp_path
+    )
 
     assert first.plan_ids == (PLAN_A, PLAN_B)
     assert second.plan_ids == (PLAN_A, PLAN_B)

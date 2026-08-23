@@ -23,7 +23,7 @@ from morpheus.core.benchmark import (
 from morpheus.core.benchstore import BenchmarkStore, CampaignRun
 from morpheus.core.health import Evidence, HealthState
 from morpheus.core.metrics_history import MetricSample
-from morpheus.core.models import ModelIdentity
+from morpheus.core.models import ServedModel
 from morpheus.core.telemetry import TelemetryEvent
 
 MORPHEUS_OWNED_REQUIREMENTS = frozenset({"OUI-001", "OUI-004"})
@@ -137,7 +137,7 @@ class FailingModelsInference(FakeInference):
     def __init__(self) -> None:
         super().__init__(health_result=READY_EVIDENCE, model_results=())
 
-    async def models(self) -> tuple[ModelIdentity, ...]:
+    async def models(self) -> tuple[ServedModel, ...]:
         raise httpx.ConnectError("fixture discovery failure")
 
 
@@ -155,7 +155,7 @@ def client(
         or FakeInference(
             health_result=health_result or READY_EVIDENCE,
             model_results=(
-                ModelIdentity(
+                ServedModel(
                     root="nvidia/Qwen3.6-27B-NVFP4",
                     aliases=("qwen36-27b-nvfp4",),
                     context_window=131072,
