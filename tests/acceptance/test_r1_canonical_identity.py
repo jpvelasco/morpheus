@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import time
+from pathlib import Path
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -282,9 +283,9 @@ def test_RUNM_001_selection_through_api_keeps_one_plan_id_across_restart(tmp_pat
     assert again.status_code == 200
     assert again.json() == fetched.json()
 
-    latest = restarted.get("/api/v1/recommendations/latest", headers=_AUTH)
-    assert latest.status_code == 200
-    assert latest.json()["recommendation"]["record_id"] == recommendation_id
+    selection = restarted.get("/api/v1/plans/selections/latest", headers=_AUTH)
+    assert selection.status_code == 200
+    assert selection.json()["recommendation"]["recommendation_id"] == recommendation_id
 
 
 def test_RUNM_001_promotion_and_rollback_cross_an_application_restart_with_one_plan_id(
@@ -460,8 +461,10 @@ def test_RUNM_001_campaign_binding_rejects_missing_or_mismatched_plans(tmp_path:
         catalog=(_plan(PLAN_A, 2_048),),
     )
 
-    with pytest.raises(PlanningIdentityError, match="plan_id"):
-        service.register_campaign(_campaign(CAMPAIGN_A, ""))
+    # Layer 1: the canonical record itself refuses an unbounded correlation.
+    with pytest.raises(ValueError, match="plan_id"):
+        _campaign(CAMPAIGN_A, "")
+    # Layer 2: the service refuses campaigns bound to plans it cannot resolve.
     with pytest.raises(PlanningIdentityError, match=PLAN_B):
         service.register_campaign(_campaign(CAMPAIGN_A, PLAN_B))
 
@@ -560,7 +563,7 @@ def test_RUNM_001_unknown_plan_identity_is_rejected_before_any_state_changes(
     assert response.json()["error"]["code"] == "plan_not_found"
 
 
-def test_RUNM_001_audit_sink_rejects_missing_observed_or_mismatched_plan_identity(
+async def test_RUNM_001_audit_sink_rejects_missing_observed_or_mismatched_plan_identity(
     tmp_path: Any,
 ) -> None:
     service = _planning(tmp_path)
@@ -571,11 +574,15 @@ def test_RUNM_001_audit_sink_rejects_missing_observed_or_mismatched_plan_identit
     )
 
     with pytest.raises(PlanningIdentityError, match="plan_id"):
-        service.audit_event(event="started", plan_id=None, ownership="managed")
+        await service.audit_event(event="started", plan_id=None, ownership="managed")
     with pytest.raises(PlanningIdentityError, match="observed"):
-        service.audit_event(event="started", plan_id=PLAN_A, ownership="external_observed")
-    with pytest.raises(PlanningIdentityError, match=PLAN_B):
-        service.audit_event(event="started", plan_id="plan-not-stored", ownership="managed")
+        await service.audit_event(event="started", plan_id=PLAN_A, ownership="external_observed")
+    with pytest.raises(PlanningIdentityError, match="plan-not-stored"):
+        await service.audit_event(event="started", plan_id="plan-not-stored", ownership="managed")
+
+    recorded = await service.audit_event(event="started", plan_id=PLAN_A, ownership="managed")
+    assert recorded["plan_id"] == PLAN_A
+    assert recorded["ownership"] == "managed"
 
 
 KEY = b"runtime-agent-r1-key"
@@ -601,7 +608,11 @@ def _agent_client() -> TestClient:
 
     client = TestClient(
         create_agent_app(
-            settings=MorpheusSettings(agent_key=KEY.decode(), enable_lifecycle=True),
+            settings=MorpheusSettings(
+                agent_key=KEY.decode(),
+                enable_lifecycle=True,
+                lifecycle_deployment_root=Path("C:/tmp") / "r1-agent-deploy",
+            ),
             inspector=Inspector(),  # type: ignore[arg-type]
             lifecycle=Lifecycle(),  # type: ignore[arg-type]
         )

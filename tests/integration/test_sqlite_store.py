@@ -323,7 +323,7 @@ async def test_OUI_006_workflow_audit_bounds_the_result_size(tmp_path: Path) -> 
 
 
 @pytest.mark.asyncio
-async def test_schema_v3_migrates_an_existing_v2_database(tmp_path: Path) -> None:
+async def test_schema_v4_migrates_an_existing_v2_database(tmp_path: Path) -> None:
     import sqlite3
 
     database = tmp_path / "morpheus.sqlite3"
@@ -337,13 +337,24 @@ async def test_schema_v3_migrates_an_existing_v2_database(tmp_path: Path) -> Non
             "first_byte_seconds REAL, completed_seconds REAL, prompt_tokens INTEGER, "
             "completion_tokens INTEGER, finish_reason TEXT, outcome TEXT NOT NULL)"
         )
+        # A v3-era audit table without the RUNM-001 identity columns.
+        connection.execute(
+            "CREATE TABLE workflow_audit (id INTEGER PRIMARY KEY AUTOINCREMENT, "
+            "recorded_at TEXT NOT NULL, session_id TEXT NOT NULL, workflow_id TEXT NOT NULL, "
+            "event TEXT NOT NULL, step_id TEXT, message TEXT)"
+        )
     store = SqliteStore(database)
     await store.initialize()
-    assert await store.schema_version() == 3
+    assert await store.schema_version() == 4
     await store.record_workflow_audit(
         recorded_at="2026-08-15T10:00:00+00:00",
         session_id="session-1",
-        workflow_id="benchmark",
-        event="started",
+        workflow_id="plan_promote",
+        event="promote",
+        plan_id="plan-libri-gguf-q4-0001",
+        ownership="managed",
     )
-    assert len(await store.workflow_audit_events()) == 1
+    events = await store.workflow_audit_events()
+    assert len(events) == 1
+    assert events[0]["plan_id"] == "plan-libri-gguf-q4-0001"
+    assert events[0]["ownership"] == "managed"

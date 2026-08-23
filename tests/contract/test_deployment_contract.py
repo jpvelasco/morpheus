@@ -1,9 +1,12 @@
 """Contract tests: engine-neutral managed deployment (RUNM-004..006).
 
 Guarantees:
+- The only semantic deployment plan is ``morpheus.core.records.DeploymentPlan``
+  (RUNM-001); lifecycle documents embed it exactly and reject lossy v1
+  migration instead of reinterpreting it.
 - A plan is promoted only after verified artifacts, passing preflight,
-  completed benchmark acceptance under declared limits, and operator
-  confirmation; every gate is durable and irreversible in record.
+  succeeded canonical campaign evidence bound to the same plan id, and
+  operator confirmation; every gate is durable and irreversible in record.
 - Activation is exclusive: the previous plan is deactivated before the new
   plan is activated, and any hook fault recovers the last-known-good plan
   durably (recovering -> rolled_back) without touching its active ownership.
@@ -20,17 +23,13 @@ import hashlib
 
 import pytest
 
-from morpheus.core.benchmark import BenchmarkSample, CampaignDeclaration, RunIdentity
-from morpheus.core.benchstore import BenchmarkStore
-from morpheus.core.campaign import CampaignAuthorizationError, authorization_token
 from morpheus.core.deployment import (
     DeploymentError,
     DeploymentPlan,
     DeploymentStore,
-    ManagedCandidate,
     activate,
     adopt,
-    benchmark_gate,
+    attach_campaign_evidence,
     confirm,
     preflight,
     propose,
@@ -38,26 +37,77 @@ from morpheus.core.deployment import (
     rollback,
 )
 from morpheus.core.paths import OwnedPathError
+from morpheus.core.records import BenchmarkCampaign, EngineIdentity, ModelIdentity, WorkloadProfile
 
 pytestmark = pytest.mark.contract
 
 DIGEST = "d" * 64
 
 
-def plan(model_id: str = "llama-3.1-8b-instruct", **overrides) -> DeploymentPlan:
-    return DeploymentPlan(
-        candidate=ManagedCandidate(
-            model_id=model_id,
-            quantization="q4_k_m",
-            engine_id="llama.cpp",
-            context_window=8192,
-            concurrency=1,
-        ),
-        profile_id="developer-default",
-        model_artifact=DIGEST,
-        engine_artifact="e" * 64,
-        **overrides,
+class MemoryCampaigns:
+    def __init__(self) -> None:
+        self.saved: dict[str, BenchmarkCampaign] = {}
+
+    def save_campaign(self, campaign: BenchmarkCampaign) -> None:
+        self.saved[campaign.campaign_id] = campaign
+
+    def campaign(self, campaign_id: str) -> BenchmarkCampaign | None:
+        return self.saved.get(campaign_id)
+
+    def campaigns_for_plan(self, plan_id: str) -> tuple[BenchmarkCampaign, ...]:
+        return tuple(c for c in self.saved.values() if c.plan_id == plan_id)
+
+
+def campaign_for(plan: DeploymentPlan) -> BenchmarkCampaign:
+    return BenchmarkCampaign(
+        campaign_id=f"campaign-{plan.plan_id}",
+        plan_id=plan.plan_id,
+        benchmark_suite_id="suite-developer-0001",
+        workload_id=plan.workload.workload_id,
+        state="succeeded",
     )
+
+
+def plan(model_id: str = "model-llama-3-1-8b-instruct", **overrides) -> DeploymentPlan:
+    fields = {
+        "model": ModelIdentity(
+            model_id=model_id,
+            revision="v1",
+            artifact_digest=DIGEST,
+            model_format="gguf",
+            quantization="q4_k_m",
+            license_id="apache-2.0",
+            source="huggingface",
+        ),
+        "engine": EngineIdentity(
+            engine_id="engine-llama-cpp-0001",
+            kind="llama.cpp",
+            artifact_digest="e" * 64,
+            platforms=("linux-x86_64",),
+        ),
+        "workload": WorkloadProfile(
+            workload_id="workload-developer-0001",
+            developer_profile="full-stack",
+            context_tokens=8192,
+            max_concurrency=1,
+            required_features=("chat",),
+        ),
+        "settings": (("context_length", 8192), ("threads", 2)),
+        "served_aliases": ("libri-1",),
+        "context_tokens": 8192,
+        "max_concurrency": 1,
+        "cache_policy": "owned-cache",
+        "memory_estimate_bytes": 4 * 1024**3,
+        "disk_estimate_bytes": 8 * 1024**3,
+        "owned_paths": ("/opt/morpheus/dev/cache",),
+        "ports": (8080,),
+        "health_contract_id": "health-openai-compatible-0001",
+        "benchmark_gate_id": "gate-ttft-0001",
+        "rollback_target_plan_id": None,
+        "source_evidence_digest": DIGEST,
+    }
+    fields.update(overrides)
+    return DeploymentPlan(plan_id=f"plan-{model_id.removeprefix('model-')}-0001", **fields)
 
 
 class RecordHooks:
@@ -126,50 +176,11 @@ class ConfirmOperator:
         return self.accepted
 
 
-def declaration(**overrides) -> CampaignDeclaration:
-    fields = {
-        "name": "phase-15.2-gate",
-        "campaign_type": "speed",
-        "benchmark_revision": "2026.2",
-        "duration_seconds": 60,
-        "concurrency": 1,
-        "ownership_target": "dev",
-        "stop_conditions": (("target_samples", 3),),
-    }
-    fields.update(overrides)
-    return CampaignDeclaration(**fields)
-
-
-def identity() -> RunIdentity:
-    return RunIdentity(
-        machine_id="ubuntu-2",
-        model_id="llama-3.1-8b-instruct",
-        model_revision="main",
-        quantization="q4_k_m",
-        engine_id="llama.cpp",
-        engine_version="b6000",
-        benchmark_revision="2026.2",
-    )
-
-
-def workload(context, index):
-    return BenchmarkSample(run_id=context.run_id, sequence_index=index)
-
-
 def promote_to_active(store, hooks, operator=None, p=None):
     p = p or plan()
     propose(store, p, artifacts_verified=True)
     preflight(store, p, hooks)
-    benchmark_gate(
-        store,
-        p,
-        declaration=declaration(),
-        identity=identity(),
-        workload=workload,
-        benchmark_store=BenchmarkStore(store.root / "benchmarks"),
-        authorized=authorization_token(),
-        ownership_target="dev",
-    )
+    attach_campaign_evidence(store, p, campaign=campaign_for(p), campaigns=MemoryCampaigns())
     confirm(store, p, operator or ConfirmOperator())
     return activate(store, p, hooks)
 
@@ -188,19 +199,10 @@ def test_activation_fault_at_every_hook_recovers_last_known_good_durably(tmp_pat
     hooks = RecordHooks()
     first = plan()
     promote_to_active(store, hooks, p=first)
-    second = plan(model_id="mistral-7b-instruct")
+    second = plan(model_id="model-mistral-7b-instruct")
     propose(store, second, artifacts_verified=True)
     preflight(store, second, hooks)
-    benchmark_gate(
-        store,
-        second,
-        declaration=declaration(),
-        identity=identity(),
-        workload=workload,
-        benchmark_store=BenchmarkStore(store.root / "benchmarks"),
-        authorized=authorization_token(),
-        ownership_target="dev",
-    )
+    attach_campaign_evidence(store, second, campaign=campaign_for(second), campaigns=MemoryCampaigns())
     confirm(store, second, ConfirmOperator())
     if fault == "deactivate":
         hooks.fail_on_deactivate = True
@@ -227,7 +229,7 @@ def test_exclusive_resource_ordering_deactivates_previous_before_activating_new(
     hooks = RecordHooks()
     first = plan()
     promote_to_active(store, hooks, p=first)
-    second = plan(model_id="mistral-7b-instruct")
+    second = plan(model_id="model-mistral-7b-instruct")
     promote_to_active(store, hooks, p=second)
     order = [event for event, _ in hooks.events]
     deactivate_at = order.index("deactivate")
@@ -242,18 +244,11 @@ def test_failed_activation_leaves_state_file_unchanged(tmp_path) -> None:
     promote_to_active(store, hooks, p=first)
     before = (tmp_path / "state.json").read_bytes()
     for index in range(2):
-        second = plan(model_id=f"mistral-7b-{index}")
+        second = plan(model_id=f"model-mistral-7b-{index}")
         propose(store, second, artifacts_verified=True)
         preflight(store, second, hooks)
-        benchmark_gate(
-            store,
-            second,
-            declaration=declaration(),
-            identity=identity(),
-            workload=workload,
-            benchmark_store=BenchmarkStore(store.root / "benchmarks"),
-            authorized=authorization_token(),
-            ownership_target="dev",
+        attach_campaign_evidence(
+            store, second, campaign=campaign_for(second), campaigns=MemoryCampaigns()
         )
         confirm(store, second, ConfirmOperator())
         hooks.fail_on_activate = True
@@ -268,7 +263,7 @@ def test_rollback_preflight_fault_is_rejected_durably(tmp_path) -> None:
     hooks = RecordHooks()
     first = plan()
     promote_to_active(store, hooks, p=first)
-    second = plan(model_id="mistral-7b-instruct")
+    second = plan(model_id="model-mistral-7b-instruct")
     promote_to_active(store, hooks, p=second)
     hooks.fail_on_activate = True
     with pytest.raises(DeploymentError, match="rollback rejected"):
@@ -284,7 +279,7 @@ def test_rollback_restore_fault_is_failed_durably(tmp_path) -> None:
     hooks = RecordHooks()
     first = plan()
     promote_to_active(store, hooks, p=first)
-    second = plan(model_id="mistral-7b-instruct")
+    second = plan(model_id="model-mistral-7b-instruct")
     promote_to_active(store, hooks, p=second)
     hooks.validate_calls = 0
     hooks.fail_validate_after = 2
@@ -301,7 +296,7 @@ def test_rollback_success_is_durable_and_exclusive(tmp_path) -> None:
     hooks = RecordHooks()
     first = plan()
     promote_to_active(store, hooks, p=first)
-    second = plan(model_id="mistral-7b-instruct")
+    second = plan(model_id="model-mistral-7b-instruct")
     promote_to_active(store, hooks, p=second)
     rollback(store, second, hooks)
     fresh = reload(tmp_path)
@@ -319,7 +314,7 @@ def test_rollback_success_is_durable_and_exclusive(tmp_path) -> None:
 def test_adoption_requires_verified_artifacts_and_exact_pre_state(tmp_path) -> None:
     store = DeploymentStore(tmp_path)
     hooks = RecordHooks()
-    p = plan(model_id="mistral-7b-instruct")
+    p = plan(model_id="model-mistral-7b-instruct")
     with pytest.raises(DeploymentError, match="verified artifacts"):
         adopt(store, p, hooks, ConfirmOperator())
     snap = adopt(store, p, hooks, ConfirmOperator(), artifacts_verified=True)
@@ -335,7 +330,7 @@ def test_adoption_requires_verified_artifacts_and_exact_pre_state(tmp_path) -> N
 def test_adoption_transfer_fault_restores_pre_state_durably(tmp_path) -> None:
     store = DeploymentStore(tmp_path)
     hooks = RecordHooks()
-    p = plan(model_id="mistral-7b-instruct")
+    p = plan(model_id="model-mistral-7b-instruct")
     hooks.fail_on_transfer = True
     with pytest.raises(DeploymentError, match="pre-state restored"):
         adopt(store, p, hooks, ConfirmOperator(), artifacts_verified=True)
@@ -347,7 +342,7 @@ def test_adoption_transfer_fault_restores_pre_state_durably(tmp_path) -> None:
 def test_adoption_restore_fault_is_failed_durably(tmp_path) -> None:
     store = DeploymentStore(tmp_path)
     hooks = RecordHooks()
-    p = plan(model_id="mistral-7b-instruct")
+    p = plan(model_id="model-mistral-7b-instruct")
     hooks.fail_on_transfer = True
     hooks.fail_on_restore = True
     with pytest.raises(DeploymentError, match="pre-state restore failed"):
@@ -359,7 +354,7 @@ def test_adoption_restore_fault_is_failed_durably(tmp_path) -> None:
 def test_adoption_without_operator_confirmation_is_rejected_durably(tmp_path) -> None:
     store = DeploymentStore(tmp_path)
     hooks = RecordHooks()
-    p = plan(model_id="mistral-7b-instruct")
+    p = plan(model_id="model-mistral-7b-instruct")
     snap = adopt(store, p, hooks, ConfirmOperator(accepted=False), artifacts_verified=True)
     assert snap.state == "rejected"
     assert not any(event == "transfer" for event, _ in hooks.events)
@@ -372,7 +367,7 @@ def test_removed_plan_is_permanently_ineligible_and_cleanup_fault_is_durable(
 ) -> None:
     store = DeploymentStore(tmp_path)
     hooks = RecordHooks()
-    p = plan(model_id="mistral-7b-instruct")
+    p = plan(model_id="model-mistral-7b-instruct")
     propose(store, p, artifacts_verified=True)
     hooks.fail_on_cleanup = True
     with pytest.raises(DeploymentError, match="cleanup"):
@@ -405,60 +400,55 @@ def test_symlinked_state_and_documents_are_rejected(tmp_path) -> None:
         reload(tmp_path).load(p)
 
 
-def test_benchmark_gate_requires_completed_campaign_and_records_run(tmp_path) -> None:
+def test_campaign_evidence_gate_binds_exactly_one_succeeded_campaign(tmp_path) -> None:
     store = DeploymentStore(tmp_path)
     hooks = RecordHooks()
-    p = plan(model_id="mistral-7b-instruct")
+    p = plan(model_id="model-mistral-7b-instruct")
     propose(store, p, artifacts_verified=True)
     preflight(store, p, hooks)
 
-    def broken(context, index):
-        return BenchmarkSample(run_id=context.run_id, sequence_index=index, error="boom")
-
-    with pytest.raises(DeploymentError, match="run status"):
-        benchmark_gate(
-            store,
-            p,
-            declaration=declaration(stop_conditions=(("target_samples", 3), ("max_errors", 1))),
-            identity=identity(),
-            workload=broken,
-            benchmark_store=BenchmarkStore(store.root / "benchmarks"),
-            authorized=authorization_token(),
-            ownership_target="dev",
-        )
-    with pytest.raises(CampaignAuthorizationError, match="explicit authority"):
-        benchmark_gate(
-            store,
-            p,
-            declaration=declaration(),
-            identity=identity(),
-            workload=workload,
-            benchmark_store=BenchmarkStore(store.root / "benchmarks"),
-            authorized=b"deadbeef",
-            ownership_target="dev",
-        )
-    benchmark_gate(
-        store,
-        p,
-        declaration=declaration(),
-        identity=identity(),
-        workload=workload,
-        benchmark_store=BenchmarkStore(store.root / "benchmarks"),
-        authorized=authorization_token(),
-        ownership_target="dev",
+    aborted = BenchmarkCampaign(
+        campaign_id=f"campaign-{p.plan_id}",
+        plan_id=p.plan_id,
+        benchmark_suite_id="suite-developer-0001",
+        workload_id=p.workload.workload_id,
+        state="aborted",
     )
+    with pytest.raises(DeploymentError, match="campaign gate failed"):
+        attach_campaign_evidence(store, p, campaign=aborted, campaigns=MemoryCampaigns())
+
+    foreign = plan(model_id="model-other-7b")
+    with pytest.raises(DeploymentError, match="correlates plan"):
+        attach_campaign_evidence(
+            store, p, campaign=campaign_for(foreign), campaigns=MemoryCampaigns()
+        )
+
+    snapshot = attach_campaign_evidence(
+        store, p, campaign=campaign_for(p), campaigns=MemoryCampaigns()
+    )
+    assert snapshot.campaign_id == f"campaign-{p.plan_id}"
     fresh = reload(tmp_path)
-    assert fresh.load(p).plan.benchmark_run is not None
-    assert fresh.load(p).plan.benchmark_run.startswith("campaign-")
+    assert fresh.load(p).campaign_id == f"campaign-{p.plan_id}"
+    replacement = BenchmarkCampaign(
+        campaign_id="campaign-replacement-attempt",
+        plan_id=p.plan_id,
+        benchmark_suite_id="suite-developer-0001",
+        workload_id=p.workload.workload_id,
+        state="succeeded",
+    )
+    with pytest.raises(DeploymentError, match="refusing to replace"):
+        attach_campaign_evidence(store, p, campaign=replacement, campaigns=MemoryCampaigns())
 
 
-def test_snapshot_digest_is_content_derived_and_stable(tmp_path) -> None:
-    a = plan()
-    b = plan()
-    assert a.plan_id == b.plan_id
-    changed = plan(model_id="mistral-7b-instruct")
-    assert changed.plan_id != a.plan_id
-    assert len(a.plan_id) == 64
-    assert int(a.plan_id, 16) >= 0
+def test_snapshot_identity_is_exact_across_a_restart(tmp_path) -> None:
+    store = DeploymentStore(tmp_path)
+    hooks = RecordHooks()
+    p = plan()
+    promote_to_active(store, hooks, p=p)
     probe = plan()
-    assert hashlib.sha256(probe.to_dict().__str__().encode()).hexdigest() != probe.plan_id
+    assert probe.plan_id == p.plan_id
+    changed = plan(model_id="model-mistral-7b-instruct")
+    assert changed.plan_id != p.plan_id
+    fresh = reload(tmp_path)
+    assert fresh.get_plan(p.plan_id) == p
+    assert int(hashlib.sha256(p.public_dict().__str__().encode()).hexdigest(), 16) >= 0

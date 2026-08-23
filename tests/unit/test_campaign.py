@@ -76,6 +76,7 @@ class TestAuthorization:
                 BenchmarkStore(tmp_path),
                 authorized=False,
                 ownership_target="DEV",
+                run_id="run-unauthorized",
             )
 
     def test_wrong_token_rejected(self, tmp_path) -> None:
@@ -87,6 +88,7 @@ class TestAuthorization:
                 BenchmarkStore(tmp_path),
                 authorized="not-the-token",
                 ownership_target="DEV",
+                run_id="run-wrong-token",
             )
 
     def test_ownership_target_must_match(self, tmp_path) -> None:
@@ -98,6 +100,7 @@ class TestAuthorization:
                 BenchmarkStore(tmp_path),
                 authorized=authorization_token(),
                 ownership_target="HOST-RO",
+                run_id="run-host-ro",
             )
 
 

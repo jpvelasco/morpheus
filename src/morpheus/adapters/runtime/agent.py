@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import secrets
 import time
 from pathlib import Path
@@ -52,7 +53,12 @@ class RuntimeAgentClient:
             backup_id=operation.backup_id,
             confirmation=operation.confirmation,
         )
-        body = request.model_dump_json().encode()
+        # Absent optional identities stay off the wire so deployed v0.1 agents
+        # see identical lifecycle payloads; explicit nulls keep their shape.
+        document = request.model_dump(mode="json")
+        if document.get("plan_id") is None:
+            document.pop("plan_id")
+        body = json.dumps(document).encode()
         response = await self._post("/v1/lifecycle", body)
         parsed = AgentLifecycleResponse.model_validate(response.json())
         if parsed.request_id != request.request_id or parsed.action is not operation.action:

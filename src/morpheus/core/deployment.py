@@ -6,21 +6,27 @@ machines. Nothing here starts load or touches a runtime directly: every
 side effect is a caller-provided hook, and every durable edge is a
 :class:`MachineRecord` transition so a fault at any boundary leaves the
 previous record unchanged and enables recovery of the last-known-good plan.
+
+The only semantic deployment plan is :class:`morpheus.core.records.DeploymentPlan`
+(RUNM-001). This module stores lifecycle aggregates around that immutable
+record; it never re-derives or re-shapes plan identity.
 """
 
 from __future__ import annotations
 
-import hashlib
 import json
 from contextlib import suppress
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
 
-from morpheus.core.benchmark import CampaignDeclaration, RunIdentity
-from morpheus.core.benchstore import BenchmarkStore
-from morpheus.core.campaign import Workload, run_campaign
 from morpheus.core.paths import OwnedPathError, OwnedPathResolver
+from morpheus.core.records import (
+    BenchmarkCampaign,
+    DeploymentPlan,
+    record_from_public_dict,
+)
+from morpheus.core.repositories import CampaignRepository
 from morpheus.core.state_machines import (
     MachineKind,
     MachineRecord,
@@ -28,147 +34,15 @@ from morpheus.core.state_machines import (
     StateTransitionError,
 )
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 
 class DeploymentError(ValueError):
     """A deployment operation violates its contract or its state machine."""
 
 
-@dataclass(frozen=True, slots=True)
-class ManagedCandidate:
-    model_id: str
-    quantization: str
-    engine_id: str
-    context_window: int
-    concurrency: int
-
-
-@dataclass(frozen=True, slots=True)
-class DeploymentPlan:
-    candidate: ManagedCandidate
-    profile_id: str
-    model_artifact: str
-    engine_artifact: str
-    benchmark_run: str | None = None
-
-    def __post_init__(self) -> None:
-        if not self.candidate.model_id:
-            raise DeploymentError("candidate model id must not be empty")
-        if not self.candidate.engine_id:
-            raise DeploymentError("candidate engine id must not be empty")
-        for digest in (self.model_artifact, self.engine_artifact):
-            if len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest):
-                raise DeploymentError("artifact references must be sha256 hex digests")
-        if self.candidate.context_window <= 0:
-            raise DeploymentError("candidate context window must be positive")
-        if self.candidate.concurrency <= 0:
-            raise DeploymentError("candidate concurrency must be positive")
-
-    @property
-    def plan_id(self) -> str:
-        canonical = json.dumps(
-            {
-                "model_id": self.candidate.model_id,
-                "quantization": self.candidate.quantization,
-                "engine_id": self.candidate.engine_id,
-                "context_window": self.candidate.context_window,
-                "concurrency": self.candidate.concurrency,
-                "profile_id": self.profile_id,
-                "model_artifact": self.model_artifact,
-                "engine_artifact": self.engine_artifact,
-            },
-            sort_keys=True,
-            separators=(",", ":"),
-        ).encode("utf-8")
-        return hashlib.sha256(canonical).hexdigest()
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "candidate": {
-                "model_id": self.candidate.model_id,
-                "quantization": self.candidate.quantization,
-                "engine_id": self.candidate.engine_id,
-                "context_window": self.candidate.context_window,
-                "concurrency": self.candidate.concurrency,
-            },
-            "profile_id": self.profile_id,
-            "model_artifact": self.model_artifact,
-            "engine_artifact": self.engine_artifact,
-            "benchmark_run": self.benchmark_run,
-        }
-
-    @classmethod
-    def from_dict(cls, payload: dict[str, Any]) -> DeploymentPlan:
-        candidate = payload["candidate"]
-        return cls(
-            candidate=ManagedCandidate(
-                model_id=candidate["model_id"],
-                quantization=candidate["quantization"],
-                engine_id=candidate["engine_id"],
-                context_window=candidate["context_window"],
-                concurrency=candidate["concurrency"],
-            ),
-            profile_id=payload["profile_id"],
-            model_artifact=payload["model_artifact"],
-            engine_artifact=payload["engine_artifact"],
-            benchmark_run=payload.get("benchmark_run"),
-        )
-
-
-@dataclass(frozen=True, slots=True)
-class DeploymentSnapshot:
-    """Durable record: plan plus its machine records and ownership facts."""
-
-    plan: DeploymentPlan
-    promotion: MachineRecord | None = None
-    rollback: MachineRecord | None = None
-    adoption: MachineRecord | None = None
-    active: bool = False
-    previous_plan_id: str | None = None
-    removed: bool = False
-
-    @property
-    def state(self) -> str:
-        machine = self.promotion or self.rollback or self.adoption
-        if machine is None:
-            raise DeploymentError("snapshot has no machine records")
-        return machine.state
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "plan": self.plan.to_dict(),
-            "promotion": self.promotion.public_dict() if self.promotion else None,
-            "rollback": self.rollback.public_dict() if self.rollback else None,
-            "adoption": self.adoption.public_dict() if self.adoption else None,
-            "active": self.active,
-            "previous_plan_id": self.previous_plan_id,
-            "removed": self.removed,
-        }
-
-    @classmethod
-    def from_dict(cls, payload: dict[str, Any]) -> DeploymentSnapshot:
-        def machine(key: str) -> MachineRecord | None:
-            entry = payload.get(key)
-            if not entry:
-                return None
-            return MachineRecord(
-                machine=MachineKind(entry["machine"]),
-                record_id=entry["record_id"],
-                state=entry["state"],
-                schema_version=entry["schema_version"],
-                checkpoint=entry["checkpoint"],
-            )
-
-        return cls(
-            plan=DeploymentPlan.from_dict(payload["plan"]),
-            promotion=machine("promotion"),
-            rollback=machine("rollback"),
-            adoption=machine("adoption"),
-            active=payload["active"],
-            previous_plan_id=payload.get("previous_plan_id"),
-            removed=payload.get("removed", False),
-        )
+class LossyMigrationError(ValueError):
+    """A stored document cannot be migrated without losing identity data."""
 
 
 class StageHooks(Protocol):
@@ -211,6 +85,99 @@ class OperatorConfirmation(Protocol):
         ...
 
 
+def _machine_record(key: str, entry: Any) -> MachineRecord | None:
+    if not entry:
+        return None
+    return MachineRecord(
+        machine=MachineKind(entry["machine"]),
+        record_id=entry["record_id"],
+        state=entry["state"],
+        schema_version=entry["schema_version"],
+        checkpoint=entry["checkpoint"],
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class DeploymentSnapshot:
+    """Durable aggregate: one canonical plan plus its machines and ownership."""
+
+    plan: DeploymentPlan
+    promotion: MachineRecord | None = None
+    rollback: MachineRecord | None = None
+    adoption: MachineRecord | None = None
+    campaign_id: str | None = None
+    active: bool = False
+    previous_plan_id: str | None = None
+    removed: bool = False
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.plan, DeploymentPlan):
+            raise DeploymentError("snapshot must bind one canonical deployment plan")
+        if self.campaign_id is not None:
+            if not self.campaign_id or len(self.campaign_id) > 128:
+                raise DeploymentError("campaign correlation must be a bounded identifier")
+
+    @property
+    def state(self) -> str:
+        machine = self.promotion or self.rollback or self.adoption
+        if machine is None:
+            raise DeploymentError("snapshot has no machine records")
+        return machine.state
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "plan": self.plan.public_dict(),
+            "promotion": self.promotion.public_dict() if self.promotion else None,
+            "rollback": self.rollback.public_dict() if self.rollback else None,
+            "adoption": self.adoption.public_dict() if self.adoption else None,
+            "campaign_id": self.campaign_id,
+            "active": self.active,
+            "previous_plan_id": self.previous_plan_id,
+            "removed": self.removed,
+        }
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> DeploymentSnapshot:
+        version = payload.get("schema_version")
+        if version != SCHEMA_VERSION:
+            if version == 1:
+                raise LossyMigrationError(
+                    "deployment snapshot schema version 1 embeds the retired lean plan "
+                    "family and cannot be migrated without losing canonical identity "
+                    "(missing: model.revision, model.model_format, model.license_id, "
+                    "model.source, workload_profile, settings, served_aliases, "
+                    "cache_policy, owned_paths, ports, health_contract_id, "
+                    "benchmark_gate_id, source_evidence_digest); migrate or invalidate "
+                    "the DEV document explicitly"
+                )
+            raise LossyMigrationError(
+                f"deployment snapshot schema version {version!r} is not supported; "
+                f"expected {SCHEMA_VERSION}"
+            )
+        return cls(
+            plan=record_from_public_dict(DeploymentPlan, payload["plan"]),
+            promotion=_machine_record("promotion", payload.get("promotion")),
+            rollback=_machine_record("rollback", payload.get("rollback")),
+            adoption=_machine_record("adoption", payload.get("adoption")),
+            campaign_id=payload.get("campaign_id"),
+            active=payload["active"],
+            previous_plan_id=payload.get("previous_plan_id"),
+            removed=payload.get("removed", False),
+        )
+
+
+def migrate_snapshot(payload: dict[str, Any]) -> DeploymentSnapshot:
+    """Versioned migration entry point for stored snapshot documents.
+
+    Version 1 documents embed the retired competing plan family whose lean
+    candidate cannot populate the canonical identity fields. Migration never
+    silently reinterprets them: they are rejected with the exact missing
+    identity data named so operators can migrate or invalidate explicitly.
+    """
+    return DeploymentSnapshot.from_dict(payload)
+
+
 @dataclass(slots=True)
 class DeploymentStore:
     """Owned store of deployment snapshots and the last-known-good plan."""
@@ -237,18 +204,46 @@ class DeploymentStore:
                 },
             )
 
-    def load(self, plan: DeploymentPlan) -> DeploymentSnapshot | None:
-        relative = f"deployments/{plan.plan_id}.json"
-        if not self._path(relative).exists():
+    def _document_path(self, plan_id: str) -> str:
+        return f"deployments/{plan_id}.json"
+
+    def get_plan(self, plan_id: str) -> DeploymentPlan | None:
+        """Resolve one canonical plan by its exact identifier."""
+        try:
+            snapshot = self.load_by_id(plan_id)
+        except DeploymentError:
             return None
-        return DeploymentSnapshot.from_dict(self._read_document(relative))
+        return snapshot.plan
+
+    def load_by_id(self, plan_id: str) -> DeploymentSnapshot:
+        relative = self._document_path(plan_id)
+        raw = Path(self.root, relative)
+        if raw.is_symlink():
+            raise OwnedPathError("deployment documents must not be symbolic links")
+        path = self._path(relative)
+        if not path.exists():
+            raise DeploymentError(f"no tracked deployment plan: {plan_id}")
+        payload = self._read_json(path)
+        if isinstance(payload, dict) and payload.get("schema_version") != SCHEMA_VERSION:
+            return migrate_snapshot(payload)
+        return DeploymentSnapshot.from_dict(payload)
+
+    def load(self, plan: DeploymentPlan) -> DeploymentSnapshot | None:
+        try:
+            return self.load_by_id(plan.plan_id)
+        except DeploymentError:
+            return None
 
     def snapshots(self) -> tuple[DeploymentSnapshot, ...]:
         paths = sorted(self._path("deployments").glob("*.json"))
-        return tuple(
-            DeploymentSnapshot.from_dict(self._read_document(f"deployments/{path.name}"))
-            for path in paths
-        )
+        snapshots: list[DeploymentSnapshot] = []
+        for path in paths:
+            payload = self._read_json(f"deployments/{path.name}")
+            if isinstance(payload, dict) and payload.get("schema_version") != SCHEMA_VERSION:
+                snapshots.append(migrate_snapshot(payload))
+            else:
+                snapshots.append(DeploymentSnapshot.from_dict(payload))
+        return tuple(snapshots)
 
     def active(self) -> DeploymentSnapshot | None:
         self.initialize()
@@ -256,10 +251,11 @@ class DeploymentStore:
         active_id = state.get("active_plan_id")
         if not active_id:
             return None
-        for snapshot in self.snapshots():
-            if snapshot.plan.plan_id == active_id and snapshot.active:
-                return snapshot
-        return None
+        try:
+            snapshot = self.load_by_id(active_id)
+        except DeploymentError:
+            return None
+        return snapshot if snapshot.active else None
 
     def last_known_good(self) -> DeploymentSnapshot | None:
         self.initialize()
@@ -267,10 +263,10 @@ class DeploymentStore:
         previous_id = state.get("previous_plan_id")
         if not previous_id:
             return None
-        for snapshot in self.snapshots():
-            if snapshot.plan.plan_id == previous_id:
-                return snapshot
-        return None
+        try:
+            return self.load_by_id(previous_id)
+        except DeploymentError:
+            return None
 
     def _set_active(self, plan_id: str | None, previous_id: str | None) -> None:
         self.initialize()
@@ -283,11 +279,11 @@ class DeploymentStore:
             },
         )
 
-    def _snapshot_path(self, plan: DeploymentPlan) -> Path:
-        return self._path(f"deployments/{plan.plan_id}.json")
-
     def _persist(self, snapshot: DeploymentSnapshot) -> None:
-        self._write_document(f"deployments/{snapshot.plan.plan_id}.json", snapshot.to_dict())
+        self.initialize()
+        self._write_json(
+            self._path(self._document_path(snapshot.plan.plan_id)), snapshot.to_dict()
+        )
 
     def _machine(self, snapshot: DeploymentSnapshot, kind: MachineKind) -> MachineRecord:
         record = (
@@ -322,34 +318,24 @@ class DeploymentStore:
             promotion=updated["promotion"],
             rollback=updated["rollback"],
             adoption=updated["adoption"],
+            campaign_id=snapshot.campaign_id,
             active=snapshot.active,
             previous_plan_id=snapshot.previous_plan_id,
             removed=snapshot.removed,
         )
 
-    def _read_document(self, relative: str) -> dict[str, Any]:
-        raw = Path(self.root, relative)
-        if raw.is_symlink():
+    def _read_json(self, path: Path | str) -> dict[str, Any]:
+        resolved = self._path(path) if isinstance(path, str) else path
+        if resolved.is_symlink():
             raise OwnedPathError("deployment documents must not be symbolic links")
-        path = self._path(relative)
-        if not path.exists():
-            raise DeploymentError(f"deployment document missing: {path.name}")
-        return self._read_json(path)
-
-    def _read_json(self, path: Path) -> dict[str, Any]:
-        if path.is_symlink():
-            raise OwnedPathError("deployment documents must not be symbolic links")
-        if not path.exists():
-            raise DeploymentError(f"deployment document missing: {path.name}")
-        payload: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
+        if not resolved.exists():
+            raise DeploymentError(f"deployment document missing: {resolved.name}")
+        payload: dict[str, Any] = json.loads(resolved.read_text(encoding="utf-8"))
         return payload
 
     def _write_json(self, path: Path, payload: dict[str, Any]) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-
-    def _write_document(self, relative: str, payload: dict[str, Any]) -> None:
-        self._write_json(self._path(relative), payload)
 
 
 def propose(
@@ -397,47 +383,42 @@ def preflight(
     return snapshot
 
 
-def benchmark_gate(
+def attach_campaign_evidence(
     store: DeploymentStore,
     plan: DeploymentPlan,
     *,
-    declaration: CampaignDeclaration,
-    identity: RunIdentity,
-    workload: Workload,
-    benchmark_store: BenchmarkStore,
-    authorized: bool | str,
-    ownership_target: str,
+    campaign: BenchmarkCampaign,
+    campaigns: CampaignRepository,
 ) -> DeploymentSnapshot:
-    """Run the declared benchmark campaign and attach its run to the plan.
+    """Correlate one completed canonical campaign with the staged plan.
 
-    The campaign uses the BENCH-005 runner: declared limits, checkpoints,
-    cancellation, and cleanup. Promotion beyond this point requires a
-    completed run (acceptance gate) plus an operator confirmation pass.
+    Promotion beyond this point requires the campaign to reference exactly
+    this plan and to have succeeded under its declared limits.
     """
     snapshot = store.load(plan)
     if snapshot is None or snapshot.state != "preflighted":
-        raise DeploymentError("benchmark gate requires a preflighted plan")
-    run = run_campaign(
-        declaration,
-        identity,
-        workload,
-        benchmark_store,
-        authorized=authorized,
-        ownership_target=ownership_target,
-    )
-    if run.status != "completed":
-        raise DeploymentError(f"benchmark gate failed: run status {run.status}")
+        raise DeploymentError("campaign evidence requires a preflighted plan")
+    if snapshot.campaign_id is not None:
+        if snapshot.campaign_id == campaign.campaign_id:
+            return snapshot
+        raise DeploymentError(
+            f"plan already carries campaign evidence {snapshot.campaign_id}; "
+            f"refusing to replace it with {campaign.campaign_id}"
+        )
+    if campaign.plan_id != plan.plan_id:
+        raise DeploymentError(
+            f"campaign {campaign.campaign_id} correlates plan {campaign.plan_id}, "
+            f"not this plan {plan.plan_id}"
+        )
+    if campaign.state != "succeeded":
+        raise DeploymentError(f"campaign gate failed: campaign state {campaign.state}")
+    campaigns.save_campaign(campaign)
     updated = DeploymentSnapshot(
-        plan=DeploymentPlan(
-            candidate=plan.candidate,
-            profile_id=plan.profile_id,
-            model_artifact=plan.model_artifact,
-            engine_artifact=plan.engine_artifact,
-            benchmark_run=run.run_id,
-        ),
+        plan=snapshot.plan,
         promotion=snapshot.promotion,
         rollback=snapshot.rollback,
         adoption=snapshot.adoption,
+        campaign_id=campaign.campaign_id,
         active=snapshot.active,
         previous_plan_id=snapshot.previous_plan_id,
         removed=snapshot.removed,
@@ -494,6 +475,7 @@ def activate(
         promotion=promoted.promotion,
         rollback=promoted.rollback,
         adoption=promoted.adoption,
+        campaign_id=promoted.campaign_id,
         active=True,
         previous_plan_id=previous.plan.plan_id if previous else None,
         removed=False,
@@ -504,6 +486,7 @@ def activate(
             promotion=previous.promotion,
             rollback=previous.rollback,
             adoption=previous.adoption,
+            campaign_id=previous.campaign_id,
             active=False,
             previous_plan_id=previous.previous_plan_id,
             removed=previous.removed,
@@ -537,6 +520,7 @@ def _recover(
                     promotion=previous.promotion,
                     rollback=previous.rollback,
                     adoption=previous.adoption,
+                    campaign_id=previous.campaign_id,
                     active=True,
                     previous_plan_id=previous.previous_plan_id,
                     removed=False,
@@ -575,6 +559,7 @@ def rollback(
         promotion=snapshot.promotion,
         rollback=record,
         adoption=snapshot.adoption,
+        campaign_id=snapshot.campaign_id,
         active=snapshot.active,
         previous_plan_id=snapshot.previous_plan_id,
         removed=snapshot.removed,
@@ -614,6 +599,7 @@ def rollback(
         promotion=previous.promotion,
         rollback=None,
         adoption=previous.adoption,
+        campaign_id=previous.campaign_id,
         active=True,
         previous_plan_id=previous.previous_plan_id,
         removed=False,
@@ -624,6 +610,7 @@ def rollback(
         promotion=snapshot.promotion,
         rollback=snapshot.rollback,
         adoption=snapshot.adoption,
+        campaign_id=snapshot.campaign_id,
         active=False,
         previous_plan_id=snapshot.previous_plan_id,
         removed=False,
@@ -653,6 +640,7 @@ def remove(
         promotion=snapshot.promotion,
         rollback=snapshot.rollback,
         adoption=snapshot.adoption,
+        campaign_id=snapshot.campaign_id,
         active=False,
         previous_plan_id=snapshot.previous_plan_id,
         removed=True,

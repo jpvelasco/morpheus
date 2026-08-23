@@ -107,6 +107,7 @@ def test_routine_calls_cannot_start_load(tmp_path) -> None:
             BenchmarkStore(tmp_path),
             authorized=False,
             ownership_target="DEV",
+            run_id="contract-denied",
         )
 
 

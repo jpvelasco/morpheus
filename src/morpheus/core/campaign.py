@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import hmac
 import threading
-import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -70,7 +69,7 @@ def run_campaign(
     *,
     authorized: bool | str = False,
     ownership_target: str,
-    run_id: str | None = None,
+    run_id: str,
     stop_event: threading.Event | None = None,
 ) -> CampaignRun:
     """Run a declared campaign under its limits, recording checkpoints.
@@ -80,7 +79,14 @@ def run_campaign(
     The workload receives (context, sample index) and must return a
     BenchmarkSample; raising CampaignCancelled or exhausting the deadline marks
     the run cancelled with a resumable checkpoint.
+
+    ``run_id`` is required and caller-declared (RUNM-001): campaign identity
+    never derives from wall-clock time.
     """
+    if not run_id or len(run_id) > 128 or any(character.isspace() for character in run_id):
+        raise BenchmarkError(
+            "run id is required and must be a bounded caller-declared identifier"
+        )
     if authorized is False or not isinstance(authorized, str) or not _compare_token(authorized):
         raise CampaignAuthorizationError(
             "campaign requires explicit authority; routine actions cannot start load"
@@ -96,7 +102,6 @@ def run_campaign(
     max_errors = limits.get("max_errors", 0)
     max_runtime = limits.get("max_runtime_seconds", 0)
     stop = stop_event or threading.Event()
-    run_id = run_id or f"campaign-{int(time.time() * 1000)}"
     started = datetime.now(UTC)
     deadline = started + timedelta(seconds=max_runtime) if max_runtime else None
     prior = store.load_run(run_id) if _run_exists(store, run_id) else None

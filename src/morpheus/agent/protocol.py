@@ -3,7 +3,7 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from morpheus.core.lifecycle import LifecycleAction
 
@@ -34,6 +34,27 @@ class AgentLifecycleRequest(BaseModel):
     version: str | None = Field(default=None, max_length=64)
     backup_id: str | None = Field(default=None, max_length=64)
     confirmation: str | None = Field(default=None, max_length=128)
+    # RUNM-001: optional canonical plan identity carried with state-changing
+    # requests. Observed/external ownership markers are never valid values.
+    plan_id: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=128,
+        pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]*$",
+    )
+
+    @field_validator("plan_id")
+    @classmethod
+    def _reject_observed_ownership_markers(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        normalized = value.strip().lower()
+        if "observed" in normalized or normalized.startswith("external"):
+            raise ValueError(
+                "plan identity must reference a Morpheus-owned managed plan, "
+                f"not an observed/external target: {value!r}"
+            )
+        return value
 
 
 class AgentLifecycleResponse(BaseModel):
