@@ -19,7 +19,7 @@ typecheck:
 	$(PYTHON) mypy
 
 test-unit:
-	$(PYTHON) pytest tests/unit tests/test_*.py
+	$(PYTHON) pytest tests/unit $(wildcard tests/test_*.py)
 
 test-contract:
 	$(PYTHON) pytest tests/contract -m contract
@@ -34,7 +34,7 @@ test-e2e:
 	$(PYTHON) pytest tests/e2e
 
 test-coverage:
-	$(PYTHON) pytest tests/contract tests/integration tests/e2e tests/unit tests/test_*.py tests/acceptance --cov --cov-branch --cov-report=term-missing
+	$(PYTHON) pytest tests/contract tests/integration tests/e2e tests/unit $(wildcard tests/test_*.py) tests/acceptance --cov --cov-branch --cov-report=term-missing
 
 test-live-readonly:
 	MORPHEUS_LIVE_TESTS=1 MORPHEUS_LIVE_MUTATION=0 $(PYTHON) pytest -s tests/live -m live

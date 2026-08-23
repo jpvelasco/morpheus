@@ -62,6 +62,30 @@ def test_network_profile_rejects_missing_tls_key() -> None:
         network_settings(tls_key_path=None)
 
 
+@pytest.mark.parametrize(
+    ("cert", "key"),
+    [
+        ("/etc/morpheus/certs/server.crt", "/etc/morpheus/certs/server.key"),
+        ("C:/certs/server.crt", "C:/certs/server.key"),
+        ("C:\\certs\\server.crt", "C:\\certs\\server.key"),
+    ],
+)
+def test_network_profile_accepts_absolute_tls_paths_from_any_host_convention(
+    cert: str, key: str
+) -> None:
+    policy = derive_access_policy(network_settings(tls_cert_path=cert, tls_key_path=key))
+    assert policy.tls_enabled is True
+
+
+def test_network_profile_rejects_relative_tls_paths() -> None:
+    with pytest.raises(ValueError):
+        network_settings(tls_cert_path="certs/server.crt", tls_key_path="/etc/certs/server.key")
+    with pytest.raises(ValueError):
+        network_settings(tls_cert_path="/etc/certs/server.crt", tls_key_path="certs/server.key")
+    with pytest.raises(ValueError):
+        network_settings(tls_cert_path=123, tls_key_path="/etc/certs/server.key")
+
+
 def test_network_profile_rejects_insecure_cookie_mode() -> None:
     with pytest.raises(ValueError):
         network_settings(session_cookie_secure=False)
