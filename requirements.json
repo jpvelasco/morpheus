@@ -567,7 +567,7 @@
       "status": "deferred",
       "owning_tests": [
         "tests/unit/test_research_deployment.py",
-        "tests/contract/test_research_deployment.py"
+        "tests/contract/test_research_deployment_wiring.py"
       ],
       "risk": "high",
       "required_environments": [
