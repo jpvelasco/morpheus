@@ -588,7 +588,7 @@ async def test_RUNM_001_audit_sink_rejects_missing_observed_or_mismatched_plan_i
 KEY = b"runtime-agent-r1-key"
 
 
-def _agent_client() -> TestClient:
+def _agent_client(deployment_root: Path) -> TestClient:
     class Inspector:
         def inspect(self, operation: object) -> dict[str, Any]:
             return {"operation": str(operation)}
@@ -611,7 +611,7 @@ def _agent_client() -> TestClient:
             settings=MorpheusSettings(
                 agent_key=KEY.decode(),
                 enable_lifecycle=True,
-                lifecycle_deployment_root=Path("C:/tmp") / "r1-agent-deploy",
+                lifecycle_deployment_root=deployment_root,
             ),
             inspector=Inspector(),  # type: ignore[arg-type]
             lifecycle=Lifecycle(),  # type: ignore[arg-type]
@@ -636,8 +636,10 @@ def _agent_post(api: TestClient, payload: dict[str, Any]) -> httpx.Response:
     )
 
 
-def test_RUNM_001_agent_lifecycle_rejects_observed_or_unbounded_plan_identity() -> None:
-    api = _agent_client()
+def test_RUNM_001_agent_lifecycle_rejects_observed_or_unbounded_plan_identity(
+    tmp_path: Any,
+) -> None:
+    api = _agent_client(tmp_path / "agent-deploy")
 
     observed = _agent_post(
         api,
