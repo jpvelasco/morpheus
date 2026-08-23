@@ -249,11 +249,8 @@ class TestStore:
             "entries": ids,
         }
         (root / "manifest.json").write_text(canonical_json(manifest), encoding="utf-8")
-        
 
-    def test_v1_records_are_remapped_without_silent_reinterpretation(
-        self, tmp_path: Path
-    ) -> None:
+    def test_v1_records_are_remapped_without_silent_reinterpretation(self, tmp_path: Path) -> None:
         item = record(created_at=datetime(2026, 8, 1, tzinfo=UTC))
         payload = item.to_dict()
         payload["schema_version"] = 1

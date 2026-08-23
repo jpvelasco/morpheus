@@ -202,7 +202,9 @@ def test_activation_fault_at_every_hook_recovers_last_known_good_durably(tmp_pat
     second = plan(model_id="model-mistral-7b-instruct")
     propose(store, second, artifacts_verified=True)
     preflight(store, second, hooks)
-    attach_campaign_evidence(store, second, campaign=campaign_for(second), campaigns=MemoryCampaigns())
+    attach_campaign_evidence(
+        store, second, campaign=campaign_for(second), campaigns=MemoryCampaigns()
+    )
     confirm(store, second, ConfirmOperator())
     if fault == "deactivate":
         hooks.fail_on_deactivate = True

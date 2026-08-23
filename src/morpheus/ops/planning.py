@@ -24,10 +24,12 @@ from morpheus.core.deployment import (
     StageHooks,
     activate,
     attach_campaign_evidence,
-    confirm as confirm_edge,
     preflight,
     propose,
     rollback,
+)
+from morpheus.core.deployment import (
+    confirm as confirm_edge,
 )
 from morpheus.core.records import (
     BenchmarkCampaign,
@@ -37,6 +39,8 @@ from morpheus.core.records import (
     WorkloadProfile,
 )
 from morpheus.core.repositories import OperationRecord
+from morpheus.core.solver import HardwareBudget
+from morpheus.ports.protocols import Clock
 
 MANAGED_OWNERSHIP = "managed"
 _OBSERVED_MARKERS = ("observed", "external")
@@ -107,7 +111,7 @@ class PlanningService:
 
     records: PlanningRepositories
     plans: DeploymentStore
-    clock: Any = None
+    clock: Clock | None = None
     audit: AuditSink | None = None
 
     # -- selection -----------------------------------------------------------
@@ -262,9 +266,7 @@ class PlanningService:
 
     def require_known_plan(self, plan_id: str | None) -> DeploymentPlan:
         if plan_id is None or not str(plan_id).strip():
-            raise PlanningIdentityError(
-                "plan identity is missing; an exact plan_id is required"
-            )
+            raise PlanningIdentityError("plan identity is missing; an exact plan_id is required")
         known = self.plan(str(plan_id))
         if known is None:
             raise PlanningIdentityError(f"unknown plan identity: {plan_id!r}")
@@ -419,7 +421,7 @@ def _recommendation_id(
     return hashlib.sha256(payload).hexdigest()
 
 
-def machine_profile_from_budget(budget: Any) -> MachineProfile:
+def machine_profile_from_budget(budget: HardwareBudget) -> MachineProfile:
     """Derive the exact machine identity from host budget evidence.
 
     The identifier is content-derived from the observed capacity facts only;
@@ -427,19 +429,23 @@ def machine_profile_from_budget(budget: Any) -> MachineProfile:
     ``local`` until the retained-profile work lands (R2); the full profile is
     persisted so later records reference the same machine identity.
     """
-    facts = {
-        "accelerator": str(budget.accelerator),
-        "memory_bytes": int(budget.ram_bytes),
-        "storage_bytes": int(budget.storage_bytes),
-    }
-    digest = hashlib.sha256(json.dumps(facts, sort_keys=True).encode()).hexdigest()
+    digest = hashlib.sha256(
+        json.dumps(
+            {
+                "accelerator": budget.accelerator,
+                "memory_bytes": budget.ram_bytes,
+                "storage_bytes": budget.storage_bytes,
+            },
+            sort_keys=True,
+        ).encode()
+    ).hexdigest()
     return MachineProfile(
         machine_id=f"machine-{digest[:16]}",
         platform="local",
         architecture="local",
-        accelerator=facts["accelerator"],
-        memory_bytes=facts["memory_bytes"],
-        disk_bytes=facts["storage_bytes"],
+        accelerator=budget.accelerator,
+        memory_bytes=budget.ram_bytes,
+        disk_bytes=budget.storage_bytes,
     )
 
 

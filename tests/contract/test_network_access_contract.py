@@ -52,9 +52,7 @@ def network_client(tmp_path: Path, **settings_overrides: object) -> TestClient:
                 expires_at=NOW,
             ),
             model_results=(
-                ServedModel(
-                    root="fixture-model", aliases=("fixture-model",), context_window=4096
-                ),
+                ServedModel(root="fixture-model", aliases=("fixture-model",), context_window=4096),
             ),
         ),
         clock=FakeClock(now=NOW),

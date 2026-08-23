@@ -123,8 +123,7 @@ class SqliteStore:
                 """
             )
             existing_columns = {
-                row[1]
-                for row in connection.execute("PRAGMA table_info(workflow_audit)").fetchall()
+                row[1] for row in connection.execute("PRAGMA table_info(workflow_audit)").fetchall()
             }
             if "plan_id" not in existing_columns:
                 connection.execute("ALTER TABLE workflow_audit ADD COLUMN plan_id TEXT")

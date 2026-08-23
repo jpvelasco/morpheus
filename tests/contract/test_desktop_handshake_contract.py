@@ -32,9 +32,7 @@ def client() -> TestClient:
                 expires_at=NOW,
             ),
             model_results=(
-                ServedModel(
-                    root="fixture-model", aliases=("fixture-model",), context_window=4096
-                ),
+                ServedModel(root="fixture-model", aliases=("fixture-model",), context_window=4096),
             ),
         ),
         clock=FakeClock(now=NOW),

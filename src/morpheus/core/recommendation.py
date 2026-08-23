@@ -264,9 +264,7 @@ class RecommendationStore:
                 migrated = migrate(payload, int(payload.get("schema_version", 1)))
                 record = RecommendationRecord.from_dict(migrated)
             except (RecommendationError, ValueError, KeyError, TypeError) as error:
-                invalidated.append(
-                    {"record_id": str(old_id), "reason": f"unmigratable: {error}"}
-                )
+                invalidated.append({"record_id": str(old_id), "reason": f"unmigratable: {error}"})
                 if source.exists():
                     self._write_json(
                         self._path(f"invalidated/{old_id}.json"),

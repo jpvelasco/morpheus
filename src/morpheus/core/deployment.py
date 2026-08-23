@@ -113,9 +113,8 @@ class DeploymentSnapshot:
     def __post_init__(self) -> None:
         if not isinstance(self.plan, DeploymentPlan):
             raise DeploymentError("snapshot must bind one canonical deployment plan")
-        if self.campaign_id is not None:
-            if not self.campaign_id or len(self.campaign_id) > 128:
-                raise DeploymentError("campaign correlation must be a bounded identifier")
+        if self.campaign_id is not None and (not self.campaign_id or len(self.campaign_id) > 128):
+            raise DeploymentError("campaign correlation must be a bounded identifier")
 
     @property
     def state(self) -> str:
@@ -281,9 +280,7 @@ class DeploymentStore:
 
     def _persist(self, snapshot: DeploymentSnapshot) -> None:
         self.initialize()
-        self._write_json(
-            self._path(self._document_path(snapshot.plan.plan_id)), snapshot.to_dict()
-        )
+        self._write_json(self._path(self._document_path(snapshot.plan.plan_id)), snapshot.to_dict())
 
     def _machine(self, snapshot: DeploymentSnapshot, kind: MachineKind) -> MachineRecord:
         record = (

@@ -42,8 +42,7 @@ class OperationRecord:
             raise ValueError("operation records require an exact plan_id")
         if self.ownership != "managed":
             raise ValueError(
-                "managed operations must record managed ownership; "
-                f"got {self.ownership!r}"
+                f"managed operations must record managed ownership; got {self.ownership!r}"
             )
         if self.requested_at.tzinfo is None:
             raise ValueError("operation timestamps must be timezone-aware")
@@ -119,5 +118,6 @@ class ActivePlanState:
 class ActivePlanRepository(Protocol):
     def active_state(self) -> ActivePlanState: ...
 
-    def set_active_state(self, active_plan_id: str | None, previous_plan_id: str | None) -> None:
-        ...
+    def set_active_state(
+        self, active_plan_id: str | None, previous_plan_id: str | None
+    ) -> None: ...

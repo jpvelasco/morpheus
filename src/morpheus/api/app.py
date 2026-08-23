@@ -77,19 +77,21 @@ from morpheus.core.metrics_history import (
     rollup,
     unit_for_signal,
 )
-from morpheus.core.records import (
-    BenchmarkCampaign,
-    DeploymentPlan,
-    MachineProfile,
-    WorkloadProfile as CanonicalWorkloadProfile,
-    record_from_public_dict,
-)
 from morpheus.core.recommendation import (
     RecommendationError,
     RecommendationStore,
     budget_from_host,
     build_recommendation,
     recommend_for_host,
+)
+from morpheus.core.records import (
+    BenchmarkCampaign,
+    DeploymentPlan,
+    MachineProfile,
+    record_from_public_dict,
+)
+from morpheus.core.records import (
+    WorkloadProfile as CanonicalWorkloadProfile,
 )
 from morpheus.core.settings_catalog import detect_sources, settings_catalog
 from morpheus.core.targets import FROZEN_TARGETS
@@ -1206,9 +1208,7 @@ def create_app(
             "schema_version": 1,
             "observed_at": clock.utc_now().isoformat(),
             "active_plan_id": active.plan.plan_id if active else None,
-            "last_known_good_plan_id": (
-                last_known_good.plan.plan_id if last_known_good else None
-            ),
+            "last_known_good_plan_id": (last_known_good.plan.plan_id if last_known_good else None),
         }
 
     @app.get("/api/v1/plans/selections/latest", dependencies=[Depends(require_api_key)])
@@ -1231,9 +1231,7 @@ def create_app(
             raise PlanningIdentityError(
                 f"selection payload does not rebuild exact canonical records: {error}"
             ) from error
-        recommendation = planning.select_plan(
-            machine=machine, workload=workload, catalog=catalog
-        )
+        recommendation = planning.select_plan(machine=machine, workload=workload, catalog=catalog)
         plans_payload = [plan.public_dict() for plan in catalog]
         return {
             "schema_version": 1,

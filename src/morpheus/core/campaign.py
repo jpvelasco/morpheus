@@ -84,9 +84,7 @@ def run_campaign(
     never derives from wall-clock time.
     """
     if not run_id or len(run_id) > 128 or any(character.isspace() for character in run_id):
-        raise BenchmarkError(
-            "run id is required and must be a bounded caller-declared identifier"
-        )
+        raise BenchmarkError("run id is required and must be a bounded caller-declared identifier")
     if authorized is False or not isinstance(authorized, str) or not _compare_token(authorized):
         raise CampaignAuthorizationError(
             "campaign requires explicit authority; routine actions cannot start load"

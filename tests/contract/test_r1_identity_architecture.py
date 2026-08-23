@@ -53,7 +53,7 @@ def test_retired_lean_plan_family_stays_retired() -> None:
     for path in _python_sources():
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         for node in ast.walk(tree):
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == "plan_id":
+            if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef) and node.name == "plan_id":
                 raise AssertionError(
                     f"{path.relative_to(SRC)}:{node.lineno} defines a derived plan_id; "
                     "plan identity is an explicit field of records.DeploymentPlan"

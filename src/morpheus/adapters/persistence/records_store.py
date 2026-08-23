@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from morpheus.core.durable import write_json_atomic
-from morpheus.core.paths import OwnedPathError, OwnedPathResolver
+from morpheus.core.paths import OwnedPathResolver
 from morpheus.core.records import (
     BenchmarkCampaign,
     DeploymentPlan,
@@ -94,14 +94,8 @@ class RecordsStore:
         if target.exists():
             existing_type, _, existing_id, existing_payload = _decode(target.read_bytes())
             rebuilt = _rebuild(existing_type, existing_payload)
-            if (
-                existing_type != record_type
-                or existing_id != record.record_id
-                or rebuilt != record
-            ):
-                raise RecordStoreError(
-                    f"identity collision at {relative}: stored document differs"
-                )
+            if existing_type != record_type or existing_id != record.record_id or rebuilt != record:
+                raise RecordStoreError(f"identity collision at {relative}: stored document differs")
             return
         write_json_atomic(target, json.loads(encoded.decode("utf-8")))
 
@@ -137,7 +131,7 @@ class RecordsStore:
         return self.get("deployment_plan", plan_id)
 
     def plans(self) -> tuple[DeploymentPlan, ...]:
-        return tuple(self.list_of("deployment_plan"))  # type: ignore[arg-type]
+        return tuple(self.list_of("deployment_plan"))
 
     def save_recommendation(self, recommendation: Recommendation) -> None:
         self.put(recommendation)
@@ -146,7 +140,7 @@ class RecordsStore:
         return self.get("recommendation", recommendation_id)
 
     def recommendations(self) -> tuple[Recommendation, ...]:
-        return tuple(self.list_of("recommendation"))  # type: ignore[arg-type]
+        return tuple(self.list_of("recommendation"))
 
     def save_campaign(self, campaign: BenchmarkCampaign) -> None:
         self.put(campaign)
@@ -175,10 +169,11 @@ class RecordsStore:
         target = self._path(f"catalog_snapshots/{digest}.json")
         if not target.exists():
             return None
-        document = json.loads(target.read_text(encoding="utf-8"))
+        document: dict[str, Any] = json.loads(target.read_text(encoding="utf-8"))
         if document.get("digest") != digest:
             raise RecordStoreError("catalog snapshot document does not match its digest")
-        return document["collection"]
+        collection: dict[str, Any] = document["collection"]
+        return collection
 
     # -- operations ------------------------------------------------------------
 

@@ -225,7 +225,7 @@ def test_tampered_plan_documents_never_load(tmp_path) -> None:
     payload = json.loads(document_path.read_text(encoding="utf-8"))
     del payload["plan"]["owned_paths"]
     document_path.write_text(json.dumps(payload), encoding="utf-8")
-    with pytest.raises(Exception):  # exact-field rebuild rejects mutated payloads
+    with pytest.raises(ValueError):  # exact-field rebuild rejects mutated payloads
         store.load_by_id(p.plan_id)
 
 
@@ -267,9 +267,7 @@ def test_campaign_evidence_requires_same_plan_and_success(tmp_path) -> None:
             campaign=campaign(p, state="aborted"),
             campaigns=MemoryCampaigns(),
         )
-    snapshot = attach_campaign_evidence(
-        store, p, campaign=campaign(p), campaigns=MemoryCampaigns()
-    )
+    snapshot = attach_campaign_evidence(store, p, campaign=campaign(p), campaigns=MemoryCampaigns())
     assert snapshot.campaign_id == f"campaign-{p.plan_id}"
     assert store.load(p).state == "preflighted"
 
