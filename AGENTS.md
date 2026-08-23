@@ -17,7 +17,7 @@ dependency-critical R1 canonical identity and deployment-plan consolidation.
 Do not resume the old Phase 11-to-18 implementation prompt or jump directly to
 physical qualification.
 
-`requirements.json` is reconciled to 59 implemented, 26 planned, 12 deferred,
+`requirements.json` is reconciled to 59 implemented, 28 planned, 12 deferred,
 and 0 validated requirements. Component scaffolds and their tests remain useful,
 but they do not establish complete product behavior. In particular:
 
@@ -27,6 +27,9 @@ but they do not establish complete product behavior. In particular:
 - metrics are collected on page requests and events have no production producers;
 - native engine shutdown bypasses process-tree supervision;
 - desktop/native package and local diagnosis paths remain incomplete;
+- the accepted bounded model console and optional setup copilot are planned only;
+  they must follow canonical target/provider identity and cannot bypass ordinary
+  policy or become a general-purpose chat product;
 - optional search/voice/research/RAG/image requirements remain deferred.
 
 Read these files in order before rectification work:

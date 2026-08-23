@@ -3,7 +3,8 @@
 Morpheus is a focused local developer-inference appliance. The v0.2 plan covers
 host discovery, evidence-ranked model and engine selection, managed installation
 and serving, durable benchmark comparisons, and a modern operations workspace
-for metrics, logs, analytics, settings, diagnosis, and recovery. The stable
+for metrics, logs, analytics, settings, diagnosis, recovery, a bounded model
+console, and an optional setup copilot. The stable
 target is a Tauri desktop plus independent backend on Ubuntu, Windows, and Apple
 Silicon macOS, with browser and SSH-tunneled access retained.
 
@@ -29,7 +30,7 @@ post-run audit found that the components do not yet form the intended coherent
 managed appliance. The active source milestone is the
 [architecture rectification plan](docs/RECTIFICATION_PLAN.md), not physical
 qualification or release. The current requirement posture is 59 implemented,
-26 planned, 12 deferred, and 0 validated.
+28 planned, 12 deferred, and 0 validated.
 
 For day-to-day operator use on ubuntu-1, install the frozen candidate with the
 ubuntu-1 path and stop feature work there:
@@ -68,6 +69,7 @@ at runtime. ODS is research input only.
 - [Tauri desktop and independent backend decision](docs/adr/0007-tauri-desktop-and-independent-backend.md)
 - [Tiered cross-platform runtime decision](docs/adr/0008-tiered-cross-platform-runtime-support.md)
 - [Optional external harness evidence decision](docs/adr/0010-optional-external-harness-qualification-evidence.md)
+- [Bounded model console and setup copilot decision](docs/adr/0011-bounded-model-console-and-setup-copilot.md)
 - [Optional Tonos interoperability](docs/TONOS_INTEROPERABILITY.md)
 - [Release validation plan](docs/RELEASE_VALIDATION_PLAN.md)
 - [Lifecycle operations](docs/LIFECYCLE.md)

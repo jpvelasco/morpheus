@@ -74,4 +74,6 @@ record contains context, decision, consequences, alternatives, and a date.
 Changing an accepted ownership, platform, distribution, or scope decision
 requires a superseding record and corresponding specification/test updates.
 ADR-0010 keeps external developer-harness qualification independent while
-allowing a later optional evidence-import boundary.
+allowing a later optional evidence-import boundary. ADR-0011 accepts a bounded
+model console and optional setup copilot while preserving Open WebUI as the
+general-purpose chat client and keeping model output outside lifecycle authority.

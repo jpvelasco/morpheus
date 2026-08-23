@@ -1765,6 +1765,42 @@
       ]
     },
     {
+      "id": "CHAT-001",
+      "phase": 16,
+      "status": "planned",
+      "owning_tests": [],
+      "risk": "high",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": [
+        "IMP-CHAT-001-01"
+      ]
+    },
+    {
+      "id": "CHAT-002",
+      "phase": 17,
+      "status": "planned",
+      "owning_tests": [],
+      "risk": "critical",
+      "required_environments": [
+        "DEV",
+        "VM"
+      ],
+      "requires_live_evidence": false,
+      "requires_hardware_evidence": false,
+      "first_satisfying_version": null,
+      "evidence_manifests": [],
+      "implementation_tasks": [
+        "IMP-CHAT-002-01"
+      ]
+    },
+    {
       "id": "DESK-001",
       "phase": 16,
       "status": "planned",

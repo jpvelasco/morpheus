@@ -97,7 +97,7 @@ required environments.
 At this plan revision the honest inventory is:
 
 - 59 implemented;
-- 26 planned rectification requirements;
+- 28 planned rectification and accepted-scope requirements;
 - 12 deferred requirements;
 - 0 validated requirements.
 
@@ -113,7 +113,9 @@ The planned requirements and implementation tasks are:
 | UI-003, OUI-005, OUI-006 | IMP-UI-003-02, IMP-OUI-005-02, IMP-OUI-006-02 | real owned-service controls, settings that feed startup/deployment plans, and durable lifecycle-backed workflows |
 | OUI-002, OUI-003 | IMP-OUI-002-02, IMP-OUI-003-02 | background metrics and real approved event ingestion/search |
 | DESK-001 through DESK-003 | IMP-DESK-001-02 through IMP-DESK-003-02 | shared React desktop delivery, authenticated handshake/bootstrap, native packages, and local/tunnel parity |
+| CHAT-001 | IMP-CHAT-001-01 | bounded memory-only model console bound to the canonical selected target, with explicit identity, submission, streaming/cancellation, and no tool execution |
 | AID-001, AID-002, AID-004 | IMP-AID-001-02, IMP-AID-002-02, IMP-AID-004-02 | complete live evidence inputs, usable local provider, and proposals routed back through ordinary typed policy plans |
+| CHAT-002 | IMP-CHAT-002-01 | optional setup copilot over bounded evidence using diagnosis provider/privacy/advisory boundaries without making setup provider-dependent |
 | HOST-003, PLAT-004 | IMP-HOST-003-02, IMP-PLAT-004-02 | actual named-target/native-engine paths and the source prerequisites for later physical evidence |
 
 SRCH-002, VOICE-003, VOICE-004, RSCH-001, RSCH-002, RAG-001 through RAG-003,
@@ -369,9 +371,9 @@ Implementation:
 Exit: metrics and events remain useful across idle UI periods and process
 restart, with privacy canaries absent from producer-to-browser integration tests.
 
-### R6 — Deliver the Real Shared Desktop and Bootstrap Path
+### R6 — Deliver the Real Shared Desktop, Model Console, and Bootstrap Path
 
-Requirements: DESK-001, DESK-002, DESK-003.
+Requirements: DESK-001, DESK-002, DESK-003, CHAT-001.
 
 Entry: R3 APIs durable; R4 native backend executors available.
 
@@ -386,6 +388,11 @@ First failing tests:
   and SSH-tunnel reconnect preserve the same operation/cancellation/recovery semantics;
 - capability tests prove the webview has no general shell, filesystem, process,
   or arbitrary network grants while the narrow bootstrap bridge remains usable.
+- an explicit model-console submission displays and preserves the canonical
+  target, ownership, requested/reported model, and managed plan identity across
+  streaming, cancellation, timeout, and model-mismatch outcomes;
+- page load, health polling, diagnostics, and background refresh send no
+  completion, and model/tool output cannot invoke an operation.
 
 Implementation:
 
@@ -396,34 +403,48 @@ Implementation:
   command boundary;
 - build and inventory the development package formats declared in Phase 16.5 on
   their native runners; keep public signing optional.
+- compose a memory-only model console through the versioned API against an
+  explicitly selected managed or external-observed target; render structured or
+  tool-call output as inert data and persist no conversation content by default.
 
 Exit: Linux, Windows, and macOS native DEV/lab desktop gates pass. Stable target
-claims remain blocked on R10 physical evidence.
+claims remain blocked on R10 physical evidence. The model console provides a
+bounded end-to-end validation workflow without becoming a general-purpose chat
+client or granting ownership/lifecycle authority.
 
-### R7 — Complete Diagnostic Evidence and Advisory Re-entry
+### R7 — Complete Diagnostic Evidence, Setup Copilot, and Advisory Re-entry
 
-Requirements: AID-001, AID-002, AID-004; preserves AID-003.
+Requirements: AID-001, AID-002, AID-004, CHAT-002; preserves AID-003.
 
-Entry: R1 deployment identity and R5 data pipelines fixed.
+Entry: R1 deployment identity, R3 plan-preview boundary, and R5 data pipelines
+fixed.
 
 First failing tests:
 
 - API-built evidence contains bounded real deployment, metrics, approved log,
   event, regression, and runbook inputs with exact provenance;
-- configured local mode calls an explicitly selected Morpheus-managed local
-  provider through a typed inference port;
+- configured local mode calls an explicitly selected local OpenAI-compatible
+  provider through a typed inference port and carries its canonical ownership
+  and model identity; an external-observed provider requires explicit user
+  submission and gains no management authority;
 - external mode sends the documented provider schema only after consent, cost,
   destination, retention, timeout, and canary checks;
 - a proposed change becomes an ordinary typed R3 plan preview and cannot skip
   policy, preflight, or confirmation;
 - provider failure leaves non-AI diagnostics fully functional.
+- setup conversation identifies local versus external provider, model,
+  destination, retention implications, timeout, cost, and consent, while
+  provider absence leaves ordinary setup and the model console fully usable.
 
 Implementation: remove empty placeholder evidence sections, wire the local
-provider, define provider-specific transport adapters, and map allowlisted
-advisory proposals to ordinary non-executing plan previews.
+provider, define provider-specific transport adapters, present the same bounded
+evidence/provider path as an optional setup copilot, and map allowlisted advisory
+proposals to ordinary non-executing plan previews. Do not bundle or implicitly
+download a helper model.
 
 Exit: diagnosis is grounded in real retained evidence and has no privileged
-execution path.
+execution path. The setup copilot shares that boundary, persists no conversation
+content by default, and cannot become a prerequisite for setup or operation.
 
 ### R8 — Reinstate the Focused v0.2 Scope Boundary
 
@@ -523,6 +544,8 @@ Rectification is complete only when:
 - metrics and approved events are collected independently of UI requests;
 - desktop, browser, CLI, and tunneled access share the same authenticated
   operation semantics;
+- the bounded model console and setup copilot bind to canonical target/provider
+  identities, preserve content privacy, and expose no tool or lifecycle bypass;
 - diagnosis uses complete bounded evidence and only proposes ordinary plans;
 - deferred optional capabilities remain deferred unless explicitly reopened;
 - requirement status, tests, current-state documentation, and release evidence

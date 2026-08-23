@@ -32,7 +32,7 @@ rules in the original implementation plan.
 | Status | Count | Meaning now |
 |---|---:|---|
 | Implemented | 59 | Complete source behavior at the currently claimed boundary; not release-validated |
-| Planned | 26 | Requires architecture rectification or complete product composition |
+| Planned | 28 | Requires architecture rectification, complete product composition, or accepted bounded feature delivery |
 | Deferred | 12 | Outside the focused v0.2 critical path |
 | Validated | 0 | No requirement has the complete retained evidence matrix |
 
@@ -45,13 +45,21 @@ BENCH-004; OUI-001, OUI-004; AID-003; ACCESS-001 through ACCESS-003.
 
 Planned: UI-003; GATE-001; HOST-003; SEL-004, SEL-005; RUNM-001 through
 RUNM-006; PLAT-002 through PLAT-004; BENCH-001, BENCH-005; OUI-002, OUI-003,
-OUI-005, OUI-006; DESK-001 through DESK-003; AID-001, AID-002, AID-004.
+OUI-005, OUI-006; CHAT-001, CHAT-002; DESK-001 through DESK-003; AID-001,
+AID-002, AID-004.
 
 Deferred: SRCH-002; VOICE-003, VOICE-004; RSCH-001, RSCH-002; RAG-001 through
 RAG-003; IMG-001 through IMG-004.
 
 The counts above are derived from the manifest. If a later edit changes them,
 update this review and `RELEASE_STATE.md` in the same change.
+
+CHAT-001 and CHAT-002 are new accepted bounded scope recorded by ADR-0011, not
+claims about existing component work. The model console follows canonical target
+identity and durable application composition in R6; the setup copilot follows
+the diagnosis evidence/provider boundary in R7. General-purpose chat, persistent
+conversation history, plugins, and model-directed tool execution remain out of
+scope.
 
 ## Why the Completion Claim Was Reversed
 
@@ -95,8 +103,8 @@ the rectification plan.
 | 3 | R3 | UI-003, GATE-001, BENCH-001, BENCH-005, RUNM-003 through RUNM-006, OUI-005, OUI-006 | durable lifecycle-backed managed application workflows |
 | 4 | R4 | PLAT-002 through PLAT-004, RUNM-002 | real process-tree, per-user service, package, and target-native DEV/lab paths |
 | 5 | R5 | OUI-002, OUI-003 | complete background metric and approved event pipelines |
-| 6 | R6 | DESK-001 through DESK-003 | shared React Tauri app, authenticated bootstrap, native packages, and access parity |
-| 7 | R7 | AID-001, AID-002, AID-004 | complete evidence, usable provider paths, and advisory plan re-entry |
+| 6 | R6 | DESK-001 through DESK-003, CHAT-001 | shared React Tauri app, bounded model console, authenticated bootstrap, native packages, and access parity |
+| 7 | R7 | AID-001, AID-002, AID-004, CHAT-002 | complete evidence, optional setup copilot, usable provider paths, and advisory plan re-entry |
 | 8 | R8 | 12 deferred IDs | focused-scope enforcement; safe scaffolds stay incomplete and off by default |
 | 9 | R9 | all planned rows | public-boundary acceptance, mutation, coverage, clean-gate, and status closure |
 | 10 | R10 | HOST-003, PLAT-004, ACCESS-003 and release set | separately authorized physical qualification and release evidence |

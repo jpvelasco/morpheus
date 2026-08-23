@@ -37,6 +37,7 @@ flowchart LR
 
     subgraph Morpheus
         Dashboard[Operations Workspace]
+        Console[Bounded Model Console]
         API[Control API]
         Agent[Runtime Agent]
         Discovery[Host Discovery]
@@ -45,7 +46,7 @@ flowchart LR
         Campaigns[Benchmark Orchestrator]
         Managed[Managed Inference Runtime]
         Store[History Import and Operational Store]
-        Advisor[Optional Diagnostic Advisor]
+        Advisor[Optional Setup and Diagnostic Advisor]
         Telemetry[Optional Telemetry Proxy]
         Search[Optional SearXNG]
         Voice[Optional STT and TTS]
@@ -57,6 +58,8 @@ flowchart LR
     Desktop --> Dashboard
     Browser --> Dashboard
     Dashboard --> API
+    Dashboard --> Console
+    Console --> API
     API --> Agent
     Agent --> Discovery
     API --> Catalogs
@@ -307,9 +310,43 @@ Design characteristics:
 - explicit timestamps and evidence for health decisions;
 - clear distinction between external read-only services and Morpheus-owned
   controllable services.
+- separate labels and visual context for talking to the selected model versus
+  asking Morpheus about setup evidence.
 
 The frontend contains no authorization decision. It renders capabilities granted
 by the API and handles denial as a normal state.
+
+#### 5.4.1 Integrated Model Console and Setup Copilot
+
+The model console is an operations-workspace client of a narrow conversational
+application port. It binds each submission to one canonical inference target and
+shows the ownership mode, requested and reported model, destination, and managed
+deployment-plan identity when present. Managed and external-observed targets use
+the same inference transport contracts, but external-observed submission is an
+explicit user workload and never confers lifecycle authority. No page load,
+health probe, or background refresh sends a completion.
+
+Console conversation state is memory-only by default. The backend may retain
+content-free request timing, outcome, token, and correlation metadata under the
+ordinary telemetry policy, but prompts and responses do not enter application
+logs, events, operational history, or support bundles. Structured and tool-call
+output can be rendered as inert data; the console exposes no tool executor.
+
+The setup copilot is a conversational presentation of the diagnostic-advisor
+port, not a second inference control plane. It can use a selected local
+OpenAI-compatible target or an explicitly configured external provider and is
+disabled by default. Provider identity, model, destination, retention
+implications, timeout, cost limit, and consent are transport inputs and visible
+UI state. Its bounded evidence combines machine, catalog, recommendation,
+configuration-preview, diagnostic, and runbook records. Suggestions can map only
+to ordinary non-executing typed checks or plan previews, which then re-enter the
+existing policy, preflight, confirmation, audit, and recovery path.
+
+Morpheus does not bundle or automatically acquire a helper model in the initial
+implementation. A later offline helper requires an evidence-backed catalog,
+license, artifact trust, package/storage budget, and resource-contention
+decision. Open WebUI remains the general-purpose conversation product and its
+state stays externally owned.
 
 ### 5.5 Telemetry Proxy
 
@@ -346,7 +383,8 @@ Database content:
 
 Prompts, responses, uploaded documents, audio, images, API keys, and session
 signing secrets are excluded unless a future specification adds an explicit,
-off-by-default retention feature.
+off-by-default retention feature. Model-console and setup-copilot content follow
+this same rule and are memory-only by default.
 
 ## 6. Health Model
 
@@ -638,6 +676,7 @@ Logs & Events
 Diagnostics
 Settings
 Recovery
+Model Console
 ```
 
 Routes consume versioned read/query models rather than raw engine output. Live
@@ -652,6 +691,12 @@ host access, and returns structured observations, hypotheses, confidence,
 citations, missing evidence, and proposed typed checks. Its output cannot call
 the runtime agent or lifecycle adapter. Any proposed state change re-enters the
 normal plan, policy, preflight, and confirmation path.
+
+The Model Console is the bounded interactive validation surface defined in
+ADR-0011. It talks to one explicitly selected inference target. The optional
+setup-copilot conversation is presented within setup and diagnostics and talks
+to the configured advisor provider about Morpheus evidence. These identities and
+purposes remain visibly distinct even when they happen to use the same model.
 
 ## 16. Target and Access Architecture
 
@@ -682,6 +727,7 @@ discovery result or convenience setting requested it.
 - [ADR-0008: Tiered cross-platform runtime support](adr/0008-tiered-cross-platform-runtime-support.md)
 - [ADR-0009: Dev-first packages and optional distribution signing](adr/0009-dev-first-packages-and-optional-distribution-signing.md)
 - [ADR-0010: Optional external harness qualification evidence](adr/0010-optional-external-harness-qualification-evidence.md)
+- [ADR-0011: Bounded model console and setup copilot](adr/0011-bounded-model-console-and-setup-copilot.md)
 
 Open decisions that must be resolved or explicitly accepted before their
 affected rectification requirement returns to `implemented`:
