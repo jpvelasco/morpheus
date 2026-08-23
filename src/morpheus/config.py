@@ -3,7 +3,7 @@ from __future__ import annotations
 import ipaddress
 import os
 from collections.abc import Mapping
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -14,6 +14,13 @@ from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator, m
 from morpheus.core.paths import OwnedPathError, OwnedPathResolver
 
 _LOOPBACK_PROFILES = ("loopback", "ssh_tunnel")
+
+
+def _is_absolute_on_any_host(value: str) -> bool:
+    # Settings may be authored on one OS and validated on another; a path is
+    # absolute if either host convention says so.
+    return PurePosixPath(value).is_absolute() or PureWindowsPath(value).is_absolute()
+
 
 FEATURE_FIELDS = {
     "search": "enable_search",
@@ -183,10 +190,9 @@ class MorpheusSettings(BaseModel):
     def validate_tls_path(cls, value: Any) -> Path | None:
         if value is None or value == "":
             return None
-        path = Path(value)
-        if not path.is_absolute():
+        if not isinstance(value, str) or not _is_absolute_on_any_host(value):
             raise ValueError("tls paths must be absolute filesystem paths")
-        return path
+        return Path(value)
 
     @field_validator("allowed_origins", mode="before")
     @classmethod
