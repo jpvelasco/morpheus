@@ -15,6 +15,8 @@ from morpheus.core.benchmark import (
 )
 from morpheus.core.benchstore import BenchmarkStore, CampaignRun, StoreManifest
 
+MORPHEUS_OWNED_REQUIREMENTS = frozenset({"BENCH-002"})
+
 
 def make_samples(run_id: str = "run-1", count: int = 4) -> tuple[BenchmarkSample, ...]:
     return tuple(

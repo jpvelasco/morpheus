@@ -8,6 +8,7 @@ from typer.testing import CliRunner
 
 from morpheus.cli import main as cli
 
+MORPHEUS_OWNED_REQUIREMENTS = frozenset({"RUN-006"})
 pytestmark = pytest.mark.acceptance
 
 

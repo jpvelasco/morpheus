@@ -15,6 +15,8 @@ from morpheus.core.solver import (
     filter_viable,
 )
 
+MORPHEUS_OWNED_REQUIREMENTS = frozenset({"SEL-002"})
+
 pytestmark = pytest.mark.contract
 
 FIXTURE_BUDGETS = {

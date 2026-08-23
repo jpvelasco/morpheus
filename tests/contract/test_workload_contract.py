@@ -30,6 +30,8 @@ from morpheus.core.workload import (
     monotonic_budget_holds,
 )
 
+MORPHEUS_OWNED_REQUIREMENTS = frozenset({"SEL-003"})
+
 pytestmark = pytest.mark.contract
 
 LLAMA = ModelCatalogEntry(

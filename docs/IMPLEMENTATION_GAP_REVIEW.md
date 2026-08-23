@@ -113,6 +113,20 @@ R1 is the shared-contract gate. Do not fan out downstream schema work until it
 lands. R4 through R7 may run in parallel only after R3 fixes the application
 operation boundary.
 
+## Rectification Progress
+
+- 2026-08-23: gate repair landed (#66): platform-neutral TLS path validation,
+  unique research-deployment contract module name, portable Makefile test
+  globs, locked pip refreshed past PYSEC-2026-3721, Linux-fatal fixture casing.
+- 2026-08-23: R0 semantic traceability enforced — `requirements.json` rows carry
+  machine-readable `boundaries`; manifest tests reject `implemented` rows whose
+  owning tests lack requirement-ID test names or explicit
+  `MORPHEUS_OWNED_REQUIREMENTS` metadata, require public-lane owners for public
+  boundaries, derive documentation counts from the manifest, refuse stale
+  completion claims, and keep `api/app.py`/`agent/app.py` measured by coverage;
+  lane reports record collected/selected/deselected/passed/failed/skipped/error
+  counts separately under ignored `artifacts/test-counts/`.
+
 Optional external harness evidence interoperability under ADR-0010 is not a
 rectification gap, requirement-status change, or R0-through-R9 work item. R1 and
 R2 must remain producer-neutral so that a later importer cannot create a

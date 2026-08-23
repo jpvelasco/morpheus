@@ -6,6 +6,7 @@ import pytest
 
 from morpheus.adapters.runtime.resources import DockerResourceObserver
 
+MORPHEUS_OWNED_REQUIREMENTS = frozenset({"PERF-002"})
 pytestmark = pytest.mark.contract
 
 

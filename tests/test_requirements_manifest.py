@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 REQUIREMENT = re.compile(r"\*\*([A-Z]+-[0-9]{3}) [^*]+\.\*\*")
 REQUIRED_FIELDS = {
     "id",
+    "boundaries",
     "phase",
     "status",
     "owning_tests",
@@ -19,6 +20,30 @@ REQUIRED_FIELDS = {
     "evidence_manifests",
     "implementation_tasks",
 }
+BOUNDARY_KINDS = {"api", "cli", "agent", "browser", "desktop", "end_to_end"}
+PUBLIC_LANES = (
+    "tests/contract/",
+    "tests/integration/",
+    "tests/acceptance/",
+    "tests/e2e/",
+    "web/tests/",
+    "web/e2e/",
+)
+OWNERSHIP_METADATA = "MORPHEUS_OWNED_REQUIREMENTS"
+
+
+def _owns_requirement(test_path: str, requirement_id: str) -> bool:
+    source = (ROOT / test_path).read_text(encoding="utf-8")
+    if OWNERSHIP_METADATA in source and re.search(
+        rf"{OWNERSHIP_METADATA}\s*[:=][^\n]*\b{re.escape(requirement_id)}\b", source
+    ):
+        return True
+    underscored = requirement_id.replace("-", "_")
+    return re.search(rf"def\s+test_\w*{underscored}(?!\d)", source) is not None
+
+
+def _is_public_boundary(item: dict) -> bool:
+    return bool(set(item["boundaries"]) & BOUNDARY_KINDS)
 
 
 def test_manifest_covers_every_product_requirement_once() -> None:
@@ -60,6 +85,45 @@ def test_TRACE_001_every_requirement_has_actionable_validation_metadata() -> Non
         for test_path in item["owning_tests"]:
             assert test_path.startswith(("tests/", "web/tests/", "web/e2e/")), item["id"]
             assert (ROOT / test_path).is_file(), f"{item['id']}: {test_path}"
+        assert set(item["boundaries"]) <= BOUNDARY_KINDS, item["id"]
+
+
+def test_TRACE_001_implemented_rows_have_semantic_ownership() -> None:
+    """An owning test must name the requirement in a test function or explicit metadata.
+
+    File existence alone proves nothing about behavior (AUD-007): a row counts as
+    implemented only when at least one owning test embeds the exact requirement ID
+    in a ``def test_*`` name or declares it through ``MORPHEUS_OWNED_REQUIREMENTS``.
+    """
+    manifest = json.loads((ROOT / "requirements.json").read_text(encoding="utf-8"))
+    shallow = []
+    for item in manifest["requirements"]:
+        if item["status"] not in {"implemented", "validated"}:
+            continue
+        if not any(_owns_requirement(path, item["id"]) for path in item["owning_tests"]):
+            shallow.append(item["id"])
+    assert shallow == [], (
+        "implemented rows without semantic test ownership "
+        f"(add MORPHEUS_OWNED_REQUIREMENTS metadata or rename the owning test): {shallow}"
+    )
+
+
+def test_TRACE_001_public_boundary_rows_have_public_lane_owner() -> None:
+    """API/CLI/browser/desktop/agent behavior needs an owner outside tests/unit."""
+    manifest = json.loads((ROOT / "requirements.json").read_text(encoding="utf-8"))
+    violations = []
+    for item in manifest["requirements"]:
+        if item["status"] not in {"implemented", "validated"}:
+            continue
+        if not _is_public_boundary(item):
+            continue
+        public_owners = [path for path in item["owning_tests"] if path.startswith(PUBLIC_LANES)]
+        if not public_owners:
+            violations.append(f"{item['id']}: boundaries={item['boundaries']}")
+    assert violations == [], (
+        "public-boundary rows without any contract/integration/acceptance/e2e/web owner: "
+        f"{violations}"
+    )
 
 
 def test_TRACE_001_status_claims_require_implementation_and_green_evidence() -> None:

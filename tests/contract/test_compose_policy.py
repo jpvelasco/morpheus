@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 import yaml
 
+MORPHEUS_OWNED_REQUIREMENTS = frozenset({"GATE-003", "REL-001", "SEC-007"})
 pytestmark = pytest.mark.contract
 ROOT = Path(__file__).resolve().parents[2]
 

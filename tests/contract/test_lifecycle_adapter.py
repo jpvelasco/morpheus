@@ -14,6 +14,8 @@ from morpheus.adapters.runtime.lifecycle import (
 from morpheus.core.lifecycle import LifecycleAction, LifecycleOutcome, LifecycleRequest
 from morpheus.ops.lifecycle import LifecycleCoordinator
 
+MORPHEUS_OWNED_REQUIREMENTS = frozenset({"REL-003"})
+
 pytestmark = pytest.mark.contract
 
 

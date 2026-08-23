@@ -9,6 +9,8 @@ import pytest
 from morpheus.core.paths import OwnedPathError
 from morpheus.ops.support import SupportBundleBuilder
 
+MORPHEUS_OWNED_REQUIREMENTS = frozenset({"OPS-003"})
+
 pytestmark = pytest.mark.integration
 
 

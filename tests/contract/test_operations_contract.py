@@ -26,6 +26,8 @@ from morpheus.core.metrics_history import MetricSample
 from morpheus.core.models import ModelIdentity
 from morpheus.core.telemetry import TelemetryEvent
 
+MORPHEUS_OWNED_REQUIREMENTS = frozenset({"OUI-001", "OUI-004"})
+
 pytestmark = pytest.mark.contract
 NOW = datetime(2026, 8, 1, tzinfo=UTC)
 
@@ -874,9 +876,21 @@ def test_OUI_006_workflow_unknown_id_and_missing_session_are_bounded(tmp_path) -
     )
     assert unknown.status_code == 400
     assert "unknown workflow" in unknown.json()["error"]["message"]
+    uncancellable = test_client.post(
+        "/api/v1/operations/workflows/not-a-workflow/cancel",
+        headers=csrf,
+    )
+    assert uncancellable.status_code == 400
+    assert "unknown workflow" in uncancellable.json()["error"]["message"]
     missing = test_client.get(
         "/api/v1/operations/workflows/benchmark/session",
         headers={"Authorization": "Bearer test-api-key"},
     )
     assert missing.status_code == 400
     assert "no workflow session" in missing.json()["error"]["message"]
+    malformed_session = test_client.get(
+        "/api/v1/operations/workflows/%20/session",
+        headers={"Authorization": "Bearer test-api-key"},
+    )
+    assert malformed_session.status_code == 400
+    assert "unknown workflow" in malformed_session.json()["error"]["message"]

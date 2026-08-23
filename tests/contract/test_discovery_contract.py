@@ -15,6 +15,8 @@ from morpheus.core.records import (
     encode_record,
 )
 
+MORPHEUS_OWNED_REQUIREMENTS = frozenset({"HOST-001", "HOST-002", "PLAT-001"})
+
 
 def _profile(
     *,

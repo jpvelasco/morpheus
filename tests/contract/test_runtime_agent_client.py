@@ -13,6 +13,7 @@ from morpheus.agent.auth import AgentAuthenticator
 from morpheus.agent.protocol import AgentOperation
 from morpheus.core.lifecycle import LifecycleAction, LifecycleRequest
 
+MORPHEUS_OWNED_REQUIREMENTS = frozenset({"RUN-004"})
 pytestmark = pytest.mark.contract
 KEY = b"runtime-agent-contract-key"
 

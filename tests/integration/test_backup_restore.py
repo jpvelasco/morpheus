@@ -9,6 +9,7 @@ import pytest
 from morpheus.ops import archive as archive_module
 from morpheus.ops.archive import ArchiveValidationError, BackupManager
 
+MORPHEUS_OWNED_REQUIREMENTS = frozenset({"OPS-001", "OPS-002", "SEC-006"})
 pytestmark = pytest.mark.integration
 
 

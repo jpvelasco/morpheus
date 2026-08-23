@@ -8,6 +8,8 @@ from pydantic import ValidationError
 
 from morpheus.config import MorpheusSettings, load_settings
 
+MORPHEUS_OWNED_REQUIREMENTS = frozenset({"CFG-001", "CFG-003", "CFG-004"})
+
 
 def test_CFG_001_configuration_precedence(tmp_path: Path) -> None:
     config = tmp_path / "config.yaml"

@@ -6,6 +6,7 @@ import pytest
 from morpheus.adapters.services.search import SearchClient, SearchContractError
 from morpheus.core.search_contract import SearchQueryContract, documented_query_url
 
+MORPHEUS_OWNED_REQUIREMENTS = frozenset({"SRCH-001"})
 pytestmark = pytest.mark.contract
 
 

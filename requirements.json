@@ -18,7 +18,8 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     },
     {
       "id": "CFG-002",
@@ -38,7 +39,10 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "api"
+      ]
     },
     {
       "id": "CFG-003",
@@ -55,7 +59,8 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     },
     {
       "id": "CFG-004",
@@ -73,7 +78,8 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     },
     {
       "id": "RUN-001",
@@ -94,7 +100,12 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "api",
+        "cli",
+        "browser"
+      ]
     },
     {
       "id": "RUN-002",
@@ -114,7 +125,11 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "api",
+        "browser"
+      ]
     },
     {
       "id": "RUN-003",
@@ -133,7 +148,11 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "api",
+        "browser"
+      ]
     },
     {
       "id": "RUN-004",
@@ -153,7 +172,12 @@
       "requires_hardware_evidence": true,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "agent",
+        "api",
+        "browser"
+      ]
     },
     {
       "id": "RUN-005",
@@ -172,7 +196,12 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "api",
+        "agent",
+        "browser"
+      ]
     },
     {
       "id": "RUN-006",
@@ -192,7 +221,11 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "cli",
+        "api"
+      ]
     },
     {
       "id": "UI-001",
@@ -213,7 +246,10 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "browser"
+      ]
     },
     {
       "id": "UI-002",
@@ -233,7 +269,10 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "browser"
+      ]
     },
     {
       "id": "UI-003",
@@ -256,6 +295,9 @@
       "evidence_manifests": [],
       "implementation_tasks": [
         "IMP-UI-003-02"
+      ],
+      "boundaries": [
+        "browser"
       ]
     },
     {
@@ -276,7 +318,10 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "browser"
+      ]
     },
     {
       "id": "UI-005",
@@ -295,7 +340,10 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "browser"
+      ]
     },
     {
       "id": "SRCH-001",
@@ -313,7 +361,10 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "api"
+      ]
     },
     {
       "id": "SRCH-002",
@@ -332,7 +383,8 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     },
     {
       "id": "SRCH-003",
@@ -350,7 +402,8 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     },
     {
       "id": "VOICE-001",
@@ -369,7 +422,10 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "api"
+      ]
     },
     {
       "id": "VOICE-002",
@@ -388,7 +444,10 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "api"
+      ]
     },
     {
       "id": "VOICE-003",
@@ -408,7 +467,8 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     },
     {
       "id": "VOICE-004",
@@ -427,7 +487,8 @@
       "requires_hardware_evidence": true,
       "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     },
     {
       "id": "TEL-001",
@@ -446,7 +507,10 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "api"
+      ]
     },
     {
       "id": "TEL-002",
@@ -466,7 +530,10 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "api"
+      ]
     },
     {
       "id": "TEL-003",
@@ -486,7 +553,10 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "api"
+      ]
     },
     {
       "id": "TEL-004",
@@ -505,7 +575,10 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "api"
+      ]
     },
     {
       "id": "TEL-005",
@@ -524,7 +597,10 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "api"
+      ]
     },
     {
       "id": "FLOW-001",
@@ -541,7 +617,10 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "api"
+      ]
     },
     {
       "id": "FLOW-002",
@@ -559,7 +638,10 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "api"
+      ]
     },
     {
       "id": "RSCH-001",
@@ -577,7 +659,8 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     },
     {
       "id": "RSCH-002",
@@ -595,7 +678,8 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     },
     {
       "id": "GATE-001",
@@ -615,6 +699,9 @@
       "evidence_manifests": [],
       "implementation_tasks": [
         "IMP-GATE-001-02"
+      ],
+      "boundaries": [
+        "api"
       ]
     },
     {
@@ -633,7 +720,8 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     },
     {
       "id": "GATE-003",
@@ -651,7 +739,10 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "api"
+      ]
     },
     {
       "id": "RAG-001",
@@ -670,7 +761,8 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     },
     {
       "id": "RAG-002",
@@ -687,7 +779,8 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     },
     {
       "id": "RAG-003",
@@ -704,7 +797,8 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     },
     {
       "id": "IMG-001",
@@ -724,7 +818,8 @@
       "requires_hardware_evidence": true,
       "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     },
     {
       "id": "IMG-002",
@@ -742,7 +837,8 @@
       "requires_hardware_evidence": true,
       "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     },
     {
       "id": "IMG-003",
@@ -759,7 +855,8 @@
       "requires_hardware_evidence": true,
       "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     },
     {
       "id": "IMG-004",
@@ -776,7 +873,8 @@
       "requires_hardware_evidence": true,
       "first_satisfying_version": null,
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     },
     {
       "id": "OPS-001",
@@ -794,7 +892,11 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "cli",
+        "agent"
+      ]
     },
     {
       "id": "OPS-002",
@@ -812,7 +914,11 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "cli",
+        "agent"
+      ]
     },
     {
       "id": "OPS-003",
@@ -831,7 +937,11 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "cli",
+        "api"
+      ]
     },
     {
       "id": "SEC-001",
@@ -852,7 +962,11 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "api",
+        "agent"
+      ]
     },
     {
       "id": "SEC-002",
@@ -860,7 +974,8 @@
       "status": "implemented",
       "owning_tests": [
         "tests/unit/test_ownership.py",
-        "tests/unit/test_host_inspector.py"
+        "tests/unit/test_host_inspector.py",
+        "tests/contract/test_runtime_agent_app.py"
       ],
       "risk": "critical",
       "required_environments": [
@@ -871,7 +986,11 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "api",
+        "agent"
+      ]
     },
     {
       "id": "SEC-003",
@@ -894,7 +1013,11 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "api",
+        "agent"
+      ]
     },
     {
       "id": "SEC-004",
@@ -918,7 +1041,11 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "browser",
+        "api"
+      ]
     },
     {
       "id": "SEC-005",
@@ -939,7 +1066,8 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     },
     {
       "id": "SEC-006",
@@ -959,7 +1087,10 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "api"
+      ]
     },
     {
       "id": "SEC-007",
@@ -979,7 +1110,8 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     },
     {
       "id": "REL-001",
@@ -999,7 +1131,8 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     },
     {
       "id": "REL-002",
@@ -1018,7 +1151,10 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "api"
+      ]
     },
     {
       "id": "REL-003",
@@ -1040,7 +1176,11 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "cli",
+        "agent"
+      ]
     },
     {
       "id": "REL-004",
@@ -1059,7 +1199,8 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     },
     {
       "id": "PERF-001",
@@ -1078,7 +1219,8 @@
       "requires_hardware_evidence": true,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     },
     {
       "id": "PERF-002",
@@ -1099,7 +1241,8 @@
       "requires_hardware_evidence": true,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     },
     {
       "id": "PERF-003",
@@ -1118,7 +1261,10 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.1.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "browser"
+      ]
     },
     {
       "id": "HOST-001",
@@ -1139,7 +1285,10 @@
       "requires_hardware_evidence": true,
       "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "agent"
+      ]
     },
     {
       "id": "HOST-002",
@@ -1160,7 +1309,8 @@
       "requires_hardware_evidence": true,
       "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     },
     {
       "id": "HOST-003",
@@ -1182,6 +1332,9 @@
       "evidence_manifests": [],
       "implementation_tasks": [
         "IMP-HOST-003-02"
+      ],
+      "boundaries": [
+        "cli"
       ]
     },
     {
@@ -1201,7 +1354,8 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     },
     {
       "id": "SEL-002",
@@ -1221,7 +1375,8 @@
       "requires_hardware_evidence": true,
       "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     },
     {
       "id": "SEL-003",
@@ -1239,7 +1394,8 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     },
     {
       "id": "SEL-004",
@@ -1263,6 +1419,9 @@
       "evidence_manifests": [],
       "implementation_tasks": [
         "IMP-SEL-004-02"
+      ],
+      "boundaries": [
+        "api"
       ]
     },
     {
@@ -1285,6 +1444,9 @@
       "evidence_manifests": [],
       "implementation_tasks": [
         "IMP-SEL-005-02"
+      ],
+      "boundaries": [
+        "api"
       ]
     },
     {
@@ -1310,6 +1472,12 @@
       "evidence_manifests": [],
       "implementation_tasks": [
         "IMP-RUNM-001-02"
+      ],
+      "boundaries": [
+        "api",
+        "cli",
+        "browser",
+        "agent"
       ]
     },
     {
@@ -1334,7 +1502,8 @@
       "evidence_manifests": [],
       "implementation_tasks": [
         "IMP-RUNM-002-02"
-      ]
+      ],
+      "boundaries": []
     },
     {
       "id": "RUNM-003",
@@ -1355,6 +1524,9 @@
       "evidence_manifests": [],
       "implementation_tasks": [
         "IMP-RUNM-003-02"
+      ],
+      "boundaries": [
+        "cli"
       ]
     },
     {
@@ -1376,6 +1548,9 @@
       "evidence_manifests": [],
       "implementation_tasks": [
         "IMP-RUNM-004-02"
+      ],
+      "boundaries": [
+        "cli"
       ]
     },
     {
@@ -1397,6 +1572,9 @@
       "evidence_manifests": [],
       "implementation_tasks": [
         "IMP-RUNM-005-02"
+      ],
+      "boundaries": [
+        "cli"
       ]
     },
     {
@@ -1420,6 +1598,9 @@
       "evidence_manifests": [],
       "implementation_tasks": [
         "IMP-RUNM-006-02"
+      ],
+      "boundaries": [
+        "api"
       ]
     },
     {
@@ -1441,7 +1622,8 @@
       "requires_hardware_evidence": true,
       "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     },
     {
       "id": "PLAT-002",
@@ -1463,7 +1645,8 @@
       "evidence_manifests": [],
       "implementation_tasks": [
         "IMP-PLAT-002-02"
-      ]
+      ],
+      "boundaries": []
     },
     {
       "id": "PLAT-003",
@@ -1487,6 +1670,9 @@
       "evidence_manifests": [],
       "implementation_tasks": [
         "IMP-PLAT-003-02"
+      ],
+      "boundaries": [
+        "desktop"
       ]
     },
     {
@@ -1509,7 +1695,8 @@
       "evidence_manifests": [],
       "implementation_tasks": [
         "IMP-PLAT-004-02"
-      ]
+      ],
+      "boundaries": []
     },
     {
       "id": "BENCH-001",
@@ -1532,6 +1719,9 @@
       "evidence_manifests": [],
       "implementation_tasks": [
         "IMP-BENCH-001-02"
+      ],
+      "boundaries": [
+        "cli"
       ]
     },
     {
@@ -1553,7 +1743,8 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     },
     {
       "id": "BENCH-003",
@@ -1574,7 +1765,8 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     },
     {
       "id": "BENCH-004",
@@ -1593,7 +1785,8 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     },
     {
       "id": "BENCH-005",
@@ -1616,6 +1809,9 @@
       "evidence_manifests": [],
       "implementation_tasks": [
         "IMP-BENCH-005-02"
+      ],
+      "boundaries": [
+        "cli"
       ]
     },
     {
@@ -1637,7 +1833,10 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "browser"
+      ]
     },
     {
       "id": "OUI-002",
@@ -1663,6 +1862,10 @@
       "evidence_manifests": [],
       "implementation_tasks": [
         "IMP-OUI-002-02"
+      ],
+      "boundaries": [
+        "browser",
+        "api"
       ]
     },
     {
@@ -1688,6 +1891,10 @@
       "evidence_manifests": [],
       "implementation_tasks": [
         "IMP-OUI-003-02"
+      ],
+      "boundaries": [
+        "browser",
+        "api"
       ]
     },
     {
@@ -1710,7 +1917,10 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "browser"
+      ]
     },
     {
       "id": "OUI-005",
@@ -1735,6 +1945,9 @@
       "evidence_manifests": [],
       "implementation_tasks": [
         "IMP-OUI-005-02"
+      ],
+      "boundaries": [
+        "browser"
       ]
     },
     {
@@ -1762,6 +1975,10 @@
       "evidence_manifests": [],
       "implementation_tasks": [
         "IMP-OUI-006-02"
+      ],
+      "boundaries": [
+        "browser",
+        "api"
       ]
     },
     {
@@ -1780,6 +1997,9 @@
       "evidence_manifests": [],
       "implementation_tasks": [
         "IMP-CHAT-001-01"
+      ],
+      "boundaries": [
+        "browser"
       ]
     },
     {
@@ -1798,6 +2018,9 @@
       "evidence_manifests": [],
       "implementation_tasks": [
         "IMP-CHAT-002-01"
+      ],
+      "boundaries": [
+        "browser"
       ]
     },
     {
@@ -1819,6 +2042,9 @@
       "evidence_manifests": [],
       "implementation_tasks": [
         "IMP-DESK-001-02"
+      ],
+      "boundaries": [
+        "desktop"
       ]
     },
     {
@@ -1843,6 +2069,9 @@
       "evidence_manifests": [],
       "implementation_tasks": [
         "IMP-DESK-002-02"
+      ],
+      "boundaries": [
+        "desktop"
       ]
     },
     {
@@ -1864,6 +2093,10 @@
       "evidence_manifests": [],
       "implementation_tasks": [
         "IMP-DESK-003-02"
+      ],
+      "boundaries": [
+        "desktop",
+        "browser"
       ]
     },
     {
@@ -1888,6 +2121,10 @@
       "evidence_manifests": [],
       "implementation_tasks": [
         "IMP-AID-001-02"
+      ],
+      "boundaries": [
+        "api",
+        "cli"
       ]
     },
     {
@@ -1910,6 +2147,9 @@
       "evidence_manifests": [],
       "implementation_tasks": [
         "IMP-AID-002-02"
+      ],
+      "boundaries": [
+        "api"
       ]
     },
     {
@@ -1930,7 +2170,8 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     },
     {
       "id": "AID-004",
@@ -1952,6 +2193,9 @@
       "evidence_manifests": [],
       "implementation_tasks": [
         "IMP-AID-004-02"
+      ],
+      "boundaries": [
+        "api"
       ]
     },
     {
@@ -1971,7 +2215,10 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "browser"
+      ]
     },
     {
       "id": "ACCESS-002",
@@ -1990,7 +2237,10 @@
       "requires_hardware_evidence": false,
       "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": [
+        "browser"
+      ]
     },
     {
       "id": "ACCESS-003",
@@ -2009,7 +2259,8 @@
       "requires_hardware_evidence": true,
       "first_satisfying_version": "0.2.0",
       "evidence_manifests": [],
-      "implementation_tasks": []
+      "implementation_tasks": [],
+      "boundaries": []
     }
   ]
 }

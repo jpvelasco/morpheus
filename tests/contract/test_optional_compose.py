@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 import yaml
 
+MORPHEUS_OWNED_REQUIREMENTS = frozenset({"SRCH-003", "FLOW-001", "FLOW-002"})
 pytestmark = pytest.mark.contract
 ROOT = Path(__file__).resolve().parents[2]
 OVERLAYS = tuple(sorted((ROOT / "deploy").glob("compose.*.yaml")))

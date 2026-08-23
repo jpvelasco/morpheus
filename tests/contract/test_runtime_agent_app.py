@@ -12,6 +12,7 @@ from morpheus.agent.auth import sign_request
 from morpheus.config import MorpheusSettings
 from morpheus.core.lifecycle import LifecycleAction
 
+MORPHEUS_OWNED_REQUIREMENTS = frozenset({"SEC-003"})
 pytestmark = pytest.mark.contract
 KEY = b"runtime-agent-contract-key"
 
@@ -195,3 +196,97 @@ def test_SEC_002_agent_rejects_arbitrary_lifecycle_target_fields() -> None:
 
     assert response.status_code == 422
     assert response.json() == {"error": {"code": "invalid_request"}}
+
+
+def test_SEC_003_agent_lifecycle_requires_a_valid_signature() -> None:
+    body = json.dumps({"request_id": "lifecycle-request", "action": "start"}).encode()
+    foreign_key = b"not-the-agent-key"
+
+    timestamp = str(int(time.time()))
+    response = agent().post(
+        "/v1/lifecycle",
+        content=body,
+        headers={
+            "Content-Type": "application/json",
+            "X-Morpheus-Timestamp": timestamp,
+            "X-Morpheus-Nonce": "unique-nonce",
+            "X-Morpheus-Signature": sign_request(
+                foreign_key, timestamp=timestamp, nonce="unique-nonce", body=body
+            ),
+        },
+    )
+
+    assert response.status_code == 401
+    assert response.json() == {"error": {"code": "authentication_failed"}}
+
+
+def test_SEC_003_agent_rejects_negative_declared_content_length() -> None:
+    response = agent().post(
+        "/v1/inspect",
+        content=b"{}",
+        headers={
+            "Content-Type": "application/json",
+            "Content-Length": "-1",
+            "X-Morpheus-Timestamp": "0",
+            "X-Morpheus-Nonce": "x",
+            "X-Morpheus-Signature": "x",
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "invalid_content_length"
+
+
+def test_SEC_003_agent_rejects_declared_content_length_above_bound() -> None:
+    response = agent().post(
+        "/v1/inspect",
+        content=b"{}",
+        headers={
+            "Content-Type": "application/json",
+            "Content-Length": "4097",
+            "X-Morpheus-Timestamp": "0",
+            "X-Morpheus-Nonce": "x",
+            "X-Morpheus-Signature": "x",
+        },
+    )
+
+    assert response.status_code == 413
+    assert response.json()["error"]["code"] == "request_too_large"
+
+
+class FailingLifecycle:
+    def __init__(self, error: Exception) -> None:
+        self._error = error
+
+    def execute(self, request: object) -> object:
+        raise self._error
+
+
+def _lifecycle_body() -> bytes:
+    return json.dumps(
+        {
+            "request_id": "lifecycle-request",
+            "action": LifecycleAction.START.value,
+            "version": None,
+            "backup_id": None,
+            "confirmation": None,
+        }
+    ).encode()
+
+
+def test_REL_003_agent_normalizes_lifecycle_authorization_denial() -> None:
+    response = agent(lifecycle=FailingLifecycle(PermissionError("denied"))).post(
+        "/v1/lifecycle", content=_lifecycle_body(), headers=signed_headers(_lifecycle_body())
+    )
+
+    assert response.status_code == 403
+    assert response.json() == {"error": {"code": "authorization_denied"}}
+
+
+def test_REL_003_agent_normalizes_lifecycle_conflict() -> None:
+    response = agent(lifecycle=FailingLifecycle(RuntimeError("conflict"))).post(
+        "/v1/lifecycle", content=_lifecycle_body(), headers=signed_headers(_lifecycle_body())
+    )
+
+    assert response.status_code == 409
+    assert response.json() == {"error": {"code": "lifecycle_conflict"}}

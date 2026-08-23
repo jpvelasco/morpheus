@@ -10,6 +10,8 @@ import pytest
 from morpheus.core.benchstore import BenchmarkStore
 from morpheus.core.history_import import HistoryImportContext, import_history
 
+MORPHEUS_OWNED_REQUIREMENTS = frozenset({"BENCH-003"})
+
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "history"
 GOLDEN = (
     "speed",

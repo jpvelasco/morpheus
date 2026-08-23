@@ -21,6 +21,8 @@ from morpheus.core.health import Evidence, HealthState
 from morpheus.core.models import ModelIdentity
 from morpheus.ops.evidence import CanaryGuard, EvidenceRun, EvidenceRunSpec, EvidenceStatus
 
+MORPHEUS_OWNED_REQUIREMENTS = frozenset({"ACCESS-003"})
+
 NOW = datetime(2026, 8, 15, 12, 0, 0, tzinfo=UTC)
 SOURCE_COMMIT = "0123456789abcdef0123456789abcdef0123456789abcdef"
 AUTH = {"Authorization": "Bearer test-api-key"}
