@@ -14,6 +14,11 @@ private request data, host addresses, or unredacted evidence.
 - **Active source milestone:** architecture rectification R0 through R9; see
   [`RECTIFICATION_PLAN.md`](RECTIFICATION_PLAN.md). R1 canonical identity/plan
   consolidation is the first dependency-critical implementation package.
+- **Rectification progress:** 2026-08-23 — gate repair landed (#66); R0
+  semantic traceability enforced (machine-readable `boundaries`, requirement-ID
+  ownership metadata, public-lane owner rule, derived documentation counts,
+  composition-root coverage measurement, separate lane count reports). R0 exit
+  evidence is in review; R1 entry requires it green.
 
 - **Validated baseline source equivalent:** `aa094172764a4de3e5dc91324306b14857706c4e`
   (`security: bound API request work`). Its pre-publication build evidence
