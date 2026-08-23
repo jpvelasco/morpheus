@@ -1,5 +1,13 @@
 # Vertical Slice Assessment — VSLICE-001 (Phase 11.5)
 
+Status: Historical gate evidence; its 2026-08-13 “go to Phase 12” decision was
+completed, but later phases forked the canonical records it exercised. Current
+execution begins with R1 in `RECTIFICATION_PLAN.md`.
+
+This assessment remains valid for its exact disposable slice and artifacts. It
+does not prove conformance of the final implementation source and must not be
+used to bypass the 2026-08-22 audit findings.
+
 - Date: 2026-08-13
 - Branch: `agent/phase-11-5-walking-skeleton`
 - Host: ubuntu-2 — Windows 11 Pro, Docker Desktop 29.6.2, AMD Ryzen 7 2700X, CPU-only (GPU explicitly out of scope for 11.5)

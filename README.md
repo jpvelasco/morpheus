@@ -13,15 +13,16 @@ without weakening that external-runtime boundary.
 
 ## Status
 
-Morpheus is an **operator control plane** for a host that already runs
-OpenAI-compatible inference (on ubuntu-1: `coder-model` + Open WebUI). It is
-intentionally **not** a full appliance installer and does not manage models or
-the external GPU stack.
+The deployed v0.1 system is an **operator control plane** for a host that already
+runs OpenAI-compatible inference (on ubuntu-1: `coder-model` + Open WebUI). It
+does not manage that external runtime or GPU stack.
 
-That paragraph describes the currently deployed v0.1 behavior. The approved
-v0.2 product plan will add a managed-appliance path for ubuntu-1 and ubuntu-2
-and qualified Windows and Apple Silicon macOS hosts, but no v0.2 runtime
-implementation or live migration has started.
+The repository also contains substantial v0.2 component implementation, but a
+post-run audit found that the components do not yet form the intended coherent
+managed appliance. The active source milestone is the
+[architecture rectification plan](docs/RECTIFICATION_PLAN.md), not physical
+qualification or release. The current requirement posture is 59 implemented,
+26 planned, 12 deferred, and 0 validated.
 
 For day-to-day operator use on ubuntu-1, install the frozen candidate with the
 ubuntu-1 path and stop feature work there:
@@ -29,9 +30,11 @@ ubuntu-1 path and stop feature work there:
 - [ubuntu-1 operator runbook](docs/runbooks/UBUNTU_OPERATOR.md)
 - Installer: `deploy/ubuntu-1/install.sh`
 
-Optional sidecars (search, voice, workflows, research, RAG, image generation)
-are outside the focused v0.2 critical path. Morpheus is not attempting to match
-ODS feature breadth.
+Optional search/Open WebUI integration, voice integration, research, independent
+RAG, and image generation remain deferred outside the focused v0.2 critical
+path. Existing safe scaffolds do not make those capabilities complete. The
+managed workflow named by OUI-006 is core product orchestration and is planned
+for rectification; it is distinct from the optional n8n sidecar.
 
 The current external runtime is treated as an integration dependency:
 
@@ -46,6 +49,9 @@ at runtime. ODS is research input only.
 
 ## Documentation
 
+- [Documentation index](docs/README.md)
+- [Current release state](docs/RELEASE_STATE.md)
+- [Active architecture rectification plan](docs/RECTIFICATION_PLAN.md)
 - [ubuntu-1 operator runbook](docs/runbooks/UBUNTU_OPERATOR.md)
 - [Product specification](docs/PRODUCT_SPECIFICATION.md)
 - [Architecture](docs/ARCHITECTURE.md)
@@ -65,7 +71,7 @@ at runtime. ODS is research input only.
 ```text
 src/morpheus/          Python domain, adapters, API, agent, and CLI
 web/                   TypeScript dashboard
-desktop/               Planned Tauri desktop shell and native packaging
+desktop/               Tauri desktop scaffold and development packaging
 deploy/                Morpheus-owned Compose and service configuration
 tests/                 Unit, contract, integration, acceptance, and live tests
 docs/                  Specifications, architecture, ADRs, and runbooks
@@ -120,5 +126,6 @@ browser security still runs against the disposable candidate stack.
 - Pin production container dependencies by immutable digest after validation.
 
 External-runtime tests remain opt-in and read-only. Installation and stateful
-runtime operations require the corresponding phase evidence and explicit
-operator authorization.
+runtime operations require the corresponding source gate, retained evidence,
+and explicit operator authorization. Component scaffolds must not be used to
+infer permission or readiness.

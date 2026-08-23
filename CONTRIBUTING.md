@@ -10,6 +10,11 @@ under a green suite.
 Do not merge skipped tests, placeholder assertions, disabled quality gates, or
 tests that only restate implementation details.
 
+The active source work order is `docs/RECTIFICATION_PLAN.md`. During
+rectification, `implemented` is reserved for complete behavior at the stable
+product boundary; a component parser, fake executor, route shape, or UI state is
+not enough. Shared identity and plan contracts land before parallel consumers.
+
 ## Change Process
 
 1. Reference a requirement ID from `docs/PRODUCT_SPECIFICATION.md`.
@@ -19,6 +24,8 @@ tests that only restate implementation details.
 5. Refactor while keeping the full relevant suite green.
 6. Run static analysis, security checks, and the appropriate integration lane.
 7. Update documentation and an ADR when contracts or architecture change.
+8. Update `requirements.json`, `docs/IMPLEMENTATION_GAP_REVIEW.md`, and
+   `docs/RELEASE_STATE.md` together when status changes.
 
 ## Required Standards
 

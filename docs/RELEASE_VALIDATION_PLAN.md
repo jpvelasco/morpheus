@@ -1,22 +1,26 @@
 # Morpheus Release Validation Plan
 
-Status: v0.1 validation baseline; v0.2 three-OS target matrix planned
+Status: Historical v0.1 validation baseline; v0.2 validation is blocked on
+architecture rectification R0 through R9
 
-Updated: 2026-08-11
+Updated: 2026-08-22
 
 This document turns the release-level exit criteria into an executable,
 dependency-ordered checklist. A green development gate is necessary but does
 not make Morpheus eligible for stable use. Every task below must produce
 reviewable evidence or an explicit, approved deferral.
 
-The checklist below remains the historical v0.1 release lane. The reopened v0.2
-product requirements are phased in `IMPLEMENTATION_PLAN.md` Sections 20 through
-32, include an early Ubuntu CPU walking skeleton and bounded replan, and
-culminate in Ubuntu, Windows, and Apple Silicon macOS qualification under Phase
-18. Public platform signing is a separate optional final lane. ubuntu-1 and
-ubuntu-2 remain named Linux evidence targets.
+The checklist below remains the historical v0.1 release lane. The v0.2 source
+must first satisfy R0 through R9 in `RECTIFICATION_PLAN.md`; only then may a new
+candidate enter Phase 18 Ubuntu, Windows, and Apple Silicon macOS qualification.
+Public platform signing is a separate optional final lane. ubuntu-1 and ubuntu-2
+remain named Linux evidence targets.
 No unchecked v0.1 optional-service item is implicitly promoted into the v0.2
 critical path, and this document does not yet constitute v0.2 release evidence.
+
+No v0.2 task below may be checked using component-only evidence from source
+`9b4cda0`. Freeze a new candidate after R9, bind every run to its exact digest,
+and request explicit authorization for every physical lane.
 
 ## 1. Non-Negotiable Boundaries
 

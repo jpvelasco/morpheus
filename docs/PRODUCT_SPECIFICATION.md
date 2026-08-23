@@ -1,6 +1,7 @@
 # Morpheus Product Specification
 
-Status: Draft v0.2 product direction; v0.1 remains the deployed read-only baseline
+Status: Accepted v0.2 product intent; implementation is under architecture
+rectification; v0.1 remains the deployed read-only baseline
 
 Specification version: 0.2
 
@@ -8,6 +9,11 @@ Stable v0.2 targets: Ubuntu 26.04 LTS x86-64, Windows 11 x86-64, and
 macOS 14 or later on Apple Silicon, discovered and validated individually
 
 Primary use case: Focused local developer-inference appliance
+
+Implementation status is tracked only in `requirements.json` and
+[`RELEASE_STATE.md`](RELEASE_STATE.md). The active recovery path is
+[`RECTIFICATION_PLAN.md`](RECTIFICATION_PLAN.md). Component availability or a
+green unit suite does not amend the behavior specified here.
 
 ## 1. Purpose
 

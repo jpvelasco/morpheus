@@ -9,6 +9,12 @@ This document defines the implemented operation contract. It does not replace
 the clean-VM install, upgrade, rollback, uninstall, and external-integrity
 evidence required by the release validation plan.
 
+This is the guarded v0.1-style Compose release lifecycle, not the complete v0.2
+canonical model/engine acquisition, staging, benchmark, promotion, and rollback
+application service. That integration remains planned under R1 through R4 in
+`RECTIFICATION_PLAN.md`; do not route an observed external inference identity
+through this command surface.
+
 ## Fixed Deployment Layout
 
 The host runtime agent must be configured with one absolute deployment root:
