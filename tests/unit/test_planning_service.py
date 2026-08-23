@@ -10,8 +10,8 @@ from typing import Any
 import pytest
 
 from morpheus.adapters.persistence.records_store import (
-    RecordStoreError,
     RecordsStore,
+    RecordStoreError,
 )
 from morpheus.core.deployment import DeploymentStore, LossyMigrationError
 from morpheus.core.records import (
@@ -221,7 +221,7 @@ def test_operation_record_requires_managed_ownership_and_timestamps() -> None:
             action="promote",
             ownership="managed",
             state="active",
-            requested_at=datetime(2026, 8, 23),
+            requested_at=datetime(2026, 8, 23),  # noqa: DTZ001 - intentionally naive
         )
     with pytest.raises(ValueError, match="plan_id"):
         OperationRecord(
@@ -307,9 +307,7 @@ def test_select_without_catalog_or_fit_is_rejected(tmp_path: Path) -> None:
         disk_bytes=1,
     )
     with pytest.raises(PlanningIdentityError, match="no viable"):
-        service.select_plan(
-            machine=tiny_machine, workload=_workload(), catalog=(_plan(),)
-        )
+        service.select_plan(machine=tiny_machine, workload=_workload(), catalog=(_plan(),))
 
 
 def test_selection_is_deterministic_and_persists_every_record(tmp_path: Path) -> None:
