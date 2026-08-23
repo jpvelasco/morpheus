@@ -94,6 +94,16 @@ Morpheus is an independent project. Do not import, vendor, symlink, or depend on
 ODS source code. ODS may be consulted for ideas and upstream project names, but
 Morpheus implementations and contracts must be written for this system.
 
+Tonos is an independent optional harness-qualification peer, not a Morpheus
+component or dependency. Follow
+`docs/adr/0010-optional-external-harness-qualification-evidence.md` and
+`docs/TONOS_INTEROPERABILITY.md`: do not import, vendor, symlink, start,
+configure, or require a Tonos checkout/service. The optional sanitized evidence
+exchange is deferred until R1 and R2 are green and separately authorized. An
+optional shared correlation value is untrusted search metadata, never a
+canonical identity, authorization input, ownership proof, or remote-control
+channel.
+
 The active `coder-model` vLLM service, existing Open WebUI container, their
 Compose project, model caches, and persistent data are externally owned. Never
 restart, recreate, stop, reconfigure, or write to them unless the user gives an

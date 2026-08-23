@@ -86,6 +86,14 @@ flowchart LR
 ODS is intentionally absent from the context diagram. It is not a component,
 dependency, deployment prerequisite, or control path.
 
+External developer-harness qualification tools are also outside the Morpheus
+component boundary. They may call a served endpoint like any other authorized
+client and may later export sanitized task evidence for explicit import, but
+Morpheus does not install, configure, start, or require them. This optional
+relationship is defined by
+[ADR-0010](adr/0010-optional-external-harness-qualification-evidence.md), not by
+a runtime edge in the system context.
+
 ## 3. Ownership Boundaries
 
 ### 3.1 Externally Owned
@@ -97,6 +105,8 @@ dependency, deployment prerequisite, or control path.
 - `/mnt/data/AI/docker-compose.yml`;
 - GPU drivers, Docker Engine, NVIDIA runtime, and host firewall;
 - model and Hugging Face caches.
+- developer-facing harness binaries, their configuration/credentials, task
+  workspaces, and independent qualification tools such as Tonos.
 
 External resources may be observed through public APIs or read-only adapters.
 Their names must never be accepted as lifecycle targets.
@@ -575,15 +585,41 @@ carry their reducer version. Comparison requires compatible workload, suite,
 model feature, engine/configuration, warm-up/cache, and machine dimensions;
 otherwise the result is labeled normalized, estimated, or incomparable.
 
+### 14.1 Optional External Harness Evidence
+
+Morpheus remains independently qualifiable through its direct-provider
+benchmark suite. A separately operated harness lab may export sanitized
+client-observed correctness, tool-use, agentic, edit/verification, failure, and
+end-to-end timing evidence. Import is an explicit administrative action through
+a versioned parser; there is no runtime source/package dependency or callback.
+
+The import boundary records producer/schema/redactor versions, source digest,
+harness and effective configuration, provider/model observation, task/evaluator
+identity, sample/dispersion data, limitations, content omissions, and mapping
+version. It rejects secrets, raw conversation/reasoning content, arbitrary
+commands, repository content, engine-control instructions, unknown future
+schemas, and oversized documents. Parsed evidence remains attributed and
+ineligible for ranking until canonical machine, deployment, suite, freshness,
+and comparability policy permits it.
+
+An optional external correlation value may appear as bounded untrusted search
+metadata on both independently produced records. It is never substituted for a
+Morpheus machine, model, deployment-plan, operation, campaign, request,
+ownership, authentication, or authorization identity, and it does not establish
+clock alignment. Its absence has no behavioral effect. A carrier is deferred to
+a later versioned contract and must not use prompt content.
+
 SQLite remains suitable for a single-machine initial release, with large raw
 artifacts stored below an owned content-addressed results root and referenced by
 checksum. Export bundles allow results from supported machines and operating
 systems to be reviewed together without introducing a fleet controller.
 
 Operational time series use bounded rollups and retention. Request content is
-not stored. Metrics, deployment events, approved logs, benchmark campaigns, and
-configuration changes share correlation and deployment-plan identifiers so the
-UI can explain before/after changes.
+not stored. Morpheus metrics, deployment events, approved logs, benchmark
+campaigns, and configuration changes share canonical internal correlation and
+deployment-plan identifiers so the UI can explain before/after changes. An
+optional external correlation value remains a separate untrusted metadata
+field.
 
 ## 15. Operations Workspace and Diagnosis
 
@@ -645,6 +681,7 @@ discovery result or convenience setting requested it.
 - [ADR-0007: Tauri desktop and independent backend](adr/0007-tauri-desktop-and-independent-backend.md)
 - [ADR-0008: Tiered cross-platform runtime support](adr/0008-tiered-cross-platform-runtime-support.md)
 - [ADR-0009: Dev-first packages and optional distribution signing](adr/0009-dev-first-packages-and-optional-distribution-signing.md)
+- [ADR-0010: Optional external harness qualification evidence](adr/0010-optional-external-harness-qualification-evidence.md)
 
 Open decisions that must be resolved or explicitly accepted before their
 affected rectification requirement returns to `implemented`:

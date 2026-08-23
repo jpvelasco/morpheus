@@ -58,6 +58,11 @@ first implementation artifact is released.
 
 ### Changed
 
+- Defined the independent specialization boundary between Morpheus inference
+  deployment optimization and external developer-harness qualification tools
+  such as Tonos. ADR-0010 permits only a later optional sanitized evidence
+  exchange and opaque correlation value; it adds no runtime dependency, remote
+  control, fleet scope, or active rectification work.
 - Restored Windows parity for the local validation lanes with bounded fixes
   that leave POSIX behavior unchanged: platform-correct path-escape checks,
   process-tree spawn/kill helpers, directory-fsync guards, and platform-aware

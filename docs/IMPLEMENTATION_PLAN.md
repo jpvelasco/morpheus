@@ -1260,3 +1260,48 @@ publication lane must:
 An undecided license is a publication blocker, not a development blocker. Agents
 record it as `decision_pending` and finish every independent product task without
 claiming that Morpheus is open source.
+
+## 33. Optional External Harness Evidence Interoperability
+
+This lane implements
+[ADR-0010](adr/0010-optional-external-harness-qualification-evidence.md) and is
+outside the active R0-through-R9 rectification critical path. It may begin only
+after R1 fixes canonical identities, R2 composes retained evidence into
+recommendations, the external producer independently stabilizes its sanitized
+export contract, and the user explicitly authorizes implementation.
+
+The lane does not make Morpheus a developer-harness orchestrator or remote fleet
+controller. Morpheus continues to pass all selection, benchmark, managed-runtime,
+qualification, and release gates without the producer repository or service.
+
+Use TDD in this order:
+
+1. freeze producer-neutral sanitized golden bundles and reject unknown schemas,
+   secrets, prompt/response/reasoning content, repository content, arbitrary
+   commands, path escapes, and oversized inputs;
+2. map harness/configuration/task/evaluator identity, client-observed quality and
+   timing, sample/dispersion data, source digest, omissions, and limitations into
+   the canonical evidence family without inventing machine/model/engine facts;
+3. classify foreign, stale, partial, estimated, and incomparable evidence before
+   ranking and prove that parsing alone never grants recommendation eligibility;
+4. accept an optional bounded opaque correlation value as untrusted search
+   metadata only, with identical behavior when it is absent or unsupported;
+5. prove the importer performs no network calls, process execution, lifecycle
+   actions, provider configuration, promotion, rollback, or adoption;
+6. prove both repositories pass their standalone clean gates with the other
+   checkout and service absent.
+
+The optional joint acceptance scenario is:
+
+```text
+Morpheus stages an owned deployment and records its canonical plan evidence
+  -> an independently operated harness lab tests the served endpoint
+  -> the operator exports and explicitly imports a sanitized result bundle
+  -> Morpheus shows client and server evidence as separate attributed timelines
+  -> policy may use comparable task-quality evidence in a new recommendation
+```
+
+No step automatically changes the active deployment. A new engine/model/config
+tuple has a new plan identity and cannot inherit an old harness qualification
+silently. A shared runtime library, automatic cross-project orchestration,
+direct control API, or fleet scope requires a new ADR.

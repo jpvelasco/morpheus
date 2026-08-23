@@ -48,6 +48,10 @@ private request data, host addresses, or unredacted evidence.
   rows represent incomplete product composition, not erased component work.
   The 12 optional-scope rows are restored to deferred because no ADR reopened
   that priority boundary and their full product paths do not exist.
+- **External harness qualification:** ADR-0010 records Tonos and similar tools
+  as optional independent evidence producers. No interoperability code is on the
+  R0-through-R9 critical path, no requirement status changes, and no source,
+  runtime, control, or release dependency exists.
 - **Release posture:** not yet release-ready. A passing candidate does not
   replace architecture conformance, lifecycle, browser, load, fault,
   supply-chain finalize, physical qualification, or soak evidence.

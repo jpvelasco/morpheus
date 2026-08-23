@@ -18,6 +18,11 @@ remain named Linux evidence targets.
 No unchecked v0.1 optional-service item is implicitly promoted into the v0.2
 critical path, and this document does not yet constitute v0.2 release evidence.
 
+External developer-harness qualification evidence under ADR-0010 is optional
+and cannot become a release prerequisite. Morpheus must pass its canonical
+direct benchmark, managed-runtime, and physical evidence lanes with no Tonos or
+other harness-lab checkout/service present.
+
 No v0.2 task below may be checked using component-only evidence from source
 `9b4cda0`. Freeze a new candidate after R9, bind every run to its exact digest,
 and request explicit authorization for every physical lane.

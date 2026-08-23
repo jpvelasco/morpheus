@@ -59,6 +59,13 @@ HOST-RO or HOST-MAINT execution, model/cache downloads outside a disposable
 lane, release publication, signing credentials, licensing changes, or adoption
 of an external runtime. Preserve the deployed v0.1 read-only operator surface.
 
+[ADR-0010](adr/0010-optional-external-harness-qualification-evidence.md)
+recognizes a future optional evidence boundary with independent harness labs
+such as Tonos. Implementing that exchange is not part of R0 through R9 and must
+not delay rectification. R1 and R2 should keep canonical evidence imports
+producer-neutral; they must not add Tonos-specific domain identities, a sibling
+repository dependency, harness orchestration, or remote fleet control.
+
 ## 3. Reproduced Findings at the Audited Source
 
 | Finding | Disposition | Current evidence | Rectification owner |

@@ -25,6 +25,9 @@ or old implementation prompt.
   is the current recovery path back to those gates.
 - [Architecture decisions](adr/) — accepted decisions. Changes require a new or
   superseding ADR rather than silent edits to implementation intent.
+- [Optional Tonos interoperability](TONOS_INTEROPERABILITY.md) — specialization,
+  measurement boundary, optional correlation semantics, and deferred sanitized
+  evidence exchange. It creates no dependency or current work item.
 
 ## Current Audit and Delivery Control
 
@@ -70,3 +73,5 @@ ADRs live in `docs/adr/` and use `NNNN-short-decision-name.md`. Every accepted
 record contains context, decision, consequences, alternatives, and a date.
 Changing an accepted ownership, platform, distribution, or scope decision
 requires a superseding record and corresponding specification/test updates.
+ADR-0010 keeps external developer-harness qualification independent while
+allowing a later optional evidence-import boundary.
