@@ -109,9 +109,10 @@ the rectification plan.
 | 9 | R9 | all planned rows | public-boundary acceptance, mutation, coverage, clean-gate, and status closure |
 | 10 | R10 | HOST-003, PLAT-004, ACCESS-003 and release set | separately authorized physical qualification and release evidence |
 
-R1 is the shared-contract gate. Do not fan out downstream schema work until it
-lands. R4 through R7 may run in parallel only after R3 fixes the application
-operation boundary.
+R1 is the shared-contract gate and has landed its canonical contracts; R2/R3
+must consume (not fork) them. Do not fan out downstream schema work beyond
+those consumers. R4 through R7 may run in parallel only after R3 fixes the
+application operation boundary.
 
 ## Rectification Progress
 
@@ -126,6 +127,21 @@ operation boundary.
   completion claims, and keep `api/app.py`/`agent/app.py` measured by coverage;
   lane reports record collected/selected/deselected/passed/failed/skipped/error
   counts separately under ignored `artifacts/test-counts/`.
+- 2026-08-23: R1 canonical identity frozen — one semantic `DeploymentPlan`
+  (`core/records.py`) survives codec, repositories, API, and restart; the lean
+  competing family in `core/deployment.py` is retired with lossy v1 snapshot
+  migration rejected explicitly; recommendation ids are timestamp-free content
+  digests (schema v2) with explicit v1 store migration/invalidation; campaign
+  run ids are caller-declared (no wall-clock derivation); canonical record
+  repositories (machine profile, catalog snapshot, workload, recommendation,
+  plan, campaign, operation) exist behind typed protocols; the planning
+  application service carries selection through promotion/rollback identity,
+  rejects missing/observed/mismatched plan or ownership identity before state
+  changes, and writes audited operation records carrying validated plan
+  identity (sqlite schema v4); `/api/v1/plans/*`, recommendation machine-profile
+  identity, agent lifecycle optional `plan_id`, and VSLICE selection through the
+  same production service are covered by acceptance tests. RUNM-001 remains
+  `planned` until its UI/browser boundary is carried (R3/R9); no status advanced.
 
 Optional external harness evidence interoperability under ADR-0010 is not a
 rectification gap, requirement-status change, or R0-through-R9 work item. R1 and
