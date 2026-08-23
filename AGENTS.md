@@ -1,70 +1,73 @@
 # AGENTS.md
 
-## Where We Left Off (2026-08-22)
+## Where We Left Off (2026-08-23)
 
-The GitHub implementation run is complete at source
-`9b4cda09d4b064f160902b9dd25387cf3129cdb3`, but the v0.2 product is **not**
-source-complete or release-ready. A post-run audit reproduced the integration,
-identity, observability, process-supervision, traceability, and documentation
-findings recorded on 2026-08-15 and found additional scope, desktop, diagnosis,
-and target-support overclaims.
+Current `main`: `ae3c8579d613546ee4add4befef62f38369849f9`. Rectification is in
+progress; the v0.2 product is **not** source-complete or release-ready.
 
-The active source milestone is the
-[`v0.2 architecture rectification plan`](docs/RECTIFICATION_PLAN.md). Its work
-packages R0 through R9 must realign the implementation before Phase 18 physical
-qualification. The first implementation package is R0, followed by the
-dependency-critical R1 canonical identity and deployment-plan consolidation.
-Do not resume the old Phase 11-to-18 implementation prompt or jump directly to
-physical qualification.
+- Landed: **R0** truthful ledgers + semantic traceability (#67), **R1** one
+  canonical identity and plan family (#68, closes #55).
+- Next package: **R2** evidence-backed recommendation (#56), then **R3** durable
+  managed operation service (#57). One integrator owns R2 and R3.
+- Do not resume the old Phase 11-to-18 implementation prompt or jump directly to
+  physical qualification (R10).
 
-`requirements.json` is reconciled to 59 implemented, 28 planned, 12 deferred,
-and 0 validated requirements. Component scaffolds and their tests remain useful,
-but they do not establish complete product behavior. In particular:
+`requirements.json` stands at 59 implemented, 28 planned, 12 deferred, 0
+validated. Component scaffolds do not establish product behavior. Still open:
 
-- managed operation routes still use a deliberately non-mutating DEV executor;
+- managed operation routes use a deliberately non-mutating DEV executor;
 - recommendation bypasses retained catalogs and benchmark evidence;
-- duplicate semantic plan/identity families prevent one end-to-end identity chain;
-- metrics are collected on page requests and events have no production producers;
+- metrics are collected on page requests and events have no producers;
 - native engine shutdown bypasses process-tree supervision;
 - desktop/native package and local diagnosis paths remain incomplete;
-- the accepted bounded model console and optional setup copilot are planned only;
-  they must follow canonical target/provider identity and cannot bypass ordinary
-  policy or become a general-purpose chat product;
-- optional search/voice/research/RAG/image requirements remain deferred.
+- model console / setup copilot are planned only; optional search/voice/RAG/etc.
+  stay deferred.
 
-Read these files in order before rectification work:
+Read before working: `docs/RELEASE_STATE.md` (current state),
+`docs/RECTIFICATION_PLAN.md` (execution order and gates), `requirements.json`,
+then `docs/PRODUCT_SPECIFICATION.md` / `docs/ARCHITECTURE.md` /
+`docs/IMPLEMENTATION_PLAN.md`. Historical detail:
+`docs/IMPLEMENTATION_AUDIT_2026-08-15.md`.
 
-1. `docs/RELEASE_STATE.md` — authoritative current state and handoff;
-2. `docs/RECTIFICATION_PLAN.md` — active execution order and gates;
-3. `requirements.json` — current functional status and task IDs;
-4. `docs/PRODUCT_SPECIFICATION.md` and `docs/ARCHITECTURE.md` — accepted intent;
-5. `docs/IMPLEMENTATION_PLAN.md` — original phase dependencies and exit criteria;
-6. `docs/IMPLEMENTATION_AUDIT_2026-08-15.md` — historical finding detail.
+Deployed v0.1 remains a **read-only operator surface** next to the existing
+inference stack (up/down, served model, GPU/disk via agent, diagnostics). It is
+not chat, model management, or vLLM control. Never present plans/scaffolds as
+deployed behavior.
 
-The deployed v0.1 Morpheus remains a **read-only operator surface** next to the
-existing inference stack. It answers whether inference is up, which model is
-served, GPU/disk state through the agent, and basic diagnostics. It is not chat,
-model management, or vLLM control. Source plans and scaffolds must not be
-presented as deployed behavior.
+### R1 Canonical Identity Rules (do not regress)
+
+- The ONLY semantic `DeploymentPlan`, `ModelIdentity`, and `WorkloadProfile`
+  live in `core/records.py`.
+  `tests/contract/test_r1_identity_architecture.py` enforces this by AST scan;
+  adding a second class with those names anywhere under `src/` fails CI.
+- Renamed read/query DTOs: `core/models.py:ServedModel` (live serving identity),
+  `core/workload.py:WorkloadPolicy` (ranking policy). Do not rename back.
+- The retired lean plan family (`ManagedCandidate`, derived sha256 `plan_id`) is
+  gone. `core/deployment.py:migrate_snapshot` rejects v1 snapshot documents as
+  lossy (`LossyMigrationError`) — never reinterpret them.
+- Content-derived IDs exclude observation timestamps. Recommendation records are
+  schema v2 (`created_at` = provenance only); campaign `run_id` is a required
+  caller-declared argument. Never derive IDs from wall-clock time.
+- Repositories: protocols in `core/repositories.py`, owned-path adapter in
+  `adapters/persistence/records_store.py`; `core/deployment.py:DeploymentStore`
+  stays the promotion/rollback engine over canonical plans.
+- `ops/planning.py:PlanningService` owns selection → promote → rollback identity
+  enforcement. State-changing calls reject missing, observed (`external_observed`),
+  or mismatched plan/ownership identity BEFORE mutating. API surface:
+  `/api/v1/plans/*`. Audit rows carry `plan_id`/`ownership` (sqlite schema v4).
+- The VSLICE fixture (`validation/vslice/harness.py`) selects through the
+  production `PlanningService` — keep it that way.
 
 ### Continuation and Authorization
 
-The user's authorization to prepare this rectification plan does not authorize
-implementation, live-host operations, external-service/cache mutation, release
-publication, or signing-credential access. When implementation is explicitly
-authorized, agents may continue across green DEV and disposable-lab packages in
-the dependency order defined by `RECTIFICATION_PLAN.md` without asking at every
-package boundary. HOST-RO and HOST-MAINT lanes always require explicit current
-authorization.
+Implementation requires explicit authorization. When granted, agents may continue
+across green DEV and disposable-lab packages in `RECTIFICATION_PLAN.md` order
+without asking at every boundary. HOST-RO and HOST-MAINT lanes always require
+explicit current authorization. Release publication and signing credentials stay
+separately authorized; missing signatures never block source/packaging work.
 
-Windows public signing and Apple signing/notarization remain optional final
-distribution-hardening lanes. Missing credentials must not delay source,
-packaging, DEV/VM, or physical product work. Unsigned development artifacts stay
-checksummed and explicitly confirmed, and unattended update remains disabled.
-
-The repository declares `Proprietary - no license granted`. Public visibility
-does not grant an open-source license. Do not change licensing metadata, add a
-license, or claim Morpheus is open source until the user explicitly chooses the
+The repository declares `Proprietary - no license granted`. Do not change
+licensing metadata or claim Morpheus is open source until the user chooses the
 license and publication policy.
 
 ### Live Install (ubuntu-1)
@@ -72,18 +75,17 @@ license and publication policy.
 | Item | Value |
 |---|---|
 | Runtime root | `/home/operator/morpheus-runtime` |
-| Dashboard | `http://127.0.0.1:7401/` (loopback only; use SSH tunnel off-box) |
+| Dashboard | `http://127.0.0.1:7401/` (loopback only; SSH tunnel off-box) |
 | API | `http://127.0.0.1:7400/` |
 | Env / API key | `/home/operator/morpheus-runtime/morpheus.env` (mode `0600`) |
 | Host agent | `/home/operator/morpheus-runtime/agent/current`, socket under `run/` |
 | Install path | `deploy/ubuntu-1/install.sh` and `docs/runbooks/UBUNTU_OPERATOR.md` |
-| Candidate | rewritten source `fa5fe3ca2e393d6d20c1afa89dff2452650bf180`; deployed artifacts retain legacy build ID `aa7174aff3194ffeb1ca455d53005f242abe6d82` |
 
-The agent socket directory must be mode `0750` so the API container can reach
-`agent.sock`. If GPU or storage appears unavailable, verify the directory mode
-and confirm the agent PID is alive.
+Agent socket directory must be mode `0750` so the API container can reach
+`agent.sock`. If GPU/storage looks unavailable, check that mode first and confirm
+the agent PID is alive.
 
-Daily CLI after sourcing the environment or using the agent venv:
+Daily CLI (after sourcing the env or using the agent venv):
 
 ```bash
 /home/operator/morpheus-runtime/agent/current/bin/morpheus status
@@ -93,55 +95,55 @@ Daily CLI after sourcing the environment or using the agent venv:
 
 ## Project Boundary
 
-Morpheus is an independent project. Do not import, vendor, symlink, or depend on
-ODS source code. ODS may be consulted for ideas and upstream project names, but
-Morpheus implementations and contracts must be written for this system.
-
-Tonos is an independent optional harness-qualification peer, not a Morpheus
-component or dependency. Follow
-`docs/adr/0010-optional-external-harness-qualification-evidence.md` and
-`docs/TONOS_INTEROPERABILITY.md`: do not import, vendor, symlink, start,
-configure, or require a Tonos checkout/service. The optional sanitized evidence
-exchange is deferred until R1 and R2 are green and separately authorized. An
-optional shared correlation value is untrusted search metadata, never a
-canonical identity, authorization input, ownership proof, or remote-control
-channel.
-
-The active `coder-model` vLLM service, existing Open WebUI container, their
-Compose project, model caches, and persistent data are externally owned. Never
-restart, recreate, stop, reconfigure, or write to them unless the user gives an
-explicit state-changing instruction in the current request.
-
-In v0.2 terms, that stack is `external_observed`. Future managed inference must
-use separate Morpheus-owned roots, labels, manifests, and endpoints. Do not
-adopt the existing stack merely because it is discoverable or appears in a
-recommendation.
+- Morpheus is independent. Do not import, vendor, symlink, or depend on ODS
+  source code; consult ODS for ideas only.
+- Tonos is an independent peer harness, not a component or dependency
+  (`docs/adr/0010-...`, `docs/TONOS_INTEROPERABILITY.md`). No import/vendor/
+  start/configure of a Tonos checkout. Sanitized evidence exchange is deferred
+  until R1+R2 are green AND separately authorized. A shared correlation value is
+  untrusted search metadata, never canonical identity or control channel.
+- The active `coder-model` vLLM service, Open WebUI container, their Compose
+  project, caches, and data are externally owned. Never restart/recreate/stop/
+  reconfigure/write them without an explicit state-changing instruction in the
+  current request. In v0.2 terms that stack is `external_observed`; managed
+  inference must use separate Morpheus-owned roots, labels, manifests, endpoints.
 
 ## Engineering Rules
 
-- Follow `docs/PRODUCT_SPECIFICATION.md`, `docs/ARCHITECTURE.md`,
-  `docs/IMPLEMENTATION_PLAN.md`, and the active `docs/RECTIFICATION_PLAN.md`.
-- Prefer `docs/runbooks/UBUNTU_OPERATOR.md` for host operator install/use.
-- Use TDD: failing requirement test, minimal implementation, refactor.
-- Keep core domain logic pure and dependency-free.
-- Put external behavior behind typed adapter protocols.
-- Use structured parsers for JSON, YAML, metrics, and Compose data.
-- Do not expose secrets or retrieve secret values for diagnostics.
+- TDD: failing requirement test first, minimal implementation, refactor.
+- Keep core domain logic pure and dependency-free; external behavior behind
+  typed adapter protocols.
+- Use structured parsers for JSON, YAML, metrics, Compose data.
+- Do not expose or retrieve secret values for diagnostics.
 - Do not weaken tests, security controls, status semantics, or type checks to
   make a build pass.
-- Do not add a competing identity, plan, lifecycle, or evidence representation;
-  map boundary DTOs explicitly to the canonical domain family.
-- Add concise comments only for non-obvious decisions.
-- Keep generated output under ignored `artifacts/`.
+- Map boundary DTOs explicitly onto the canonical record family; never add a
+  competing identity, plan, lifecycle, or evidence representation.
+- Concise comments only for non-obvious decisions; generated output goes under
+  ignored `artifacts/`.
 
 ## Validation
 
-Run the smallest relevant test lane while iterating, then the complete required
-gate for the affected rectification package. Acceptance tests must exercise the
-real public/application composition boundary; component test volume does not
-substitute for specified behavior.
+Lanes (see `Makefile`); run the smallest relevant lane while iterating, full
+`make gate` before merge:
 
-Live-system tests are opt-in and read-only unless the user explicitly authorizes
-mutation. Do not pull formal release checklist items such as the 24-hour soak,
-full browser matrix, multi-host rebuilds, optional sidecars, public signing, or
-notarization ahead of their declared gate.
+```
+make format-check lint typecheck test-unit test-contract test-integration \
+     test-acceptance test-e2e test-coverage security build   # = make gate
+```
+
+- Single test file/lane examples: `uv run pytest tests/unit/test_deployment.py -q`,
+  `uv run pytest tests/acceptance -m acceptance -q`.
+- Coverage threshold is 90% and includes `api/app.py` + `agent/app.py`; do not
+  re-add omissions to pass.
+- **Windows quirk:** `make typecheck` fails locally on four pre-existing
+  POSIX-API mypy errors (`agent/host.py` clock_gettime/CLOCK_BOOTTIME,
+  `agent/app.py` AF_UNIX). Linux CI passes them; everything else must be clean.
+- Acceptance tests must exercise the real public/application composition
+  boundary (e.g., `create_app(...)` + `TestClient`); component test volume does
+  not substitute for specified behavior.
+- Live-system tests are opt-in and read-only
+  (`MORPHEUS_LIVE_TESTS=1 MORPHEUS_LIVE_MUTATION=0 make test-live-readonly`)
+  unless mutation is explicitly authorized. Do not pull release-checklist items
+  (24h soak, browser matrix, multi-host rebuilds, sidecars, signing,
+  notarization) ahead of their declared gate.
