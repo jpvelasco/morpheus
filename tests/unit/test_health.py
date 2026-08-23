@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from morpheus.core.health import Evidence, HealthState, aggregate_health
@@ -36,6 +36,9 @@ def test_RUN_002_stale_ready_evidence_becomes_unknown() -> None:
     assert report.reason_code == "stale_evidence"
 
 
+# Coverage tracing makes per-example generation exceed the default 200ms deadline
+# on slower hosts; assertions are unchanged.
+@settings(deadline=None)
 @given(st.lists(st.sampled_from(list(HealthState)), min_size=1, max_size=10))
 def test_RUN_002_aggregation_never_reports_ready_with_nonready_child(
     states: list[HealthState],
