@@ -78,6 +78,13 @@ modifying the source files or pretending missing historical provenance exists.
 New managed campaigns use Morpheus's canonical benchmark schema and can continue
 to invoke validated history workload implementations behind an adapter.
 
+The sibling Tonos repository is a separate provider-agnostic developer-harness
+qualification lab, not a Morpheus module or replacement benchmark runner. Under
+ADR-0010, a later explicitly authorized importer may consume its sanitized
+bundles as attributed task-quality evidence. Morpheus never reads or executes
+the sibling checkout directly, and the optional path is not part of the active
+rectification queue.
+
 ## Recommendation
 
 The v0.1 recommendation was to codify the existing working server before adding

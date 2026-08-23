@@ -41,6 +41,15 @@ not enough. Shared identity and plan contracts land before parallel consumers.
 - Persistent formats are versioned and migrated transactionally.
 - Container images used in release manifests are pinned by digest.
 
+## External Harness Evidence
+
+Changes involving Tonos or another developer-harness qualification producer
+must follow ADR-0010. Keep producer-specific DTOs at the import boundary, map
+them into the canonical Morpheus evidence family, and use static sanitized
+golden fixtures rather than a source/package/runtime dependency. An optional
+external correlation value is untrusted search metadata and must never enter
+authorization, ownership, or canonical identity decisions.
+
 ## Safety Boundary
 
 Normal tests must not call or mutate the production `coder-model` or

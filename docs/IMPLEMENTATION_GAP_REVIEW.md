@@ -105,6 +105,11 @@ R1 is the shared-contract gate. Do not fan out downstream schema work until it
 lands. R4 through R7 may run in parallel only after R3 fixes the application
 operation boundary.
 
+Optional external harness evidence interoperability under ADR-0010 is not a
+rectification gap, requirement-status change, or R0-through-R9 work item. R1 and
+R2 must remain producer-neutral so that a later importer cannot create a
+competing identity/evidence family.
+
 ## Release Consequence
 
 Morpheus is not source-complete and no v0.2 candidate should be frozen for

@@ -31,6 +31,13 @@ benchmark history, and rollback state. An external runtime never becomes managed
 implicitly; adoption requires a separately confirmed migration with a captured
 pre-state and recovery plan.
 
+Developer-facing harness qualification is a separate concern. Morpheus retains
+a small canonical direct benchmark suite so it can qualify a deployment on its
+own, but it does not configure or orchestrate external coding harnesses. An
+independent lab such as Tonos may later supply optional sanitized task-quality
+evidence through a versioned import boundary. Neither product depends on the
+other; see [ADR-0010](adr/0010-optional-external-harness-qualification-evidence.md).
+
 The initial deployment target is the current server:
 
 - inference container: `coder-model`
@@ -79,6 +86,10 @@ engine, benchmark, lifecycle, access, and recovery evidence.
     workflows and evidence model across supported systems while selecting native
     host, service, telemetry, model-format, and engine adapters from measured
     platform capabilities.
+13. **Separate client and server qualification.** Morpheus is authoritative for
+    the deployment and server-side evidence it owns. External harness behavior
+    remains independently operated and is accepted only as attributed,
+    provenance-checked evidence.
 
 ## 3. Users and Primary Workflows
 
@@ -179,6 +190,8 @@ The following are out of scope for the focused v0.2 release:
 - silent model download, promotion, replacement, or deletion;
 - implicit management of `coder-model`, Open WebUI, or the `ai` Compose project;
 - replacing Open WebUI with a Morpheus chat product;
+- configuring, installing, or orchestrating Codex, Grok CLI, Zero, OpenClaude,
+  Tonos, or other developer-facing harnesses;
 - becoming a broad AI application suite equivalent to ODS;
 - prioritizing search, voice, research, workflow, RAG, or image-generation
   expansion ahead of the focused inference-appliance milestones;
@@ -624,10 +637,12 @@ Managed-runtime exit criteria:
 
 ### 7.15 Benchmark Campaigns and History
 
-**BENCH-001 Developer benchmark suite.** Morpheus runs versioned speed,
-time-to-first-token, coding, tool-use, structured-output, agentic, long-context,
-concurrency, stability, and resource workloads appropriate to the selected
-developer profile.
+**BENCH-001 Developer benchmark suite.** Morpheus runs a self-contained,
+versioned direct-provider suite covering speed, time-to-first-token, bounded
+coding/tool/structured-output/agentic canaries, long-context, concurrency,
+stability, and resource workloads appropriate to the selected developer
+profile. Full end-to-end qualification of external developer harnesses is a
+separate product concern and is never required to run this canonical suite.
 
 **BENCH-002 Complete provenance.** Every campaign records stable machine
 identity, model source and revision, artifact digest, quantization, engine image
@@ -637,7 +652,10 @@ workload parameters, warm-up, timestamps, errors, and environmental caveats.
 **BENCH-003 Durable result store.** Raw observations, normalized summaries, and
 comparisons are stored with versioned schemas and retention/export policy. The
 existing `history-tool-tests` JSONL history can be imported without rewriting or
-misrepresenting its original evidence.
+misrepresenting its original evidence. A later optional importer may accept
+sanitized external harness-qualification bundles, but only as attributed
+evidence with source digest, mapping version, missing provenance, and content
+omissions preserved.
 
 **BENCH-004 Comparison and regression.** Operators can compare campaigns across
 model, engine, configuration, software version, benchmark revision, and machine.
@@ -657,6 +675,9 @@ Benchmark exit criteria:
 - results survive restart, backup, restore, schema migration, and export;
 - incomplete, interrupted, cache-contaminated, or configuration-mismatched runs
   remain visible but cannot become recommendation evidence silently;
+- external harness evidence remains optional and cannot become comparable or
+  recommendation-eligible merely because it parsed or carries a correlation
+  value;
 - repeated campaigns publish sample counts, dispersion, and regression
   thresholds alongside medians or other selected statistics.
 

@@ -11,6 +11,13 @@ The deployed v0.1 foundation remains an independent read-only control plane for
 an existing OpenAI-compatible runtime. v0.2 adds a separately owned managed mode
 without weakening that external-runtime boundary.
 
+Developer-harness qualification remains outside Morpheus. An independent tool
+such as Tonos may test Codex, Grok CLI, Zero, OpenClaude, or another harness
+against a Morpheus-served endpoint, while Morpheus remains responsible for the
+model/quantization/engine/hardware deployment. Optional future evidence exchange
+does not create a source, runtime, control, or release dependency; see
+[ADR-0010](docs/adr/0010-optional-external-harness-qualification-evidence.md).
+
 ## Status
 
 The deployed v0.1 system is an **operator control plane** for a host that already
@@ -60,6 +67,8 @@ at runtime. ODS is research input only.
 - [Evidence-ranked selection decision](docs/adr/0006-evidence-ranked-model-engine-selection.md)
 - [Tauri desktop and independent backend decision](docs/adr/0007-tauri-desktop-and-independent-backend.md)
 - [Tiered cross-platform runtime decision](docs/adr/0008-tiered-cross-platform-runtime-support.md)
+- [Optional external harness evidence decision](docs/adr/0010-optional-external-harness-qualification-evidence.md)
+- [Optional Tonos interoperability](docs/TONOS_INTEROPERABILITY.md)
 - [Release validation plan](docs/RELEASE_VALIDATION_PLAN.md)
 - [Lifecycle operations](docs/LIFECYCLE.md)
 - [Existing asset inventory](docs/inventory.md)
