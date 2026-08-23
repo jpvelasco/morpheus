@@ -5,6 +5,7 @@ import pytest
 
 from morpheus.adapters.services.voice import VoiceClient, VoiceContractError
 
+MORPHEUS_OWNED_REQUIREMENTS = frozenset({"VOICE-001", "VOICE-002"})
 pytestmark = pytest.mark.contract
 
 

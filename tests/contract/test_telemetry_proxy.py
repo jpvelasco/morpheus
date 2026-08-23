@@ -19,6 +19,7 @@ from morpheus.core.telemetry import TelemetryEvent
 from morpheus.ports.protocols import InferencePort
 from morpheus.telemetry.app import _finalize_stream, create_proxy_app
 
+MORPHEUS_OWNED_REQUIREMENTS = frozenset({"TEL-001", "TEL-002", "TEL-004", "TEL-005", "REL-002"})
 pytestmark = pytest.mark.contract
 
 

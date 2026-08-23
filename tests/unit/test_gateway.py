@@ -4,6 +4,8 @@ import pytest
 
 from morpheus.core.gateway import AliasMap
 
+MORPHEUS_OWNED_REQUIREMENTS = frozenset({"GATE-002"})
+
 
 def test_GATE_002_alias_mapping_is_deterministic() -> None:
     aliases = AliasMap({"coding": "qwen36-27b-nvfp4", "default": "qwen36-27b-nvfp4"})

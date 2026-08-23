@@ -13,6 +13,7 @@ from morpheus.adapters.inference.openai import InferenceContractError, OpenAIInf
 from morpheus.core.concurrency import RetryPolicy
 from morpheus.core.health import HealthState
 
+MORPHEUS_OWNED_REQUIREMENTS = frozenset({"RUN-001", "RUN-002"})
 pytestmark = pytest.mark.contract
 ROOT = Path(__file__).resolve().parents[2]
 

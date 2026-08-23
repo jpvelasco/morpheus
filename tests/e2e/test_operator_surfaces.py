@@ -10,6 +10,8 @@ from morpheus.config import MorpheusSettings
 from morpheus.core.health import Evidence, HealthState
 from morpheus.core.models import ModelIdentity
 
+MORPHEUS_OWNED_REQUIREMENTS = frozenset({"UI-001"})
+
 
 def test_UI_001_operator_overview_traverses_the_public_control_api() -> None:
     now = datetime(2026, 7, 15, tzinfo=UTC)

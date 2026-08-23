@@ -3,6 +3,8 @@ import userEvent from '@testing-library/user-event'
 
 import App from '../src/App'
 
+
+// MORPHEUS_OWNED_REQUIREMENTS: ["PERF-003", "UI-005"]
 const overview = {
   observed_at: '2026-07-15T12:00:00+00:00',
   inference: {

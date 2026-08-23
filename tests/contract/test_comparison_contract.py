@@ -23,6 +23,8 @@ from morpheus.core.comparison import (
     export_comparison,
 )
 
+MORPHEUS_OWNED_REQUIREMENTS = frozenset({"BENCH-004"})
+
 pytestmark = pytest.mark.contract
 
 

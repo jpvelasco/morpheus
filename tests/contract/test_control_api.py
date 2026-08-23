@@ -12,6 +12,7 @@ from morpheus.config import MorpheusSettings
 from morpheus.core.health import Evidence, HealthState
 from morpheus.core.models import ModelIdentity
 
+MORPHEUS_OWNED_REQUIREMENTS = frozenset({"RUN-005", "SEC-001", "UI-002", "UI-004"})
 pytestmark = pytest.mark.contract
 NOW = datetime(2026, 7, 15, tzinfo=UTC)
 

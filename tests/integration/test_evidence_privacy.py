@@ -16,6 +16,8 @@ from morpheus.ops.evidence import (
     EvidenceStatus,
 )
 
+MORPHEUS_OWNED_REQUIREMENTS = frozenset({"CFG-002", "TEL-003"})
+
 pytestmark = pytest.mark.integration
 
 CANARY_CLASSES = (

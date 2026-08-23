@@ -10,6 +10,7 @@ from morpheus.core.metrics_history import MetricSample
 from morpheus.core.paths import OwnedPathError
 from morpheus.core.telemetry import TelemetryEvent
 
+MORPHEUS_OWNED_REQUIREMENTS = frozenset({"REL-004"})
 pytestmark = pytest.mark.integration
 
 

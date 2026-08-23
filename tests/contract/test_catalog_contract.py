@@ -18,6 +18,8 @@ from morpheus.core.catalog import (
 )
 from morpheus.core.paths import OwnedPathError
 
+MORPHEUS_OWNED_REQUIREMENTS = frozenset({"SEL-001"})
+
 TODAY = date(2026, 8, 13)
 
 

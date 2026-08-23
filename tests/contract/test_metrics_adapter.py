@@ -7,6 +7,7 @@ import pytest
 
 from morpheus.adapters.metrics.vllm import VllmMetricsAdapter, parse_vllm_metrics
 
+MORPHEUS_OWNED_REQUIREMENTS = frozenset({"RUN-003"})
 pytestmark = pytest.mark.contract
 ROOT = Path(__file__).resolve().parents[2]
 

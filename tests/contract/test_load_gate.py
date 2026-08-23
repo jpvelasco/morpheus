@@ -8,6 +8,7 @@ import pytest
 import yaml
 from _posix_tools import NEEDS_USABLE_BASH, USABLE_BASH
 
+MORPHEUS_OWNED_REQUIREMENTS = frozenset({"PERF-001"})
 pytestmark = pytest.mark.contract
 ROOT = Path(__file__).resolve().parents[2]
 LOAD = ROOT / "validation/load"
