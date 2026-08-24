@@ -24,12 +24,13 @@ from morpheus import __version__ as morpheus_version
 from morpheus.adapters.inference.openai import OpenAIInferenceAdapter
 from morpheus.adapters.metrics.collector import collect_metrics
 from morpheus.adapters.metrics.vllm import VllmMetricsAdapter
+from morpheus.adapters.persistence.operation_store import OperationStore
 from morpheus.adapters.persistence.records_store import RecordsStore
 from morpheus.adapters.persistence.settings import SettingsJournal, SettingsJournalError
 from morpheus.adapters.persistence.sqlite import SqliteStore
 from morpheus.adapters.runtime.agent import RuntimeAgentClient
-from morpheus.adapters.workflows.dev_executor import DevWorkflowExecutor
-from morpheus.adapters.workflows.runner import LazyAuditStore, WorkflowRunner, WorkflowRunnerError
+from morpheus.adapters.workflows.executors import UnavailableWorkflowExecutor
+from morpheus.adapters.workflows.runner import LazyAuditStore, WorkflowExecutor
 from morpheus.api.body_limit import BodyLimitMiddleware
 from morpheus.api.operations import (
     COMPONENT_MAPPING,
@@ -97,6 +98,7 @@ from morpheus.core.workflows import WorkflowId, workflow_definitions
 from morpheus.core.workload import SEED_PROFILES, OperatorConstraints
 from morpheus.ops.diagnosis import DiagnosisService
 from morpheus.ops.diagnostics import DiagnosticEvidenceBuilder, DiagnosticEvidenceError
+from morpheus.ops.operation_service import OperationService, OperationServiceError
 from morpheus.ops.planning import (
     PlanningIdentityError,
     PlanningService,
@@ -225,6 +227,8 @@ class WorkflowStart(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     confirmed: bool = False
+    operation_token: str | None = Field(default=None, max_length=128)
+    plan_id: str | None = Field(default=None, max_length=128)
 
 
 _SESSION_COOKIE = "morpheus_session"
@@ -279,6 +283,7 @@ def create_app(
     clock: Clock,
     runtime_agent: RuntimeAgentPort | None = None,
     stage_hooks: StageHooks | None = None,
+    workflow_executor: WorkflowExecutor | None = None,
 ) -> FastAPI:
     app = FastAPI(title="Morpheus Control API", version="0.1.0", docs_url=None, redoc_url=None)
     app.state.settings = settings
@@ -310,10 +315,13 @@ def create_app(
     )
     request_limiter = ConcurrencyLimiter(settings.max_concurrent_requests)
     rate_limiter = FixedWindowRateLimiter(settings.max_requests_per_minute)
-    workflow_runner = WorkflowRunner(
-        executor=DevWorkflowExecutor(settings),
+    operation_service = OperationService(
+        executor=workflow_executor or UnavailableWorkflowExecutor(),
+        store=OperationStore(settings.data_dir / "operations"),
+        clock=clock,
         audit=workflow_audit_store,
     )
+    operation_service.recover_interrupted()
     allowed_origins = [
         f"http://127.0.0.1:{settings.dashboard_port}",
         f"http://localhost:{settings.dashboard_port}",
@@ -936,15 +944,10 @@ def create_app(
         store = SqliteStore(settings.data_dir / "morpheus.sqlite3", owned_root=settings.data_dir)
         await store.initialize()
         audit_events = await store.workflow_audit_events(limit=50)
-        sessions = {
-            workflow_id.value: session
-            for workflow_id in WorkflowId
-            if (session := await workflow_runner.session(workflow_id)) is not None
-        }
         return workflows_payload(
             observed_at=observed_at,
             definitions=workflow_definitions(),
-            sessions=sessions,
+            sessions=[operation.public_dict() for operation in operation_service.list_operations()],
             audit_events=audit_events,
         )
 
@@ -957,15 +960,15 @@ def create_app(
         except ValueError:
             raise OperationsDataError("unknown workflow id") from None
         try:
-            result = await workflow_runner.start(
+            result = await operation_service.start(
                 workflow,
                 confirmed=body.confirmed,
-                session_id=secrets.token_urlsafe(16),
-                observed_at=clock.utc_now().isoformat(),
+                token=body.operation_token,
+                plan_id=body.plan_id,
             )
-        except WorkflowRunnerError as error:
+        except OperationServiceError as error:
             raise OperationsDataError(str(error)) from error
-        return {"schema_version": 1, "started": result["started"], "session": result["session"]}
+        return {"schema_version": 1, **result}
 
     @app.post(
         "/api/v1/operations/workflows/{workflow_id}/cancel", dependencies=[Depends(require_csrf)]
@@ -976,8 +979,8 @@ def create_app(
         except ValueError:
             raise OperationsDataError("unknown workflow id") from None
         try:
-            await workflow_runner.cancel(workflow, observed_at=clock.utc_now().isoformat())
-        except WorkflowRunnerError as error:
+            await operation_service.cancel(workflow)
+        except OperationServiceError as error:
             raise OperationsDataError(str(error)) from error
         return {"schema_version": 1, "cancelled": True}
 
@@ -990,10 +993,10 @@ def create_app(
             workflow = WorkflowId(workflow_id)
         except ValueError:
             raise OperationsDataError("unknown workflow id") from None
-        session = await workflow_runner.session(workflow)
-        if session is None:
+        operation = operation_service.latest_for_workflow(workflow)
+        if operation is None:
             raise OperationsDataError("no workflow session exists for this id")
-        return {"schema_version": 1, "session": session.to_dict()}
+        return {"schema_version": 1, "session": operation.public_dict()}
 
     @app.get("/api/v1/overview", dependencies=[Depends(require_api_key)])
     async def overview() -> dict[str, Any]:

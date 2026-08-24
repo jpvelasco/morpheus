@@ -44,101 +44,99 @@ class SqliteStore:
         return await asyncio.to_thread(execute)
 
     async def initialize(self) -> None:
-        def migrate(connection: sqlite3.Connection) -> None:
-            connection.execute("CREATE TABLE IF NOT EXISTS schema_meta (version INTEGER NOT NULL)")
-            row = connection.execute("SELECT version FROM schema_meta").fetchone()
-            if row is None:
-                connection.execute("INSERT INTO schema_meta(version) VALUES (?)", (SCHEMA_VERSION,))
-            elif int(row[0]) != SCHEMA_VERSION:
-                connection.execute("UPDATE schema_meta SET version = ?", (SCHEMA_VERSION,))
-            connection.execute(
-                """
-                CREATE TABLE IF NOT EXISTS telemetry (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    recorded_at TEXT NOT NULL,
-                    correlation_id TEXT NOT NULL UNIQUE,
-                    model_requested TEXT NOT NULL,
-                    model_reported TEXT,
-                    started_at REAL NOT NULL,
-                    first_byte_seconds REAL,
-                    completed_seconds REAL,
-                    prompt_tokens INTEGER,
-                    completion_tokens INTEGER,
-                    finish_reason TEXT,
-                    outcome TEXT NOT NULL
-                )
-                """
-            )
-            connection.execute(
-                "CREATE INDEX IF NOT EXISTS idx_telemetry_recorded_at ON telemetry(recorded_at)"
-            )
-            connection.execute(
-                """
-                CREATE TABLE IF NOT EXISTS metric_samples (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    recorded_at TEXT NOT NULL,
-                    source TEXT NOT NULL,
-                    signal TEXT NOT NULL,
-                    value REAL NOT NULL
-                )
-                """
-            )
-            connection.execute(
-                "CREATE INDEX IF NOT EXISTS idx_metric_samples_signal_recorded "
-                "ON metric_samples(signal, recorded_at)"
-            )
-            connection.execute(
-                """
-                CREATE TABLE IF NOT EXISTS events (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    recorded_at TEXT NOT NULL,
-                    source TEXT NOT NULL,
-                    severity TEXT NOT NULL,
-                    message TEXT NOT NULL,
-                    correlation_id TEXT,
-                    deployment_id TEXT,
-                    campaign_id TEXT
-                )
-                """
-            )
-            connection.execute(
-                "CREATE INDEX IF NOT EXISTS idx_events_recorded_at ON events(recorded_at)"
-            )
-            connection.execute(
-                "CREATE INDEX IF NOT EXISTS idx_events_correlation ON events(correlation_id)"
-            )
-            connection.execute(
-                """
-                CREATE TABLE IF NOT EXISTS workflow_audit (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    recorded_at TEXT NOT NULL,
-                    session_id TEXT NOT NULL,
-                    workflow_id TEXT NOT NULL,
-                    event TEXT NOT NULL,
-                    step_id TEXT,
-                    message TEXT,
-                    plan_id TEXT,
-                    ownership TEXT
-                )
-                """
-            )
-            existing_columns = {
-                row[1] for row in connection.execute("PRAGMA table_info(workflow_audit)").fetchall()
-            }
-            if "plan_id" not in existing_columns:
-                connection.execute("ALTER TABLE workflow_audit ADD COLUMN plan_id TEXT")
-            if "ownership" not in existing_columns:
-                connection.execute("ALTER TABLE workflow_audit ADD COLUMN ownership TEXT")
-            connection.execute(
-                "CREATE INDEX IF NOT EXISTS idx_workflow_audit_recorded "
-                "ON workflow_audit(recorded_at)"
-            )
-            connection.execute(
-                "CREATE INDEX IF NOT EXISTS idx_workflow_audit_session "
-                "ON workflow_audit(session_id)"
-            )
+        await self._run(self._migrate)
 
-        await self._run(migrate)
+    def _migrate(self, connection: sqlite3.Connection) -> None:
+        connection.execute("CREATE TABLE IF NOT EXISTS schema_meta (version INTEGER NOT NULL)")
+        row = connection.execute("SELECT version FROM schema_meta").fetchone()
+        if row is None:
+            connection.execute("INSERT INTO schema_meta(version) VALUES (?)", (SCHEMA_VERSION,))
+        elif int(row[0]) != SCHEMA_VERSION:
+            connection.execute("UPDATE schema_meta SET version = ?", (SCHEMA_VERSION,))
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS telemetry (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                recorded_at TEXT NOT NULL,
+                correlation_id TEXT NOT NULL UNIQUE,
+                model_requested TEXT NOT NULL,
+                model_reported TEXT,
+                started_at REAL NOT NULL,
+                first_byte_seconds REAL,
+                completed_seconds REAL,
+                prompt_tokens INTEGER,
+                completion_tokens INTEGER,
+                finish_reason TEXT,
+                outcome TEXT NOT NULL
+            )
+            """
+        )
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_telemetry_recorded_at ON telemetry(recorded_at)"
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS metric_samples (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                recorded_at TEXT NOT NULL,
+                source TEXT NOT NULL,
+                signal TEXT NOT NULL,
+                value REAL NOT NULL
+            )
+            """
+        )
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_metric_samples_signal_recorded "
+            "ON metric_samples(signal, recorded_at)"
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                recorded_at TEXT NOT NULL,
+                source TEXT NOT NULL,
+                severity TEXT NOT NULL,
+                message TEXT NOT NULL,
+                correlation_id TEXT,
+                deployment_id TEXT,
+                campaign_id TEXT
+            )
+            """
+        )
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_events_recorded_at ON events(recorded_at)"
+        )
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_events_correlation ON events(correlation_id)"
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS workflow_audit (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                recorded_at TEXT NOT NULL,
+                session_id TEXT NOT NULL,
+                workflow_id TEXT NOT NULL,
+                event TEXT NOT NULL,
+                step_id TEXT,
+                message TEXT,
+                plan_id TEXT,
+                ownership TEXT
+            )
+            """
+        )
+        existing_columns = {
+            row[1] for row in connection.execute("PRAGMA table_info(workflow_audit)").fetchall()
+        }
+        if "plan_id" not in existing_columns:
+            connection.execute("ALTER TABLE workflow_audit ADD COLUMN plan_id TEXT")
+        if "ownership" not in existing_columns:
+            connection.execute("ALTER TABLE workflow_audit ADD COLUMN ownership TEXT")
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_workflow_audit_recorded ON workflow_audit(recorded_at)"
+        )
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_workflow_audit_session ON workflow_audit(session_id)"
+        )
 
     async def schema_version(self) -> int:
         return await self._run(
@@ -427,6 +425,43 @@ class SqliteStore:
             ]
 
         return await self._run(select)
+
+    def record_workflow_audit_sync(
+        self,
+        *,
+        recorded_at: str,
+        session_id: str,
+        workflow_id: str,
+        event: str,
+        step_id: str | None = None,
+        message: str | None = None,
+        plan_id: str | None = None,
+        ownership: str | None = None,
+    ) -> None:
+        """Composition-time audit write; only restart recovery may use this.
+
+        Recovery runs synchronously while the application is being built,
+        before any request task or lazy async initialization exists.
+        """
+
+        def insert(connection: sqlite3.Connection) -> None:
+            connection.execute(
+                """
+                INSERT INTO workflow_audit (
+                    recorded_at, session_id, workflow_id, event, step_id, message,
+                    plan_id, ownership
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (recorded_at, session_id, workflow_id, event, step_id, message, plan_id, ownership),
+            )
+
+        def migrate_and_insert(connection: sqlite3.Connection) -> None:
+            self._migrate(connection)
+            insert(connection)
+
+        self._path.parent.mkdir(parents=True, exist_ok=True)
+        with self._connect() as connection:
+            migrate_and_insert(connection)
 
     async def backup(self, destination: Path) -> Path:
         destination = self._paths.resolve(destination)

@@ -1,9 +1,11 @@
 """Workflow runner: preflight, cooperative execution, cancellation, audit.
 
-The runner drives a workflow definition through its steps against an
-executor adapter. It records every transition in the audit sink, honors
-cancellation at step boundaries, and never trusts partial work: a failed
-workflow ends in ``FAILED`` with the step's recovery instruction.
+Retired from production composition by the R3 durable operation service
+(``morpheus.ops.operation_service``); retained only for explicit test and
+development injection. The runner drives a workflow definition through its
+steps against an executor adapter. It records every transition in the audit
+sink, honors cancellation at step boundaries, and never trusts partial work:
+a failed workflow ends in ``FAILED`` with the step's recovery instruction.
 """
 
 from __future__ import annotations
@@ -80,6 +82,13 @@ class LazyAuditStore:
             await self._store.initialize()
             self._initialized = True
         await self._store.record_workflow_audit(**fields)
+
+    def record_workflow_audit_sync(self, **fields: object) -> None:
+        """Composition-time passthrough for restart recovery audit rows."""
+        sync_writer = getattr(self._store, "record_workflow_audit_sync", None)
+        if sync_writer is None:
+            raise TypeError("audit store does not support synchronous recovery writes")
+        sync_writer(**fields)
 
 
 class WorkflowRunner:

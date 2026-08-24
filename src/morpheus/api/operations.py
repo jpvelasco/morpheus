@@ -8,7 +8,7 @@ evidence for the core control, never a control itself.
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from typing import Any
 
 from morpheus.config import MorpheusSettings
@@ -332,10 +332,10 @@ def workflows_payload(
     *,
     observed_at: str,
     definitions: Sequence[Any],
-    sessions: Mapping[str, Any],
+    sessions: Sequence[dict[str, Any]],
     audit_events: Sequence[dict[str, Any]],
 ) -> dict[str, Any]:
-    """Versioned workflows payload: definitions, active sessions, audit trail."""
+    """Versioned workflows payload: definitions, recorded operations, audit trail."""
     return {
         "schema_version": 1,
         "observed_at": observed_at,
@@ -358,6 +358,6 @@ def workflows_payload(
             }
             for definition in definitions
         ],
-        "sessions": [session.to_dict() for session in sessions.values()],
+        "sessions": list(sessions),
         "audit_events": list(audit_events),
     }

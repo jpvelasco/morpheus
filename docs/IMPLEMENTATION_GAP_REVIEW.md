@@ -142,6 +142,27 @@ application operation boundary.
   identity, agent lifecycle optional `plan_id`, and VSLICE selection through the
   same production service are covered by acceptance tests. RUNM-001 remains
   `planned` until its UI/browser boundary is carried (R3/R9); no status advanced.
+- 2026-08-24: R2 evidence-backed recommendation landed (#71) —
+  `RecommendationService` ranks over retained catalog/machine/workload/benchmark
+  repositories only; `SEED_CATALOG` never reenters a request path; ranked tuples
+  carry provenance, comparability, and evidence ids; every viable tuple
+  materializes one canonical plan deterministically; explicit catalog seeding
+  (`POST /api/v1/catalog/snapshots`, `morpheus catalog-seed`) and audited
+  operator choice (`/api/v1/plans/from-recommendation`) replace implicit seeds.
+  SEL-004/SEL-005 remain `planned` pending their CLI/browser carriage (R9).
+- 2026-08-24: R3 foundation landed on `feat/r3-durable-operation-service` — the
+  in-memory workflow runner and DEV executor no longer serve production routes.
+  A durable managed operation service persists every durable edge under an
+  owned-path versioned store, executes steps outside the request task with
+  bounded concurrency, starts idempotently by caller token via timestamp-free
+  content-derived operation ids, honors cooperative cancellation at step
+  boundaries, terminalizes interrupted operations honestly at composition time,
+  and correlates plan identity into audit rows. The production default executor
+  refuses workflows without a wired lifecycle executor instead of simulating
+  pure-step success; lifecycle-backed executors are injected explicitly.
+  BENCH/GATE/RUNM/UI/OUI rows remain `planned`; real per-workflow executors,
+  the disposable acceptance walk, settings-to-startup-config composition, and
+  owned service actions are still open R3 scope.
 
 Optional external harness evidence interoperability under ADR-0010 is not a
 rectification gap, requirement-status change, or R0-through-R9 work item. R1 and
