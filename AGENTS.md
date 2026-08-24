@@ -2,13 +2,14 @@
 
 ## Where We Left Off (2026-08-23)
 
-Current `main`: `11f8fdccc50228026fdd606c21d7ed901d1b7770`. Rectification is in
+Current `main`: `df39a3b5b430e1e3a6b46f11d84c2693c286c27e`. Rectification is in
 progress; the v0.2 product is **not** source-complete or release-ready.
 
 - Landed: **R0** truthful ledgers + semantic traceability (#67), **R1** one
-  canonical identity and plan family (#68, closes #55).
-- Next package: **R2** evidence-backed recommendation (#56), then **R3** durable
-  managed operation service (#57). One integrator owns R2 and R3.
+  canonical identity and plan family (#68, closes #55), **R2** evidence-backed
+  recommendation over retained repositories (#71, closes #56).
+- Next package: **R3** durable managed operation service (#57), then **R4**
+  target-native process/backend lifecycle. One integrator owns R2 and R3.
 - Do not resume the old Phase 11-to-18 implementation prompt or jump directly to
   physical qualification (R10).
 
@@ -16,7 +17,6 @@ progress; the v0.2 product is **not** source-complete or release-ready.
 validated. Component scaffolds do not establish product behavior. Still open:
 
 - managed operation routes use a deliberately non-mutating DEV executor;
-- recommendation bypasses retained catalogs and benchmark evidence;
 - metrics are collected on page requests and events have no producers;
 - native engine shutdown bypasses process-tree supervision;
 - desktop/native package and local diagnosis paths remain incomplete;
@@ -46,8 +46,9 @@ deployed behavior.
   gone. `core/deployment.py:migrate_snapshot` rejects v1 snapshot documents as
   lossy (`LossyMigrationError`) — never reinterpret them.
 - Content-derived IDs exclude observation timestamps. Recommendation records are
-  schema v2 (`created_at` = provenance only); campaign `run_id` is a required
-  caller-declared argument. Never derive IDs from wall-clock time.
+  schema v3 (`catalog_digest` joins the timestamp-free identity; `created_at` =
+  provenance only); campaign `run_id` is a required caller-declared argument.
+  Never derive IDs from wall-clock time.
 - Repositories: protocols in `core/repositories.py`, owned-path adapter in
   `adapters/persistence/records_store.py`; `core/deployment.py:DeploymentStore`
   stays the promotion/rollback engine over canonical plans.
@@ -57,6 +58,20 @@ deployed behavior.
   `/api/v1/plans/*`. Audit rows carry `plan_id`/`ownership` (sqlite schema v4).
 - The VSLICE fixture (`validation/vslice/harness.py`) selects through the
   production `PlanningService` — keep it that way.
+
+### R2 Recommendation Rules (do not regress)
+
+- `ops/recommendation.py:RecommendationService` owns preview → choose over the
+  retained repositories. `SEED_CATALOG` must never reenter a request path; an
+  unretained catalog digest or machine profile is rejected, never substituted.
+- Ranked tuples carry canonical `plan_id`, per-contribution provenance
+  (measured/estimated), comparability (comparable/incomparable/missing), and
+  evidence source ids. Every viable tuple materializes exactly one canonical
+  plan deterministically; replaying identical inputs is byte-equivalent.
+- Catalog seeding is explicit only: `POST /api/v1/catalog/snapshots` /
+  `morpheus catalog-seed`. Operator choice goes through
+  `/api/v1/plans/from-recommendation` and is audited; it never rewrites the
+  recommendation record.
 
 ### Continuation and Authorization
 
