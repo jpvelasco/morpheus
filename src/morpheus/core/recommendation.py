@@ -25,7 +25,7 @@ from morpheus.core.solver import (
 )
 from morpheus.core.workload import OperatorConstraints, WorkloadPolicy
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 _ASCII = frozenset(chr(code) for code in range(32, 127))
 
 Migration = Callable[[dict[str, Any]], dict[str, Any]]
@@ -66,6 +66,25 @@ def _migrate_v1_to_v2(payload: dict[str, Any]) -> dict[str, Any]:
     return migrated
 
 
+@register_migration(2)
+def _migrate_v2_to_v3(payload: dict[str, Any]) -> dict[str, Any]:
+    """Re-address a v2 record so its identity names its catalog snapshot.
+
+    ``catalog_digest`` becomes part of the content identity (R2): a
+    recommendation that cannot name the retained catalog it ranked from is not
+    replayable. v2 documents migrate with an explicit null digest and are
+    re-addressed accordingly; nothing is silently reinterpreted.
+    """
+    migrated = dict(payload)
+    migrated["schema_version"] = SCHEMA_VERSION
+    migrated.setdefault("catalog_digest", None)
+    identity = {
+        key: value for key, value in migrated.items() if key not in {"created_at", "record_id"}
+    }
+    migrated["record_id"] = sha256_hex(canonical_json(identity).encode("utf-8"))
+    return migrated
+
+
 def migrate(payload: dict[str, Any], from_version: int) -> dict[str, Any]:
     current = from_version
     while current < SCHEMA_VERSION:
@@ -94,6 +113,7 @@ class RecommendationRecord:
     ranked: tuple[RankedCandidate, ...]
     excluded: tuple[tuple[Candidate, tuple[ConstraintViolation, ...]], ...]
     summary: str
+    catalog_digest: str | None = None
 
     def __post_init__(self) -> None:
         _bounded_identifier(self.record_id, "record id")
@@ -128,6 +148,7 @@ class RecommendationRecord:
                 for candidate, violations in self.excluded
             ],
             "summary": self.summary,
+            "catalog_digest": self.catalog_digest,
         }
 
     def identity_dict(self) -> dict[str, Any]:
@@ -157,6 +178,7 @@ class RecommendationRecord:
             ranked=tuple(_ranked_from_dict(item) for item in payload["ranked"]),
             excluded=tuple(_excluded_from_dict(item) for item in payload["excluded"]),
             summary=payload["summary"],
+            catalog_digest=payload.get("catalog_digest"),
         )
 
 
@@ -182,6 +204,8 @@ def _ranked_from_dict(payload: dict[str, Any]) -> RankedCandidate:
             effective_confidence=item["effective_confidence"],
             contribution=item["contribution"],
             comparability=item["comparability"],
+            provenance=item.get("provenance", ""),
+            source=item.get("source", ""),
         )
         for item in payload["contributions"]
     )
@@ -190,6 +214,7 @@ def _ranked_from_dict(payload: dict[str, Any]) -> RankedCandidate:
         score=payload["score"],
         contributions=contributions,
         summary=payload["summary"],
+        plan_id=payload.get("plan_id"),
     )
 
 
@@ -242,18 +267,18 @@ class RecommendationStore:
         version = manifest.get("schema_version")
         if version == SCHEMA_VERSION:
             return
-        if version != 1:
+        if version not in (1, 2):
             raise RecommendationError(
                 f"recommendation store schema version {version!r} is not supported; "
                 f"refusing to reinterpret it"
             )
-        self._migrate_store_v1_to_v2(manifest, manifest_path)
+        self._migrate_store(manifest, manifest_path)
 
-    def _migrate_store_v1_to_v2(self, manifest: dict[str, Any], manifest_path: Path) -> None:
-        """Re-address v1 entries explicitly; nothing is silently reinterpreted.
+    def _migrate_store(self, manifest: dict[str, Any], manifest_path: Path) -> None:
+        """Re-address older entries explicitly; nothing is silently reinterpreted.
 
         Records whose payloads cannot be migrated are moved to ``invalidated/``
-        with a reason document instead of being loaded as if they were v2.
+        with a reason document instead of being loaded as if they were current.
         """
         invalidated: list[dict[str, str]] = []
         winners: dict[str, dict[str, Any]] = {}
@@ -287,6 +312,7 @@ class RecommendationStore:
             "entries": sorted(winners),
             "invalidated": [*manifest.get("invalidated", []), *invalidated],
         }
+
         self._write_json(manifest_path, migrated_manifest)
 
     def store_record(self, record: RecommendationRecord) -> str:
@@ -395,6 +421,7 @@ def build_recommendation(
     ranked: tuple[RankedCandidate, ...],
     excluded: tuple[tuple[Candidate, tuple[ConstraintViolation, ...]], ...],
     created_at: datetime | None = None,
+    catalog_digest: str | None = None,
 ) -> RecommendationRecord:
     """Build an immutable record whose id is the digest of its timestamp-free content."""
     if not ranked:
@@ -411,6 +438,7 @@ def build_recommendation(
         ranked=ranked,
         excluded=excluded,
         summary=summary,
+        catalog_digest=catalog_digest,
     )
     digest = sha256_hex(canonical_json(record.identity_dict()).encode("utf-8"))
     return RecommendationRecord(
@@ -423,6 +451,7 @@ def build_recommendation(
         ranked=ranked,
         excluded=excluded,
         summary=summary,
+        catalog_digest=catalog_digest,
     )
 
 

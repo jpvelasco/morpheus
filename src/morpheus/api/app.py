@@ -52,7 +52,7 @@ from morpheus.core.analytics import analytics_report
 from morpheus.core.benchmark import BenchmarkSummary
 from morpheus.core.benchstore import BenchmarkStore
 from morpheus.core.capabilities import Capability, evaluate_capabilities
-from morpheus.core.catalog import SEED_CATALOG
+from morpheus.core.catalog import CatalogCollection, CatalogError
 from morpheus.core.compatibility import compatibility_payload
 from morpheus.core.concurrency import ConcurrencyLimiter, FixedWindowRateLimiter, RetryPolicy
 from morpheus.core.controls import ComponentHealth
@@ -81,8 +81,6 @@ from morpheus.core.recommendation import (
     RecommendationError,
     RecommendationStore,
     budget_from_host,
-    build_recommendation,
-    recommend_for_host,
 )
 from morpheus.core.records import (
     BenchmarkCampaign,
@@ -104,6 +102,11 @@ from morpheus.ops.planning import (
     PlanningService,
     machine_profile_from_budget,
     require_managed_ownership,
+)
+from morpheus.ops.recommendation import (
+    RecommendationService,
+    StoreBenchmarkEvidence,
+    catalog_snapshot_digest,
 )
 from morpheus.ops.support import SupportReportService
 from morpheus.ports.protocols import Clock, InferencePort, RuntimeAgentPort
@@ -195,6 +198,21 @@ class RecommendationRequest(BaseModel):
 
     profile: str = Field(min_length=1, max_length=128)
     operator: dict[str, Any] | None = None
+    catalog_digest: str = Field(min_length=64, max_length=64, pattern="^[0-9a-f]{64}$")
+
+
+class FromRecommendationRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    recommendation_id: str = Field(min_length=1, max_length=128)
+    plan_id: str = Field(min_length=1, max_length=128)
+    ownership: str | None = "managed"
+
+
+class CatalogSeedRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    catalog: dict[str, Any]
 
 
 class SettingsChanges(BaseModel):
@@ -276,6 +294,11 @@ def create_app(
         plans=plan_store,
         clock=clock,
         audit=workflow_audit_store,
+    )
+    recommending = RecommendationService(
+        records=records_store,
+        evidence=StoreBenchmarkEvidence(BenchmarkStore(settings.data_dir / "benchmarks")),
+        clock=clock,
     )
     active_hooks = stage_hooks or _UnavailableStageHooks()
     app.add_middleware(BodyLimitMiddleware, max_body_bytes=settings.max_request_bytes)
@@ -1155,11 +1178,11 @@ def create_app(
 
     @app.post("/api/v1/recommendations", dependencies=[Depends(require_api_key)])
     async def generate_recommendation(body: RecommendationRequest) -> dict[str, Any]:
-        profile = next(
+        policy = next(
             (candidate for candidate in SEED_PROFILES if candidate.id == body.profile),
             None,
         )
-        if profile is None:
+        if policy is None:
             raise RecommendationError(f"unknown workload profile: {body.profile}")
         host = await runtime_snapshot(runtime_agent, clock=clock)
         budget = budget_from_host(host)
@@ -1168,31 +1191,70 @@ def create_app(
                 "host budget unavailable: runtime agent memory/disk evidence missing"
             )
         operator = OperatorConstraints(**body.operator) if body.operator else None
-        ranked, excluded = recommend_for_host(
-            profile=profile,
+        # R2: the machine profile is persisted first, then loaded back through
+        # the repository so the recommendation references the exact retained
+        # identity; observation time stays provenance, never identity.
+        observed = machine_profile_from_budget(budget)
+        records_store.save_machine_profile(observed)
+        outcome = recommending.preview(
+            machine_id=observed.machine_id,
+            catalog_digest=body.catalog_digest,
+            policy=policy,
             budget=budget,
-            catalog=SEED_CATALOG,
             operator=operator,
         )
-        # RUNM-001: the recommendation references the exact persisted machine
-        # profile identity; observation time stays provenance, never identity.
-        machine = machine_profile_from_budget(budget)
-        records_store.save_machine_profile(machine)
-        record = build_recommendation(
-            profile=profile,
-            operator=operator,
-            reference_machine_id=machine.machine_id,
-            budget={
-                "ram_bytes": budget.ram_bytes,
-                "vram_bytes": budget.vram_bytes,
-                "storage_bytes": budget.storage_bytes,
-                "accelerator": budget.accelerator,
-            },
-            ranked=ranked,
-            excluded=excluded,
+        _store().store_record(outcome.record)
+        return {
+            "schema_version": 1,
+            "catalog_digest": body.catalog_digest,
+            "machine_profile": observed.public_dict(),
+            "recommendation": outcome.record.to_dict(),
+            "canonical_selection": outcome.selection.public_dict(),
+        }
+
+    @app.post("/api/v1/plans/from-recommendation", dependencies=[Depends(require_csrf)])
+    async def choose_from_recommendation(body: FromRecommendationRequest) -> dict[str, Any]:
+        ownership = require_managed_ownership(body.ownership)
+        try:
+            plan = recommending.choose(
+                recommendation_id=body.recommendation_id,
+                plan_id=body.plan_id,
+            )
+        except RecommendationError as error:
+            raise PlanningIdentityError(str(error)) from error
+        await planning.audit_event(
+            event="recommendation_choice",
+            plan_id=plan.plan_id,
+            ownership=ownership,
+            detail=f"chosen from recommendation {body.recommendation_id}",
         )
-        _store().store_record(record)
-        return {"recommendation": record.to_dict()}
+        return {
+            "schema_version": 1,
+            "selected_plan_id": plan.plan_id,
+            "recommendation_id": body.recommendation_id,
+            "plan": plan.public_dict(),
+        }
+
+    @app.post("/api/v1/catalog/snapshots", dependencies=[Depends(require_csrf)])
+    async def seed_catalog_snapshot(body: CatalogSeedRequest) -> dict[str, Any]:
+        """Explicitly retain one catalog snapshot (R2 seeding boundary).
+
+        Seeding is an authenticated operator action; the recommendation path
+        only ever reads retained snapshots and never falls back to a built-in
+        catalog.
+        """
+        try:
+            collection = CatalogCollection.from_dict(body.catalog)
+        except (CatalogError, KeyError, TypeError, ValueError) as error:
+            raise RecommendationError(f"catalog document is not retailable: {error}") from error
+        digest = catalog_snapshot_digest(collection)
+        records_store.save_catalog_snapshot(digest, collection.to_dict())
+        return {
+            "schema_version": 1,
+            "catalog_digest": digest,
+            "models": len(collection.models),
+            "engines": len(collection.engines),
+        }
 
     def _canonical_plan_or_404(plan_id: str) -> DeploymentPlan:
         known = planning.plan(plan_id)

@@ -108,8 +108,10 @@ class TestOperatorConstraints:
         assert OperatorConstraints().to_dict() == {
             "max_context": None,
             "max_concurrency": None,
-            "allowed_engines": (),
-            "allowed_quantizations": (),
+            # The serializer emits JSON arrays; digests are unaffected because
+            # json renders tuples and lists identically.
+            "allowed_engines": [],
+            "allowed_quantizations": [],
             "max_ram_bytes": None,
             "max_vram_bytes": None,
             "max_storage_bytes": None,

@@ -74,6 +74,20 @@ class Contribution:
     effective_confidence: float
     contribution: float
     comparability: str  # comparable | incomparable | missing
+    provenance: str = ""  # measured | estimated ("" when missing)
+    source: str = ""  # retained evidence record identity ("" when absent)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "metric": self.metric,
+            "weight": self.weight,
+            "calibrated": self.calibrated,
+            "effective_confidence": self.effective_confidence,
+            "contribution": self.contribution,
+            "comparability": self.comparability,
+            "provenance": self.provenance,
+            "source": self.source,
+        }
 
 
 @dataclass(frozen=True, slots=True)
@@ -82,6 +96,9 @@ class RankedCandidate:
     score: float
     contributions: tuple[Contribution, ...]
     summary: str
+    # Canonical plan the tuple materializes; set by the application layer
+    # when the recommendation is produced over the retained plan family.
+    plan_id: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -93,18 +110,9 @@ class RankedCandidate:
                 "concurrency": self.candidate.concurrency,
             },
             "score": self.score,
-            "contributions": [
-                {
-                    "metric": item.metric,
-                    "weight": item.weight,
-                    "calibrated": item.calibrated,
-                    "effective_confidence": item.effective_confidence,
-                    "contribution": item.contribution,
-                    "comparability": item.comparability,
-                }
-                for item in self.contributions
-            ],
+            "contributions": [item.to_dict() for item in self.contributions],
             "summary": self.summary,
+            "plan_id": self.plan_id,
         }
 
 
@@ -169,33 +177,39 @@ def rank_candidates(
                     )
                 )
                 continue
-            if (
+            foreign = (
                 item.machine_id is not None
                 and reference_machine_id is not None
                 and item.machine_id != reference_machine_id
-            ):
+            )
+            calibrated = calibrated_value(metric, item.value)
+            if foreign:
                 contributions.append(
                     Contribution(
                         metric=metric,
                         weight=weight,
-                        calibrated=calibrated_value(metric, item.value),
+                        calibrated=calibrated,
                         effective_confidence=0.0,
                         contribution=0.0,
                         comparability="incomparable",
+                        provenance=item.provenance,
+                        source=item.source,
                     )
                 )
                 continue
             confidence = effective_confidence(item)
-            contribution = calibrated_value(metric, item.value) * confidence
+            contribution = calibrated * confidence
             total += weight * contribution
             contributions.append(
                 Contribution(
                     metric=metric,
                     weight=weight,
-                    calibrated=calibrated_value(metric, item.value),
+                    calibrated=calibrated,
                     effective_confidence=confidence,
                     contribution=contribution,
                     comparability="comparable",
+                    provenance=item.provenance,
+                    source=item.source,
                 )
             )
         summary = summarize(profile, tuple(contributions))

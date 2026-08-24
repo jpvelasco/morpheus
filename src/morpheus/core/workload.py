@@ -174,13 +174,21 @@ class OperatorConstraints:
         ):
             if field is not None and field <= 0:
                 raise WorkloadError("operator caps must be positive when declared")
+        # Accept JSON-round-tripped payloads: sequence inputs normalize to
+        # tuples so ``OperatorConstraints(**payload.to_dict())`` round-trips.
+        for name in ("allowed_engines", "allowed_quantizations"):
+            value = getattr(self, name)
+            if not isinstance(value, tuple):
+                object.__setattr__(self, name, tuple(value))
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "max_context": self.max_context,
             "max_concurrency": self.max_concurrency,
-            "allowed_engines": self.allowed_engines,
-            "allowed_quantizations": self.allowed_quantizations,
+            # Lists so an in-memory payload equals its JSON round-trip;
+            # content digests are unaffected (json renders both as arrays).
+            "allowed_engines": list(self.allowed_engines),
+            "allowed_quantizations": list(self.allowed_quantizations),
             "max_ram_bytes": self.max_ram_bytes,
             "max_vram_bytes": self.max_vram_bytes,
             "max_storage_bytes": self.max_storage_bytes,
