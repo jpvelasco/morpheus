@@ -2,7 +2,7 @@
 
 ## Where We Left Off (2026-08-23)
 
-Current `main`: `ae3c8579d613546ee4add4befef62f38369849f9`. Rectification is in
+Current `main`: `11f8fdccc50228026fdd606c21d7ed901d1b7770`. Rectification is in
 progress; the v0.2 product is **not** source-complete or release-ready.
 
 - Landed: **R0** truthful ledgers + semantic traceability (#67), **R1** one
@@ -132,10 +132,19 @@ make format-check lint typecheck test-unit test-contract test-integration \
      test-acceptance test-e2e test-coverage security build   # = make gate
 ```
 
+- Env setup: `make bootstrap` (`uv sync --python 3.12 --extra dev --frozen`);
+  every lane runs through `uv run`.
 - Single test file/lane examples: `uv run pytest tests/unit/test_deployment.py -q`,
   `uv run pytest tests/acceptance -m acceptance -q`.
 - Coverage threshold is 90% and includes `api/app.py` + `agent/app.py`; do not
   re-add omissions to pass.
+- CI (`.github/workflows/quality.yml`) also gates the non-Python packages; the
+  Makefile does not cover them:
+  - `web/` dashboard: node 22 container — `npm ci --ignore-scripts`,
+    `npm run format-check`, `npm run typecheck`, `npm test`, `npm run build`;
+  - `desktop/` Tauri backend: Rust 1.97.1 — `cargo fmt --check`, clippy
+    `-D warnings`, `cargo test --lib --locked`, `cargo build --locked`
+    (all with `--manifest-path desktop/src-tauri/Cargo.toml`).
 - **Windows quirk:** `make typecheck` fails locally on four pre-existing
   POSIX-API mypy errors (`agent/host.py` clock_gettime/CLOCK_BOOTTIME,
   `agent/app.py` AF_UNIX). Linux CI passes them; everything else must be clean.
