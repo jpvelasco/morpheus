@@ -12,6 +12,7 @@ from morpheus.core.ranking import (
     RankedCandidate,
 )
 from morpheus.core.recommendation import (
+    SCHEMA_VERSION,
     RecommendationError,
     RecommendationRecord,
     RecommendationStore,
@@ -264,7 +265,7 @@ class TestStore:
         loaded = store.load_record(item.record_id)
         assert loaded == item  # same identity inputs, timestamp-free address
         manifest = (root / "manifest.json").read_text(encoding="utf-8")
-        assert '"schema_version": 2' in manifest
+        assert f'"schema_version": {SCHEMA_VERSION}' in manifest
         assert item.record_id in manifest
 
     def test_unmigratable_v1_entries_are_invalidated_explicitly(self, tmp_path: Path) -> None:

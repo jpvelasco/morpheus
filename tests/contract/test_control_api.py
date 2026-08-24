@@ -6,15 +6,70 @@ import pytest
 from fastapi.testclient import TestClient
 
 from morpheus.adapters.fakes import FakeClock, FakeInference
+from morpheus.adapters.persistence.records_store import RecordsStore
 from morpheus.agent.protocol import AgentOperation, AgentResponse
 from morpheus.api.app import create_app
 from morpheus.config import MorpheusSettings
+from morpheus.core.catalog import CatalogCollection, EngineCatalogEntry, ModelCatalogEntry
 from morpheus.core.health import Evidence, HealthState
 from morpheus.core.models import ServedModel
+from morpheus.ops.recommendation import catalog_snapshot_digest
 
 MORPHEUS_OWNED_REQUIREMENTS = frozenset({"RUN-005", "SEC-001", "UI-002", "UI-004"})
 pytestmark = pytest.mark.contract
 NOW = datetime(2026, 7, 15, tzinfo=UTC)
+
+
+def _seed_retained_catalog(settings: MorpheusSettings) -> str:
+    """Retain one explicit catalog snapshot; returns its content digest."""
+    collection = CatalogCollection(
+        version="contract-r2-0001",
+        models=(
+            ModelCatalogEntry(
+                id="model-contract-viable",
+                name="Contract viable model",
+                license="apache-2.0",
+                architecture="transformer",
+                modalities=("text",),
+                formats=("gguf",),
+                quantizations=("q4_k_m",),
+                context_window=8192,
+                artifact_size_bytes=256 * 1024**2,
+                revision="r1",
+                engine_support=("engine-contract",),
+                features=("tool_calling",),
+            ),
+            ModelCatalogEntry(
+                id="model-contract-incompatible",
+                name="Contract incompatible model",
+                license="apache-2.0",
+                architecture="transformer",
+                modalities=("text",),
+                formats=("gguf",),
+                quantizations=("q8_0",),
+                context_window=4096,
+                artifact_size_bytes=256 * 1024**2,
+                revision="r1",
+                engine_support=("engine-contract",),
+                features=("chat",),
+            ),
+        ),
+        engines=(
+            EngineCatalogEntry(
+                id="engine-contract",
+                name="Contract engine",
+                license="mit",
+                version="1.0.0",
+                platforms=("linux-x86_64",),
+                features=("tool_calling", "chat", "cuda"),
+            ),
+        ),
+    )
+    digest = catalog_snapshot_digest(collection)
+    store = RecordsStore(settings.data_dir / "records")
+    store.initialize()
+    store.save_catalog_snapshot(digest, collection.to_dict())
+    return digest
 
 
 class PartialRuntimeAgent:
@@ -127,6 +182,16 @@ def client(
         runtime_agent=runtime_agent,
     )
     return TestClient(app, base_url="https://testserver")
+
+
+def _csrf(test_client: TestClient) -> dict[str, str]:
+    signin = test_client.post(
+        "/api/v1/session",
+        json={"api_key": "test-api-key"},
+        headers={"Content-Type": "application/json"},
+    )
+    assert signin.status_code == 200
+    return {"X-CSRF-Token": test_client.cookies.get("morpheus_csrf", "")}
 
 
 def test_SEC_001_public_health_is_minimal() -> None:
@@ -416,20 +481,96 @@ def test_REC_002_latest_recommendation_empty_store_is_404(tmp_path) -> None:
     assert response.json()["error"]["code"] == "recommendation_unavailable"
 
 
+def test_REC_006_catalog_seeding_requires_csrf(tmp_path) -> None:
+    settings = MorpheusSettings(
+        api_key="test-api-key", session_secret="session-test-secret", data_dir=tmp_path
+    )
+    response = client(settings=settings).post(
+        "/api/v1/catalog/snapshots",
+        headers={"Authorization": "Bearer test-api-key"},
+        json={"catalog": {}},
+    )
+    assert response.status_code in (401, 403)
+
+
+def test_REC_007_catalog_seed_returns_content_digest(tmp_path) -> None:
+    settings = MorpheusSettings(
+        api_key="test-api-key", session_secret="session-test-secret", data_dir=tmp_path
+    )
+    test_client = client(settings=settings, runtime_agent=RecommendationRuntimeAgent())
+    csrf = _csrf(test_client)
+    collection = CatalogCollection(
+        version="seed-r2-0001",
+        models=(),
+        engines=(),
+    )
+    response = test_client.post(
+        "/api/v1/catalog/snapshots",
+        json={"catalog": collection.to_dict()},
+        headers={**{"Authorization": "Bearer test-api-key"}, **csrf},
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["catalog_digest"] == catalog_snapshot_digest(collection)
+    # The retained snapshot is retrievable through the repository.
+    store = RecordsStore(settings.data_dir / "records")
+    assert store.catalog_snapshot(body["catalog_digest"]) == collection.to_dict()
+
+
+def test_REC_008_catalog_seed_rejects_invalid_documents(tmp_path) -> None:
+    settings = MorpheusSettings(
+        api_key="test-api-key", session_secret="session-test-secret", data_dir=tmp_path
+    )
+    test_client = client(settings=settings, runtime_agent=RecommendationRuntimeAgent())
+    csrf = _csrf(test_client)
+    headers = {**{"Authorization": "Bearer test-api-key"}, **csrf}
+    unknown_field = test_client.post(
+        "/api/v1/catalog/snapshots",
+        json={"catalog": {"version": "v", "models": [], "engines": [], "bogus": 1}},
+        headers=headers,
+    )
+    assert unknown_field.status_code == 422
+    bad_model = test_client.post(
+        "/api/v1/catalog/snapshots",
+        json={
+            "catalog": {
+                "version": "v",
+                "models": [{"id": ""}],
+                "engines": [],
+            }
+        },
+        headers=headers,
+    )
+    assert bad_model.status_code == 422
+
+
 def test_REC_003_generate_and_read_latest_recommendation(tmp_path) -> None:
     settings = MorpheusSettings(api_key="test-api-key", data_dir=tmp_path)
     test_client = client(settings=settings, runtime_agent=RecommendationRuntimeAgent())
+    digest = _seed_retained_catalog(settings)
     generated = test_client.post(
         "/api/v1/recommendations",
         headers={"Authorization": "Bearer test-api-key"},
-        json={"profile": "developer-default"},
+        json={"profile": "developer-default", "catalog_digest": digest},
     )
     assert generated.status_code == 200
-    payload = generated.json()["recommendation"]
+    body = generated.json()
+    assert body["catalog_digest"] == digest
+    assert body["machine_profile"]["machine_id"]
+    payload = body["recommendation"]
     assert payload["record_id"]
-    assert payload["ranked"]
+    assert payload["catalog_digest"] == digest
+    ranked_models = {entry["candidate"]["model_id"] for entry in payload["ranked"]}
+    assert "model-contract-viable" in ranked_models
+    # The feature-incompatible tuple is excluded with its violation, never ranked.
+    assert "model-contract-incompatible" not in ranked_models
     assert payload["excluded"]
     assert payload["summary"].startswith("top:")
+    # Every ranked tuple names the canonical plan it materializes.
+    for entry in payload["ranked"]:
+        assert entry["plan_id"]
+    selection = body["canonical_selection"]
+    assert selection["plan_ids"] == [entry["plan_id"] for entry in payload["ranked"]]
     latest = test_client.get(
         "/api/v1/recommendations/latest",
         headers={"Authorization": "Bearer test-api-key"},
@@ -440,10 +581,12 @@ def test_REC_003_generate_and_read_latest_recommendation(tmp_path) -> None:
 
 def test_REC_004_unknown_profile_is_rejected(tmp_path) -> None:
     settings = MorpheusSettings(api_key="test-api-key", data_dir=tmp_path)
-    response = client(settings=settings, runtime_agent=RecommendationRuntimeAgent()).post(
+    test_client = client(settings=settings, runtime_agent=RecommendationRuntimeAgent())
+    digest = _seed_retained_catalog(settings)
+    response = test_client.post(
         "/api/v1/recommendations",
         headers={"Authorization": "Bearer test-api-key"},
-        json={"profile": "no-such-profile"},
+        json={"profile": "no-such-profile", "catalog_digest": digest},
     )
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "recommendation_unavailable"
@@ -451,10 +594,12 @@ def test_REC_004_unknown_profile_is_rejected(tmp_path) -> None:
 
 def test_REC_005_generate_without_runtime_agent_is_rejected(tmp_path) -> None:
     settings = MorpheusSettings(api_key="test-api-key", data_dir=tmp_path)
-    response = client(settings=settings).post(
+    test_client = client(settings=settings)
+    digest = _seed_retained_catalog(settings)
+    response = test_client.post(
         "/api/v1/recommendations",
         headers={"Authorization": "Bearer test-api-key"},
-        json={"profile": "developer-default"},
+        json={"profile": "developer-default", "catalog_digest": digest},
     )
     assert response.status_code == 422
     assert "runtime agent" in response.json()["error"]["message"]

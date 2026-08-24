@@ -227,6 +227,51 @@ def _signed_in(api: TestClient) -> dict[str, str]:
 _AUTH = {"Authorization": "Bearer test-api-key"}
 
 
+def _seed_retained_catalog(data_dir: Any) -> str:
+    """Retain one explicit catalog snapshot; returns its content digest (R2)."""
+    from morpheus.core.catalog import (
+        CatalogCollection,
+        EngineCatalogEntry,
+        ModelCatalogEntry,
+    )
+    from morpheus.ops.recommendation import catalog_snapshot_digest
+
+    collection = CatalogCollection(
+        version="r1-fixture-0001",
+        models=(
+            ModelCatalogEntry(
+                id="model-r1-fixture",
+                name="R1 fixture model",
+                license="apache-2.0",
+                architecture="transformer",
+                modalities=("text",),
+                formats=("gguf",),
+                quantizations=("q4_k_m",),
+                context_window=8192,
+                artifact_size_bytes=256 * 1024**2,
+                revision="r1",
+                engine_support=("engine-r1-fixture",),
+                features=("tool_calling",),
+            ),
+        ),
+        engines=(
+            EngineCatalogEntry(
+                id="engine-r1-fixture",
+                name="R1 fixture engine",
+                license="mit",
+                version="1.0.0",
+                platforms=("linux-x86_64",),
+                features=("tool_calling",),
+            ),
+        ),
+    )
+    digest = catalog_snapshot_digest(collection)
+    store = RecordsStore(Path(data_dir) / "records")
+    store.initialize()
+    store.save_catalog_snapshot(digest, collection.to_dict())
+    return digest
+
+
 # ---------------------------------------------------------------------------
 # Criterion 1: one recommendation becomes one canonical plan; IDs survive the
 # codec, the repositories, the API, and an application restart.
@@ -706,11 +751,12 @@ def test_RUNM_001_recommendation_records_exact_machine_identity_not_observation_
 ) -> None:
     agent = HostRuntimeAgent()
     early = _app(tmp_path, runtime_agent=agent)
+    digest = _seed_retained_catalog(tmp_path)
 
     csrf = _signed_in(early)
     first = early.post(
         "/api/v1/recommendations",
-        json={"profile": "developer-default"},
+        json={"profile": "developer-default", "catalog_digest": digest},
         headers={**_AUTH, **csrf},
     )
     assert first.status_code == 200, first.text
@@ -730,7 +776,7 @@ def test_RUNM_001_recommendation_records_exact_machine_identity_not_observation_
     second_csrf = _signed_in(second_app)
     second = second_app.post(
         "/api/v1/recommendations",
-        json={"profile": "developer-default"},
+        json={"profile": "developer-default", "catalog_digest": digest},
         headers={**_AUTH, **second_csrf},
     )
     assert second.status_code == 200
