@@ -14,7 +14,7 @@ private request data, host addresses, or unredacted evidence.
 - **Active source milestone:** architecture rectification R0 through R9; see
   [`RECTIFICATION_PLAN.md`](RECTIFICATION_PLAN.md). R1 canonical identity/plan
   consolidation is the first dependency-critical implementation package.
-- **Rectification progress:** 2026-08-23 — gate repair landed (#66); R0
+- **Rectification progress:** 2026-08-24 — gate repair landed (#66); R0
   semantic traceability enforced (machine-readable `boundaries`, requirement-ID
   ownership metadata, public-lane owner rule, derived documentation counts,
   composition-root coverage measurement, separate lane count reports). R1
@@ -25,6 +25,15 @@ private request data, host addresses, or unredacted evidence.
   protocols, and the planning service carries selection through rollback with
   identity enforcement at API/agent/audit boundaries. RUNM-001 stays `planned`
   (browser/UI carriage is R3/R9 scope); no requirement status advanced.
+  R2 evidence-backed recommendation landed (#71) over retained repositories
+  with explicit seeding and audited operator choice; SEL-004/SEL-005 stay
+  `planned`. R3 foundation landed on `feat/r3-durable-operation-service`:
+  production workflow routes now run through a durable managed operation
+  service (out-of-request execution, idempotent token starts, restart
+  recovery, honest refusal instead of simulated DEV mutations); remaining R3
+  scope — real per-workflow lifecycle executors, the disposable acceptance
+  walk, settings-to-startup-config composition, and owned service actions —
+  is still open.
 
 - **Validated baseline source equivalent:** `aa094172764a4de3e5dc91324306b14857706c4e`
   (`security: bound API request work`). Its pre-publication build evidence
@@ -311,12 +320,16 @@ public/application boundaries and their affected gates pass.
    content identities, typed record repositories, planning application service,
    and identity enforcement at API/agent/audit boundaries; VSLICE selects
    through the same production service.
-3. **R2 — evidence-backed recommendation.** Use retained catalog, machine, and
-   benchmark records and produce the canonical plan losslessly; must consume the
-   frozen R1 contracts, not fork them.
-4. **R3 — durable managed application service.** Replace DEV-only workflow
-   simulation and inert settings/control paths with real owned operations on the
-   R1 plan/operation identities.
+3. **R2 — evidence-backed recommendation.** Landed (#71): ranking over
+   retained catalog, machine, and benchmark records producing the canonical
+   plan losslessly through the frozen R1 contracts.
+4. **R3 — durable managed application service.** Foundation landed on
+   `feat/r3-durable-operation-service` (durable operation documents,
+   out-of-request execution with bounded concurrency, idempotent token
+   starts, restart recovery, honest refusal default). Still open: real
+   lifecycle-backed executors per workflow, the disposable acceptance walk
+   lane, settings overrides through the real startup configuration source,
+   and Morpheus-owned service actions behind the operation boundary.
 5. **R4 through R7 — native lifecycle, observability, desktop/model console,
    diagnosis, and setup copilot.** These may fan out only after the R3
    application boundary is fixed. CHAT-001 and CHAT-002 remain planned and must

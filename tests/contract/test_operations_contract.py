@@ -834,15 +834,24 @@ def test_OUI_006_workflow_start_requires_confirmation_and_csrf(tmp_path) -> None
         headers=csrf,
     )
     assert started.status_code == 200
-    assert started.json()["started"] is True
+    # R3: production routes no longer simulate mutations. Without an
+    # explicitly wired lifecycle-backed executor the removal workflow is
+    # durably recorded and honestly refused.
+    assert started.json()["started"] is False
     session = started.json()["session"]
     assert session["workflow_id"] == "remove"
     assert session["state"] == "failed"
     assert "lifecycle-backed executor" in session["error"]
     assert session["recovery_instruction"]
+    recorded = test_client.get(
+        "/api/v1/operations/workflows/remove/session",
+        headers={"Authorization": "Bearer test-api-key"},
+    )
+    assert recorded.status_code == 200
+    assert recorded.json()["session"]["state"] == "failed"
 
 
-def test_OUI_006_benchmark_workflow_runs_and_audits_every_step(tmp_path) -> None:
+def test_OUI_006_benchmark_refusal_is_honest_and_audited(tmp_path) -> None:
     test_client, csrf = _signed_in_client(tmp_path)
     started = test_client.post(
         "/api/v1/operations/workflows/benchmark/start",
@@ -850,21 +859,25 @@ def test_OUI_006_benchmark_workflow_runs_and_audits_every_step(tmp_path) -> None
         headers=csrf,
     )
     assert started.status_code == 200
+    # R3: no lifecycle-backed executor is wired by default; the operation is
+    # recorded durably but no step pretends to have run.
+    assert started.json()["started"] is False
     session = started.json()["session"]
     assert session["state"] == "failed"
-    assert session["progress_percent"] > 0
+    assert session["progress_percent"] == 0
+    assert all(step["outcome"] is None for step in session["steps"])
     listed = test_client.get(
         "/api/v1/operations/workflows", headers={"Authorization": "Bearer test-api-key"}
     ).json()
     assert [item["workflow_id"] for item in listed["sessions"]] == ["benchmark"]
     assert any(event["event"] == "started" for event in listed["audit_events"])
-    assert any(event["event"] == "failed" for event in listed["audit_events"])
+    assert any(event["event"] == "preflight_failed" for event in listed["audit_events"])
     session_response = test_client.get(
         "/api/v1/operations/workflows/benchmark/session",
         headers={"Authorization": "Bearer test-api-key"},
     )
     assert session_response.status_code == 200
-    assert session_response.json()["session"]["session_id"] == session["session_id"]
+    assert session_response.json()["session"]["session_id"] == started.json()["operation_id"]
 
 
 def test_OUI_006_workflow_unknown_id_and_missing_session_are_bounded(tmp_path) -> None:

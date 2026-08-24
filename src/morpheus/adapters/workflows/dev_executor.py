@@ -1,12 +1,13 @@
 """Development executor for managed workflows (OUI-006).
 
-The DEV executor performs only owned-state checks: preflight gates on the
-workflows control and lifecycle configuration, and pure validation steps
-succeed when their owned preconditions hold. Every mutating step (download,
-install, apply, promote, restore, remove, and record) fails honestly with a
-recovery instruction because no managed runtime exists yet; the executor
-protocol exists so a real lifecycle-backed executor can replace this one
-without touching the runner.
+Explicit test/development injection only: production routes no longer
+compose this executor. The DEV executor performs only owned-state checks:
+preflight gates on the workflows control and lifecycle configuration, and
+pure validation steps succeed when their owned preconditions hold. Every
+mutating step (download, install, apply, promote, restore, remove, and
+record) fails honestly with a recovery instruction because no managed
+runtime exists yet; the executor protocol exists so a real lifecycle-backed
+executor can replace this one without touching the operation service.
 """
 
 from __future__ import annotations
