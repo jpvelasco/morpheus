@@ -91,6 +91,11 @@ def test_network_profile_rejects_insecure_cookie_mode() -> None:
         network_settings(session_cookie_secure=False)
 
 
+def test_network_profile_still_requires_secure_cookies() -> None:
+    policy = derive_access_policy(network_settings(session_cookie_secure=True))
+    assert policy.cookie_secure is True
+
+
 def test_network_profile_rejects_empty_origin_controls() -> None:
     with pytest.raises(ValueError):
         network_settings(allowed_origins="")

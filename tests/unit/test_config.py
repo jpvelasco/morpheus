@@ -111,7 +111,36 @@ def test_SEC_004_browser_sessions_default_to_short_lived_secure_cookies() -> Non
     settings = MorpheusSettings()
 
     assert settings.session_ttl_seconds == 900
+    assert settings.session_cookie_secure is False
+
+
+def test_session_cookie_secure_defaults_off_on_http_loopback_profiles() -> None:
+    assert MorpheusSettings().session_cookie_secure is False
+    assert MorpheusSettings(access_profile="ssh_tunnel").session_cookie_secure is False
+
+
+def test_loopback_profiles_reject_secure_cookies_without_tls() -> None:
+    message = "Secure session cookies require TLS"
+    with pytest.raises(ValidationError, match=message):
+        MorpheusSettings(session_cookie_secure=True)
+    with pytest.raises(ValidationError, match=message):
+        MorpheusSettings(access_profile="ssh_tunnel", session_cookie_secure=True)
+
+
+def test_loopback_allows_secure_cookies_when_tls_is_configured() -> None:
+    settings = MorpheusSettings(
+        session_cookie_secure=True,
+        tls_cert_path="C:/certs/server.crt",
+        tls_key_path="C:/certs/server.key",
+    )
     assert settings.session_cookie_secure is True
+
+
+def test_env_example_documents_secure_off_for_http_loopback() -> None:
+    text = Path(__file__).resolve().parents[2].joinpath(".env.example").read_text(encoding="utf-8")
+    assert "MORPHEUS_SESSION_COOKIE_SECURE=false" in text
+    assert "HTTP loopback" in text
+    assert "access_profile=network still requires MORPHEUS_SESSION_COOKIE_SECURE=true" in text
 
 
 @pytest.mark.parametrize("limit", [0, 257])

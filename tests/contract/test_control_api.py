@@ -274,7 +274,7 @@ def test_SEC_004_browser_session_uses_secure_cookie_and_csrf_protected_logout() 
     assert login.json() == {"status": "authenticated"}
     assert "HttpOnly" in login.headers["set-cookie"]
     assert "SameSite=strict" in login.headers["set-cookie"]
-    assert "Secure" in login.headers["set-cookie"]
+    assert "Secure" not in login.headers["set-cookie"]
     assert test_client.get("/api/v1/models").status_code == 200
 
     assert test_client.delete("/api/v1/session").status_code == 403
