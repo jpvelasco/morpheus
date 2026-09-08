@@ -28,6 +28,22 @@ def test_CFG_001_configuration_precedence(tmp_path: Path) -> None:
     assert str(settings.llm_base_url) == "http://config-llm:8000/v1"
 
 
+def test_OUI_005_load_settings_reads_owned_journal_overrides(tmp_path: Path) -> None:
+    data_dir = tmp_path / "data"
+    journal = data_dir / "settings" / "overrides.env"
+    journal.parent.mkdir(parents=True)
+    journal.write_text("API_PORT=7411\n", encoding="utf-8")
+
+    settings = load_settings(
+        config_file=None,
+        env_file=None,
+        environ={"MORPHEUS_DATA_DIR": str(data_dir), "MORPHEUS_API_PORT": "7400"},
+    )
+
+    assert settings.api_port == 7411
+    assert settings.data_dir == data_dir.resolve()
+
+
 def test_CFG_004_gpu_policy_defaults_to_opt_in_disabled_with_headroom() -> None:
     settings = MorpheusSettings()
     assert settings.enable_gpu_acceleration is False

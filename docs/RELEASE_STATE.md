@@ -38,7 +38,10 @@ private request data, host addresses, or unredacted evidence.
   `AcquisitionCache` against an owned fixture source; other workflows still
   honest-fail. R3 slice 2 landed: fixture StageHooks install/promote/rollback
   canonical plans under the owned runtime root (file markers only).
-  `engine_configure`, `benchmark`, and `remove` still honest-fail. R8
+  `engine_configure` and `remove` still honest-fail. A fixture `benchmark`
+  workflow now records a succeeded campaign through `run_campaign`. Settings
+  apply is a real `load_settings` journal layer. A background metrics
+  collector persists samples without a dashboard GET. R8
   public-surface enforcement landed: deferred optional
   services (search, voice, research, RAG, image generation) stay `deferred`
   in the manifest and cannot be advertised as available or usable on

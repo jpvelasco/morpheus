@@ -5,6 +5,7 @@ import os
 import re
 import secrets
 from collections.abc import Awaitable, Callable
+from contextlib import asynccontextmanager
 from dataclasses import asdict
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -23,6 +24,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from morpheus import __version__ as morpheus_version
 from morpheus.adapters.inference.openai import OpenAIInferenceAdapter
 from morpheus.adapters.metrics.collector import collect_metrics
+from morpheus.adapters.metrics.loop import MetricsCollectorLoop
 from morpheus.adapters.metrics.vllm import VllmMetricsAdapter
 from morpheus.adapters.persistence.operation_store import OperationStore
 from morpheus.adapters.persistence.records_store import RecordsStore
@@ -293,7 +295,28 @@ def create_app(
     stage_hooks: StageHooks | None = None,
     workflow_executor: WorkflowExecutor | None = None,
 ) -> FastAPI:
-    app = FastAPI(title="Morpheus Control API", version="0.1.0", docs_url=None, redoc_url=None)
+    @asynccontextmanager
+    async def lifespan(application: FastAPI) -> Any:
+        async def host_snapshot() -> dict[str, Any]:
+            return await runtime_snapshot(runtime_agent, clock=clock)
+
+        collector = MetricsCollectorLoop(
+            settings=settings, clock=clock, host_snapshot=host_snapshot
+        )
+        application.state.metrics_collector = collector
+        collector.start()
+        try:
+            yield
+        finally:
+            await collector.aclose()
+
+    app = FastAPI(
+        title="Morpheus Control API",
+        version="0.1.0",
+        docs_url=None,
+        redoc_url=None,
+        lifespan=lifespan,
+    )
     app.state.settings = settings
     app.state.inference = inference
     app.state.clock = clock

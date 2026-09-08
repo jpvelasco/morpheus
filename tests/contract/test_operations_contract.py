@@ -15,7 +15,7 @@ from morpheus.adapters.persistence.records_store import RecordsStore
 from morpheus.adapters.persistence.sqlite import SqliteStore
 from morpheus.agent.protocol import AgentOperation, AgentResponse
 from morpheus.api.app import create_app
-from morpheus.config import MorpheusSettings
+from morpheus.config import MorpheusSettings, load_settings
 from morpheus.core.benchmark import (
     CampaignDeclaration,
     RunIdentity,
@@ -799,6 +799,12 @@ def test_OUI_005_settings_apply_persists_journal_and_rollback_restores(tmp_path)
     assert "api_key" not in str(first_journal)
     overrides = (tmp_path / "settings" / "overrides.env").read_text(encoding="utf-8")
     assert "API_PORT=7411" in overrides
+    reloaded = load_settings(
+        config_file=None,
+        env_file=None,
+        environ={"MORPHEUS_DATA_DIR": str(tmp_path), "MORPHEUS_API_PORT": "7400"},
+    )
+    assert reloaded.api_port == 7411
     applied_twice = test_client.post(
         "/api/v1/operations/settings/apply",
         json={"changes": {"api_port": 7412}},
@@ -902,16 +908,16 @@ def test_OUI_006_workflow_start_requires_confirmation_and_csrf(tmp_path) -> None
     assert recorded.json()["session"]["state"] == "failed"
 
 
-def test_OUI_006_benchmark_refusal_is_honest_and_audited(tmp_path) -> None:
+def test_OUI_006_unwired_workflow_refusal_is_honest_and_audited(tmp_path) -> None:
     test_client, csrf = _signed_in_client(tmp_path)
     started = test_client.post(
-        "/api/v1/operations/workflows/benchmark/start",
-        json={"confirmed": True, "plan_id": HONEST_PLAN_ID},
+        "/api/v1/operations/workflows/remove/start",
+        json={"confirmed": True, "plan_id": HONEST_PLAN_ID, "operation_token": "honest-remove"},
         headers=csrf,
     )
     assert started.status_code == 200
-    # R3: no lifecycle-backed executor is wired by default; the operation is
-    # recorded durably but no step pretends to have run.
+    # R3: remove still has no lifecycle-backed executor; the operation is
+    # recorded durably but no mutating step pretends to have run.
     assert started.json()["started"] is False
     session = started.json()["session"]
     assert session["state"] == "failed"
@@ -920,11 +926,11 @@ def test_OUI_006_benchmark_refusal_is_honest_and_audited(tmp_path) -> None:
     listed = test_client.get(
         "/api/v1/operations/workflows", headers={"Authorization": "Bearer test-api-key"}
     ).json()
-    assert [item["workflow_id"] for item in listed["sessions"]] == ["benchmark"]
+    assert any(item["workflow_id"] == "remove" for item in listed["sessions"])
     assert any(event["event"] == "started" for event in listed["audit_events"])
     assert any(event["event"] == "preflight_failed" for event in listed["audit_events"])
     session_response = test_client.get(
-        "/api/v1/operations/workflows/benchmark/session",
+        "/api/v1/operations/workflows/remove/session",
         headers={"Authorization": "Bearer test-api-key"},
     )
     assert session_response.status_code == 200

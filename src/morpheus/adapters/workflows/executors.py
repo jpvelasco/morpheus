@@ -19,9 +19,16 @@ from morpheus.core.acquisition import (
     AcquisitionPolicy,
     CacheQuota,
 )
+from morpheus.core.benchmark import (
+    BenchmarkSample,
+    CampaignDeclaration,
+    RunIdentity,
+)
+from morpheus.core.benchstore import BenchmarkStore
+from morpheus.core.campaign import authorization_token, run_campaign
 from morpheus.core.deployment import StageHooks
 from morpheus.core.operations import ManagedOperation
-from morpheus.core.records import DeploymentPlan
+from morpheus.core.records import BenchmarkCampaign, DeploymentPlan
 from morpheus.core.workflows import WorkflowId
 from morpheus.ops.planning import PlanningIdentityError, PlanningService
 
@@ -62,6 +69,7 @@ class ManagedLifecycleExecutor:
                 WorkflowId.ENGINE_INSTALL,
                 WorkflowId.PROMOTE,
                 WorkflowId.ROLLBACK,
+                WorkflowId.BENCHMARK,
             }
         )
 
@@ -92,6 +100,8 @@ class ManagedLifecycleExecutor:
                 return self._execute_install(step_id, workflow_id)
             if workflow_id is WorkflowId.PROMOTE:
                 return await self._execute_promote(step_id, workflow_id)
+            if workflow_id is WorkflowId.BENCHMARK:
+                return self._execute_benchmark(step_id, workflow_id)
             return await self._execute_rollback(step_id, workflow_id)
         except (AcquisitionError, PlanningIdentityError, OSError, ValueError) as error:
             return StepResult(ok=False, message=str(error))
@@ -215,6 +225,72 @@ class ManagedLifecycleExecutor:
         if isinstance(self._hooks, FixtureStageHooks):
             return self._hooks
         return FixtureStageHooks(self._data_dir)
+
+    def _execute_benchmark(self, step_id: str, workflow_id: WorkflowId) -> StepResult:
+        plan = self._require_plan(workflow_id)
+        store = BenchmarkStore(self._data_dir / "benchmarks")
+        store.initialize()
+        run_id = f"run-{plan.plan_id}"
+        if step_id == "preflight":
+            return StepResult(ok=True, message="owned benchmark store is writable")
+        if step_id == "run":
+            declaration = CampaignDeclaration(
+                name=f"fixture-{plan.plan_id}",
+                campaign_type="speed",
+                benchmark_revision="bench-r3-fixture",
+                duration_seconds=1,
+                concurrency=1,
+                ownership_target="managed",
+                stop_conditions=(("target_samples", 1), ("max_runtime_seconds", 5)),
+            )
+            identity = RunIdentity(
+                machine_id="machine-r3-fixture",
+                model_id=plan.model.model_id,
+                model_revision=plan.model.revision,
+                quantization=plan.model.quantization,
+                engine_id=plan.engine.engine_id,
+                engine_version="fixture",
+                benchmark_revision="bench-r3-fixture",
+            )
+
+            def workload(_context: object, index: int) -> BenchmarkSample:
+                from datetime import UTC, datetime
+
+                return BenchmarkSample(
+                    run_id=run_id,
+                    started_at=datetime.now(UTC),
+                    sequence_index=index,
+                    duration_seconds=0.01,
+                    ttft_seconds=0.01,
+                    tokens_per_second=1.0,
+                    generated_tokens=1,
+                )
+
+            run_campaign(
+                declaration,
+                identity,
+                workload,
+                store,
+                authorized=authorization_token(),
+                ownership_target="managed",
+                run_id=run_id,
+            )
+            return StepResult(ok=True, message=run_id)
+        if step_id == "record":
+            run = store.load_run(run_id)
+            if run is None or run.status != "completed":
+                return StepResult(ok=False, message="fixture campaign did not complete")
+            self._planning.register_campaign(
+                BenchmarkCampaign(
+                    campaign_id=f"campaign-{plan.plan_id}",
+                    plan_id=plan.plan_id,
+                    benchmark_suite_id="suite-r3-fixture",
+                    workload_id=plan.workload.workload_id,
+                    state="succeeded",
+                )
+            )
+            return StepResult(ok=True, message=run.run_id)
+        return StepResult(ok=False, message=f"unknown benchmark step {step_id!r}")
 
     def _succeeded_campaign_id(self, plan_id: str) -> str | None:
         for campaign in self._planning.records.campaigns_for_plan(plan_id):
