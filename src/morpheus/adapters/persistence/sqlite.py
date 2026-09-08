@@ -301,12 +301,16 @@ class SqliteStore:
         severity: str | None = None,
         correlation_id: str | None = None,
         since: str | None = None,
+        not_before: str | None = None,
         limit: int = 100,
     ) -> list[EventRecord]:
         validate_event_filter(
             source=source, severity=severity, correlation_id=correlation_id, since=since
         )
         bounded = bounded_limit(limit)
+        lower = since
+        if not_before is not None and (lower is None or not_before > lower):
+            lower = not_before
 
         def select(connection: sqlite3.Connection) -> list[EventRecord]:
             rows = connection.execute(
@@ -328,8 +332,8 @@ class SqliteStore:
                     severity,
                     correlation_id,
                     correlation_id,
-                    since,
-                    since,
+                    lower,
+                    lower,
                     bounded,
                 ),
             ).fetchall()

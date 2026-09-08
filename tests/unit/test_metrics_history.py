@@ -32,6 +32,7 @@ def test_unit_catalog_has_explicit_units_for_expected_signals() -> None:
     assert unit_for_signal("memory_available_bytes") == "bytes"
     assert unit_for_signal("requests_running") == "count"
     assert unit_for_signal("prompt_tokens_total") == "tokens"
+    assert unit_for_signal("temperature_c") == "celsius"
 
 
 def test_unit_catalog_defaults_unknown_signals_to_count() -> None:
