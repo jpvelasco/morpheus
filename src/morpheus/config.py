@@ -321,17 +321,30 @@ def _read_yaml(path: Path | None) -> dict[str, Any]:
     return _normalize_source(data)
 
 
+def journal_overrides_path(data_dir: Path | str | None) -> Path | None:
+    """Owned journal path used as a real startup layer after settings apply."""
+    if data_dir is None or data_dir == "":
+        return None
+    return Path(data_dir) / "settings" / "overrides.env"
+
+
 def load_settings(
     *,
     overrides: Mapping[str, Any] | None = None,
     environ: Mapping[str, str] | None = None,
     env_file: Path | None = Path(".env"),
     config_file: Path | None = Path("deploy/config/morpheus.yaml"),
+    journal_file: Path | None = None,
 ) -> MorpheusSettings:
     values: dict[str, Any] = {}
     values.update(_read_yaml(config_file))
     if env_file is not None and env_file.exists():
         values.update(_normalize_source(dotenv_values(env_file)))
     values.update(_normalize_source(os.environ if environ is None else environ))
+    if journal_file is None:
+        data_dir = values.get("data_dir")
+        journal_file = journal_overrides_path(data_dir)
+    if journal_file is not None and journal_file.exists():
+        values.update(_normalize_source(dotenv_values(journal_file)))
     values.update(_normalize_source(overrides or {}))
     return MorpheusSettings.model_validate(values)

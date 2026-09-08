@@ -173,6 +173,11 @@ application operation boundary.
   requires a succeeded campaign bound to the plan. Remaining R3: disposable
   walk, settings-as-startup, owned-service actions, GATE-001, `benchmark`
   executor. BENCH/GATE/RUNM/UI/OUI stay `planned`.
+- 2026-09-08: R3/R5 increment — `load_settings` reads
+  `{data_dir}/settings/overrides.env`; fixture `benchmark` records a
+  succeeded campaign via `run_campaign`; `MetricsCollectorLoop` collects
+  independently of GET. OUI-002/OUI-003/OUI-005 stay `planned` until the
+  remaining producers, settings-to-plan preview, and walk land.
 - 2026-09-08: R8 focused-scope boundary enforced at the public capability
   and control surfaces. The 12 optional-scope IDs remain `deferred`. Enabling
   search/voice/research/RAG/image flags no longer advertises those services

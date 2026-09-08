@@ -226,3 +226,20 @@ def test_install_promote_then_rollback_restores_previous(tmp_path: Path) -> None
             client.get("/api/v1/plans/state", headers=AUTH).json()["active_plan_id"]
             == plan_a.plan_id
         )
+
+
+def test_fixture_benchmark_records_a_succeeded_campaign(tmp_path: Path) -> None:
+    plan = _plan("plan-r3-stage-a", alias="stage-a")
+    RecordsStore(tmp_path / "records").save_plan(plan)
+    with _client(tmp_path) as client:
+        csrf = _csrf(client)
+        started = _start(client, csrf, "benchmark", plan.plan_id, "bench-a")
+        assert started["started"] is True
+        session = _wait(client, "benchmark", started["operation_id"])
+        assert session["state"] == "succeeded", session
+        campaigns = RecordsStore(tmp_path / "records").campaigns_for_plan(plan.plan_id)
+        assert campaigns
+        assert campaigns[-1].state == "succeeded"
+        listed = client.get("/api/v1/operations/benchmarks?limit=10", headers=AUTH)
+        assert listed.status_code == 200
+        assert listed.json()["count"] >= 1
