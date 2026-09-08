@@ -11,6 +11,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from morpheus.adapters.fakes import FakeClock, FakeInference
+from morpheus.adapters.persistence.records_store import RecordsStore
 from morpheus.adapters.persistence.sqlite import SqliteStore
 from morpheus.agent.protocol import AgentOperation, AgentResponse
 from morpheus.api.app import create_app
@@ -24,7 +25,11 @@ from morpheus.core.benchstore import BenchmarkStore, CampaignRun
 from morpheus.core.health import Evidence, HealthState
 from morpheus.core.metrics_history import MetricSample
 from morpheus.core.models import ServedModel
+from morpheus.core.records import DeploymentPlan, EngineIdentity, ModelIdentity, WorkloadProfile
 from morpheus.core.telemetry import TelemetryEvent
+
+HONEST_PLAN_ID = "plan-r3-honest-0001"
+HONEST_DIGEST = "c" * 64
 
 MORPHEUS_OWNED_REQUIREMENTS = frozenset({"OUI-001", "OUI-004"})
 
@@ -647,17 +652,60 @@ def test_OUI_001_navigation_reports_data_workspace_states_from_stores(tmp_path) 
     assert by_id["logs_events"]["state"] == "ready"
 
 
-def _signed_in_client(tmp_path) -> tuple[TestClient, dict[str, str]]:
-    test_client = client(
-        settings=MorpheusSettings(
-            api_key="test-api-key",
-            session_secret="session-test-secret",
-            data_dir=tmp_path,
-            enable_workflows=True,
-            enable_lifecycle=True,
-            lifecycle_deployment_root=tmp_path / "deploy",
+def _seed_honest_plan(data_dir) -> None:
+    RecordsStore(data_dir / "records").save_plan(
+        DeploymentPlan(
+            plan_id=HONEST_PLAN_ID,
+            model=ModelIdentity(
+                model_id="model-r3-honest",
+                revision="v1.0.0",
+                artifact_digest=HONEST_DIGEST,
+                model_format="gguf",
+                quantization="q4_k_m",
+                license_id="apache-2.0",
+                source="huggingface",
+            ),
+            engine=EngineIdentity(
+                engine_id="engine-r3-honest",
+                kind="llama.cpp",
+                artifact_digest=HONEST_DIGEST,
+                platforms=("linux-x86_64",),
+            ),
+            workload=WorkloadProfile(
+                workload_id="workload-r3-honest",
+                developer_profile="full-stack",
+                context_tokens=8192,
+                max_concurrency=1,
+                required_features=("tool_use",),
+            ),
+            settings=(("context_length", 8192),),
+            served_aliases=("r3-honest",),
+            context_tokens=8192,
+            max_concurrency=1,
+            cache_policy="owned-cache",
+            memory_estimate_bytes=1024,
+            disk_estimate_bytes=1024,
+            owned_paths=("/var/lib/morpheus/models/r3-honest",),
+            ports=(8080,),
+            health_contract_id="health-openai-compatible-0001",
+            benchmark_gate_id="gate-ttft-latency-0001",
+            rollback_target_plan_id=None,
+            source_evidence_digest=HONEST_DIGEST,
         )
     )
+
+
+def _signed_in_client(tmp_path) -> tuple[TestClient, dict[str, str]]:
+    settings = MorpheusSettings(
+        api_key="test-api-key",
+        session_secret="session-test-secret",
+        data_dir=tmp_path,
+        enable_workflows=True,
+        enable_lifecycle=True,
+        lifecycle_deployment_root=tmp_path / "deploy",
+    )
+    _seed_honest_plan(settings.data_dir)
+    test_client = client(settings=settings)
     response = test_client.post(
         "/api/v1/session",
         json={"api_key": "test-api-key"},
@@ -819,20 +867,21 @@ def test_OUI_006_workflows_payload_lists_definitions_and_sessions(tmp_path) -> N
 def test_OUI_006_workflow_start_requires_confirmation_and_csrf(tmp_path) -> None:
     test_client, csrf = _signed_in_client(tmp_path)
     without_csrf = test_client.post(
-        "/api/v1/operations/workflows/remove/start", json={"confirmed": True}
+        "/api/v1/operations/workflows/remove/start",
+        json={"confirmed": True, "plan_id": HONEST_PLAN_ID},
     )
     assert without_csrf.status_code == 403
     assert without_csrf.json()["error"]["code"] == "csrf_validation_failed"
     unconfirmed = test_client.post(
         "/api/v1/operations/workflows/remove/start",
-        json={"confirmed": False},
+        json={"confirmed": False, "plan_id": HONEST_PLAN_ID},
         headers=csrf,
     )
     assert unconfirmed.status_code == 400
     assert "confirmation" in unconfirmed.json()["error"]["message"]
     started = test_client.post(
         "/api/v1/operations/workflows/remove/start",
-        json={"confirmed": True},
+        json={"confirmed": True, "plan_id": HONEST_PLAN_ID},
         headers=csrf,
     )
     assert started.status_code == 200
@@ -857,7 +906,7 @@ def test_OUI_006_benchmark_refusal_is_honest_and_audited(tmp_path) -> None:
     test_client, csrf = _signed_in_client(tmp_path)
     started = test_client.post(
         "/api/v1/operations/workflows/benchmark/start",
-        json={"confirmed": True},
+        json={"confirmed": True, "plan_id": HONEST_PLAN_ID},
         headers=csrf,
     )
     assert started.status_code == 200
@@ -886,7 +935,7 @@ def test_OUI_006_workflow_unknown_id_and_missing_session_are_bounded(tmp_path) -
     test_client, csrf = _signed_in_client(tmp_path)
     unknown = test_client.post(
         "/api/v1/operations/workflows/not-a-workflow/start",
-        json={"confirmed": True},
+        json={"confirmed": True, "plan_id": HONEST_PLAN_ID},
         headers=csrf,
     )
     assert unknown.status_code == 400

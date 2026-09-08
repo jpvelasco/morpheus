@@ -195,6 +195,12 @@ function mockFetch(
     if (path === '/api/v1/recommendations/latest') {
       return respond(recommendationPayload, recommendationPayload === null ? 404 : 200)
     }
+    if (path === '/api/v1/plans/selections/latest') {
+      return respond({ schema_version: 1, recommendation: { plan_ids: ['plan-selected-1'] } }, 200)
+    }
+    if (path === '/api/v1/plans/state') {
+      return respond({ schema_version: 1, active_plan_id: 'plan-active-1' }, 200)
+    }
     if (path === '/api/v1/operations/settings' && method === 'GET') return respond(settingsPayload, status)
     if (path === '/api/v1/operations/settings/plan') return respond(routes.plan ?? validPlan(true), 200)
     if (path === '/api/v1/operations/settings/apply') {

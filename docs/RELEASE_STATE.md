@@ -33,7 +33,10 @@ private request data, host addresses, or unredacted evidence.
   recovery, honest refusal instead of simulated DEV mutations); remaining R3
   scope — real per-workflow lifecycle executors, the disposable acceptance
   walk, settings-to-startup-config composition, and owned service actions —
-  is still open. R8 public-surface enforcement landed: deferred optional
+  is still open. R3 slice 1 landed: workflow starts now require a known
+  managed `plan_id` before persist, and `model_acquire` runs through
+  `AcquisitionCache` against an owned fixture source; other workflows still
+  honest-fail. R8 public-surface enforcement landed: deferred optional
   services (search, voice, research, RAG, image generation) stay `deferred`
   in the manifest and cannot be advertised as available or usable on
   `/api/v1/capabilities`, `/api/v1/support`, or `/api/v1/operations/controls`

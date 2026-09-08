@@ -29,7 +29,10 @@ from morpheus.adapters.persistence.records_store import RecordsStore
 from morpheus.adapters.persistence.settings import SettingsJournal, SettingsJournalError
 from morpheus.adapters.persistence.sqlite import SqliteStore
 from morpheus.adapters.runtime.agent import RuntimeAgentClient
-from morpheus.adapters.workflows.executors import UnavailableWorkflowExecutor
+from morpheus.adapters.workflows.executors import (
+    ManagedLifecycleExecutor,
+    UnavailableWorkflowExecutor,
+)
 from morpheus.adapters.workflows.runner import LazyAuditStore, WorkflowExecutor
 from morpheus.api.body_limit import BodyLimitMiddleware
 from morpheus.api.operations import (
@@ -319,11 +322,17 @@ def create_app(
     )
     request_limiter = ConcurrencyLimiter(settings.max_concurrent_requests)
     rate_limiter = FixedWindowRateLimiter(settings.max_requests_per_minute)
+    default_executor = workflow_executor or ManagedLifecycleExecutor(
+        planning=planning,
+        data_dir=settings.data_dir,
+        fallback=UnavailableWorkflowExecutor(),
+    )
     operation_service = OperationService(
-        executor=workflow_executor or UnavailableWorkflowExecutor(),
+        executor=default_executor,
         store=OperationStore(settings.data_dir / "operations"),
         clock=clock,
         audit=workflow_audit_store,
+        planning=planning,
     )
     operation_service.recover_interrupted()
     allowed_origins = [

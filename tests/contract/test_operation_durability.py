@@ -19,11 +19,16 @@ import pytest
 from fastapi.testclient import TestClient
 
 from morpheus.adapters.fakes import FakeClock, FakeInference
+from morpheus.adapters.persistence.records_store import RecordsStore
 from morpheus.adapters.workflows.runner import PreflightResult, StepResult
 from morpheus.api.app import create_app
 from morpheus.config import MorpheusSettings
 from morpheus.core.health import Evidence, HealthState
+from morpheus.core.records import DeploymentPlan, EngineIdentity, ModelIdentity, WorkloadProfile
 from morpheus.core.workflows import WorkflowId
+
+PLAN_ID = "plan-r3-durability-0001"
+DIGEST = "b" * 64
 
 pytestmark = pytest.mark.contract
 
@@ -68,10 +73,54 @@ async def _await_gate(gate: threading.Event) -> None:
     await __import__("asyncio").to_thread(gate.wait, 30)
 
 
+def _seed_plan(data_dir) -> None:
+    RecordsStore(data_dir / "records").save_plan(
+        DeploymentPlan(
+            plan_id=PLAN_ID,
+            model=ModelIdentity(
+                model_id="model-r3-durability",
+                revision="v1.0.0",
+                artifact_digest=DIGEST,
+                model_format="gguf",
+                quantization="q4_k_m",
+                license_id="apache-2.0",
+                source="huggingface",
+            ),
+            engine=EngineIdentity(
+                engine_id="engine-r3-durability",
+                kind="llama.cpp",
+                artifact_digest=DIGEST,
+                platforms=("linux-x86_64",),
+            ),
+            workload=WorkloadProfile(
+                workload_id="workload-r3-durability",
+                developer_profile="full-stack",
+                context_tokens=8192,
+                max_concurrency=1,
+                required_features=("tool_use",),
+            ),
+            settings=(("context_length", 8192),),
+            served_aliases=("r3-durability",),
+            context_tokens=8192,
+            max_concurrency=1,
+            cache_policy="owned-cache",
+            memory_estimate_bytes=1024,
+            disk_estimate_bytes=1024,
+            owned_paths=("/var/lib/morpheus/models/r3-durability",),
+            ports=(8080,),
+            health_contract_id="health-openai-compatible-0001",
+            benchmark_gate_id="gate-ttft-latency-0001",
+            rollback_target_plan_id=None,
+            source_evidence_digest=DIGEST,
+        )
+    )
+
+
 def _client(tmp_path, executor: ScriptedExecutor | None = None):
     settings = MorpheusSettings(
         api_key=API_KEY, session_secret="session-test-secret", data_dir=tmp_path
     )
+    _seed_plan(settings.data_dir)
     app = create_app(
         settings=settings,
         inference=FakeInference(health_result=_ready_evidence(), model_results=()),
@@ -88,8 +137,9 @@ def _signed_in(test_client: TestClient) -> dict[str, str]:
 
 
 def _start(test_client: TestClient, csrf: dict[str, str], body: dict[str, Any]) -> dict[str, Any]:
+    payload = {"plan_id": PLAN_ID, **body}
     response = test_client.post(
-        "/api/v1/operations/workflows/benchmark/start", json=body, headers=csrf
+        "/api/v1/operations/workflows/benchmark/start", json=payload, headers=csrf
     )
     assert response.status_code == 200, response.text
     return response.json()

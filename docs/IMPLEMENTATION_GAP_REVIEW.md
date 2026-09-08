@@ -163,6 +163,11 @@ application operation boundary.
   BENCH/GATE/RUNM/UI/OUI rows remain `planned`; real per-workflow executors,
   the disposable acceptance walk, settings-to-startup-config composition, and
   owned service actions are still open R3 scope.
+- 2026-09-08: R3 slice 1 — `OperationService.start` rejects missing,
+  observed, or unknown plan identity before writing a document; production
+  `ManagedLifecycleExecutor` acquires a known plan through `AcquisitionCache`
+  and records an R1 `OperationRecord`. Remaining OUI-006 workflows stay
+  honest-unavailable. BENCH/GATE/RUNM/UI/OUI rows remain `planned`.
 - 2026-09-08: R8 focused-scope boundary enforced at the public capability
   and control surfaces. The 12 optional-scope IDs remain `deferred`. Enabling
   search/voice/research/RAG/image flags no longer advertises those services
