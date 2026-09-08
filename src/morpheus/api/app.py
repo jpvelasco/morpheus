@@ -29,6 +29,7 @@ from morpheus.adapters.persistence.records_store import RecordsStore
 from morpheus.adapters.persistence.settings import SettingsJournal, SettingsJournalError
 from morpheus.adapters.persistence.sqlite import SqliteStore
 from morpheus.adapters.runtime.agent import RuntimeAgentClient
+from morpheus.adapters.runtime.stage import FixtureStageHooks
 from morpheus.adapters.workflows.executors import (
     ManagedLifecycleExecutor,
     UnavailableWorkflowExecutor,
@@ -312,7 +313,7 @@ def create_app(
         evidence=StoreBenchmarkEvidence(BenchmarkStore(settings.data_dir / "benchmarks")),
         clock=clock,
     )
-    active_hooks = stage_hooks or _UnavailableStageHooks()
+    active_hooks = stage_hooks or FixtureStageHooks(settings.data_dir)
     app.add_middleware(BodyLimitMiddleware, max_body_bytes=settings.max_request_bytes)
     session_secret = settings.session_secret.get_secret_value().encode()
     session_codec = (
@@ -325,6 +326,7 @@ def create_app(
     default_executor = workflow_executor or ManagedLifecycleExecutor(
         planning=planning,
         data_dir=settings.data_dir,
+        hooks=active_hooks,
         fallback=UnavailableWorkflowExecutor(),
     )
     operation_service = OperationService(

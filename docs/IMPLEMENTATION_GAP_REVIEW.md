@@ -168,6 +168,11 @@ application operation boundary.
   `ManagedLifecycleExecutor` acquires a known plan through `AcquisitionCache`
   and records an R1 `OperationRecord`. Remaining OUI-006 workflows stay
   honest-unavailable. BENCH/GATE/RUNM/UI/OUI rows remain `planned`.
+- 2026-09-08: R3 slice 2 — `FixtureStageHooks` plus `engine_install` /
+  `promote` / `rollback` on `ManagedLifecycleExecutor`. Promotion still
+  requires a succeeded campaign bound to the plan. Remaining R3: disposable
+  walk, settings-as-startup, owned-service actions, GATE-001, `benchmark`
+  executor. BENCH/GATE/RUNM/UI/OUI stay `planned`.
 - 2026-09-08: R8 focused-scope boundary enforced at the public capability
   and control surfaces. The 12 optional-scope IDs remain `deferred`. Enabling
   search/voice/research/RAG/image flags no longer advertises those services
