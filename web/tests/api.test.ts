@@ -7,6 +7,7 @@ import {
   fetchBenchmarks,
   fetchControls,
   fetchEvents,
+  fetchLatestSelectedPlanId,
   fetchMetricsTrend,
   fetchNavigation,
   fetchOverview,
@@ -508,6 +509,8 @@ test('settings and workflow fetchers send the CSRF token and parse responses', a
     if (route.includes('/operations/workflows/benchmark/session')) return Promise.resolve(new Response(JSON.stringify({ schema_version: 1, session: validWorkflowsPayload().sessions[0] }), { status: 200 }))
     if (route.endsWith('/operations/workflows/benchmark/cancel')) return Promise.resolve(new Response(JSON.stringify({ schema_version: 1, cancelled: true }), { status: 200 }))
     if (route.endsWith('/operations/workflows/benchmark/start')) return Promise.resolve(new Response(JSON.stringify({ schema_version: 1, started: true, session: validWorkflowsPayload().sessions[0] }), { status: 200 }))
+    if (route.endsWith('/plans/selections/latest')) return Promise.resolve(new Response(JSON.stringify({ schema_version: 1, recommendation: { plan_ids: ['plan-selected-1'] } }), { status: 200 }))
+    if (route.endsWith('/plans/state')) return Promise.resolve(new Response(JSON.stringify({ schema_version: 1, active_plan_id: 'plan-active-1' }), { status: 200 }))
     if (route.includes('/operations/workflows')) return Promise.resolve(new Response(JSON.stringify(validWorkflowsPayload()), { status: 200 }))
     throw new Error(`unhandled route ${route}`)
   })
@@ -518,7 +521,11 @@ test('settings and workflow fetchers send the CSRF token and parse responses', a
   await expect(applySettings({ api_port: '7411' })).resolves.toMatchObject({ applied: { api_port: '7411' } })
   await expect(rollbackSettings()).resolves.toMatchObject({ rolled_back: true })
   await expect(fetchWorkflows()).resolves.toMatchObject({ schema_version: 1 })
-  await expect(startWorkflow('benchmark', true)).resolves.toMatchObject({ started: true })
+  await expect(startWorkflow('benchmark', true, 'plan-selected-1')).resolves.toMatchObject({ started: true })
+  await expect(fetchLatestSelectedPlanId()).resolves.toBe('plan-selected-1')
+  const startCall = fetchMock.mock.calls.find((call) => String(call[0]).endsWith('/operations/workflows/benchmark/start'))
+  expect(JSON.parse(String((startCall?.[1] as RequestInit).body))).toEqual({ confirmed: true, plan_id: 'plan-selected-1' })
+
   await expect(cancelWorkflow('benchmark')).resolves.toMatchObject({ cancelled: true })
   await expect(fetchWorkflowSession('benchmark')).resolves.toMatchObject({ session_id: 's1' })
 

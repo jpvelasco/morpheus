@@ -38,6 +38,7 @@ import {
   fetchControls,
   fetchEvents,
   fetchLatestRecommendation,
+  fetchLatestSelectedPlanId,
   fetchMetricsTrend,
   fetchNavigation,
   fetchOverview,
@@ -963,10 +964,12 @@ function SettingsPage({
 
 function WorkflowsPage({
   payload,
+  planId,
   onChanged,
   onSessionExpired,
 }: {
   payload: WorkflowsPayload | null
+  planId: string | null
   onChanged: () => void
   onSessionExpired: () => void
 }) {
@@ -994,7 +997,12 @@ function WorkflowsPage({
   }
   function start(workflow: WorkflowDefinition) {
     void run(async () => {
-      const result = await startWorkflow(workflow.workflow_id, true)
+      if (!planId) {
+        setMessage('Select a retained managed plan before starting a workflow.')
+        setConfirming(null)
+        return
+      }
+      const result = await startWorkflow(workflow.workflow_id, true, planId)
       setMessage(result.started
         ? `${workflow.label} started; watch the session notes for step progress.`
         : `${workflow.label} could not be started; review the session notes.`)
@@ -1128,6 +1136,7 @@ function WorkspacePage({
   overview,
   controls,
   recommendation,
+  selectedPlanId,
   workspaces,
   metrics,
   trendSignal,
@@ -1145,6 +1154,7 @@ function WorkspacePage({
   overview: Overview | null
   controls: ControlsReport | null
   recommendation: RecommendationRecord | null | undefined
+  selectedPlanId: string | null
   workspaces: Workspace[]
   metrics: MetricsTrend | null
   trendSignal: string
@@ -1186,7 +1196,14 @@ function WorkspacePage({
     case 'settings':
       return <SettingsPage payload={settings} onChanged={reloadSettings} onSessionExpired={onSessionExpired} />
     case 'recovery':
-      return <WorkflowsPage payload={workflows} onChanged={reloadWorkflows} onSessionExpired={onSessionExpired} />
+      return (
+        <WorkflowsPage
+          payload={workflows}
+          planId={selectedPlanId}
+          onChanged={reloadWorkflows}
+          onSessionExpired={onSessionExpired}
+        />
+      )
     default:
       return workspace ? <EmptyWorkspacePage workspace={workspace} /> : null
   }
@@ -1226,6 +1243,7 @@ function Dashboard({ onLogout, onSessionExpired }: { onLogout: () => Promise<voi
   const [navigation, setNavigation] = useState<NavigationManifest | null>(null)
   const [controls, setControls] = useState<ControlsReport | null>(null)
   const [recommendation, setRecommendation] = useState<RecommendationRecord | null | undefined>(undefined)
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
   const [metrics, setMetrics] = useState<MetricsTrend | null>(null)
   const [events, setEvents] = useState<EventsReport | null>(null)
   const [benchmarks, setBenchmarks] = useState<BenchmarksReport | null>(null)
@@ -1274,10 +1292,16 @@ function Dashboard({ onLogout, onSessionExpired }: { onLogout: () => Promise<voi
     recommendationRequest.current?.abort()
     recommendationRequest.current = controller
     try {
-      setRecommendation(await fetchLatestRecommendation(controller.signal))
+      const [latest, planId] = await Promise.all([
+        fetchLatestRecommendation(controller.signal),
+        fetchLatestSelectedPlanId(controller.signal),
+      ])
+      setRecommendation(latest)
+      setSelectedPlanId(planId)
     } catch (reason) {
       if (reason instanceof DOMException && reason.name === 'AbortError') return
       setRecommendation(null)
+      setSelectedPlanId(null)
     } finally {
       if (recommendationRequest.current === controller) {
         recommendationRequest.current = null
@@ -1361,6 +1385,7 @@ function Dashboard({ onLogout, onSessionExpired }: { onLogout: () => Promise<voi
           overview={overview}
           controls={controls}
           recommendation={recommendation}
+          selectedPlanId={selectedPlanId}
           workspaces={workspaces}
           metrics={metrics}
           trendSignal={trendSignal}

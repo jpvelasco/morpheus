@@ -1092,6 +1092,28 @@ export interface RecommendationPayload {
   recommendation: RecommendationRecord
 }
 
+export async function fetchLatestSelectedPlanId(signal?: AbortSignal): Promise<string | null> {
+  const selected = await fetch(`${API_BASE}/api/v1/plans/selections/latest`, {
+    credentials: 'include',
+    signal,
+  })
+  if (selected.status !== 404) {
+    requireSuccess(selected)
+    const payload = record(await selected.json())
+    const recommendation = record(payload.recommendation)
+    const planIds = Array.isArray(recommendation.plan_ids) ? recommendation.plan_ids : []
+    const first = planIds[0]
+    if (typeof first === 'string' && first.length > 0) return first
+  }
+  const state = await fetch(`${API_BASE}/api/v1/plans/state`, {
+    credentials: 'include',
+    signal,
+  })
+  requireSuccess(state)
+  const body = record(await state.json())
+  return typeof body.active_plan_id === 'string' ? body.active_plan_id : null
+}
+
 export async function fetchLatestRecommendation(signal?: AbortSignal): Promise<RecommendationRecord | null> {
   const response = await fetch(`${API_BASE}/api/v1/recommendations/latest`, {
     credentials: 'include',
@@ -1153,12 +1175,16 @@ export async function fetchWorkflows(signal?: AbortSignal): Promise<WorkflowsPay
   return parseWorkflowsPayload(await response.json())
 }
 
-export async function startWorkflow(workflowId: string, confirmed: boolean): Promise<WorkflowStartResult> {
+export async function startWorkflow(
+  workflowId: string,
+  confirmed: boolean,
+  planId?: string,
+): Promise<WorkflowStartResult> {
   const response = await fetch(`${API_BASE}/api/v1/operations/workflows/${workflowId}/start`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken() },
-    body: JSON.stringify({ confirmed }),
+    body: JSON.stringify(planId ? { confirmed, plan_id: planId } : { confirmed }),
   })
   requireSuccess(response)
   const payload = record(await response.json())
