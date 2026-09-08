@@ -163,6 +163,10 @@ application operation boundary.
   BENCH/GATE/RUNM/UI/OUI rows remain `planned`; real per-workflow executors,
   the disposable acceptance walk, settings-to-startup-config composition, and
   owned service actions are still open R3 scope.
+- 2026-09-08: R8 focused-scope boundary enforced at the public capability
+  and control surfaces. The 12 optional-scope IDs remain `deferred`. Enabling
+  search/voice/research/RAG/image flags no longer advertises those services
+  as available or usable; they stay blocked with `deferred_optional_scope`.
 
 Optional external harness evidence interoperability under ADR-0010 is not a
 rectification gap, requirement-status change, or R0-through-R9 work item. R1 and

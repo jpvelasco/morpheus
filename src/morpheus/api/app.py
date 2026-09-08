@@ -52,7 +52,11 @@ from morpheus.core.access import AccessPolicyError, access_capabilities
 from morpheus.core.analytics import analytics_report
 from morpheus.core.benchmark import BenchmarkSummary
 from morpheus.core.benchstore import BenchmarkStore
-from morpheus.core.capabilities import Capability, evaluate_capabilities
+from morpheus.core.capabilities import (
+    Capability,
+    evaluate_capabilities,
+    withhold_deferred_capability,
+)
 from morpheus.core.catalog import CatalogCollection, CatalogError
 from morpheus.core.compatibility import compatibility_payload
 from morpheus.core.concurrency import ConcurrencyLimiter, FixedWindowRateLimiter, RetryPolicy
@@ -619,13 +623,14 @@ def create_app(
             dependency_health=dependency_health,
             blockers=blockers,
         )
-        return {
-            capability.value: {
-                "state": status.state.value,
-                "blockers": list(status.blockers),
+        payload: dict[str, Any] = {}
+        for capability, status in report.items():
+            withheld = withhold_deferred_capability(status)
+            payload[capability.value] = {
+                "state": withheld.state.value,
+                "blockers": list(withheld.blockers),
             }
-            for capability, status in report.items()
-        }
+        return payload
 
     @app.get("/healthz")
     async def public_health() -> dict[str, str]:

@@ -33,7 +33,11 @@ private request data, host addresses, or unredacted evidence.
   recovery, honest refusal instead of simulated DEV mutations); remaining R3
   scope — real per-workflow lifecycle executors, the disposable acceptance
   walk, settings-to-startup-config composition, and owned service actions —
-  is still open.
+  is still open. R8 public-surface enforcement landed: deferred optional
+  services (search, voice, research, RAG, image generation) stay `deferred`
+  in the manifest and cannot be advertised as available or usable on
+  `/api/v1/capabilities`, `/api/v1/support`, or `/api/v1/operations/controls`
+  even when their feature flags are on.
 
 - **Validated baseline source equivalent:** `aa094172764a4de3e5dc91324306b14857706c4e`
   (`security: bound API request work`). Its pre-publication build evidence

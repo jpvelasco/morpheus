@@ -1,6 +1,12 @@
 from __future__ import annotations
 
-from morpheus.core.capabilities import Capability, CapabilityState, evaluate_capabilities
+from morpheus.core.capabilities import (
+    Capability,
+    CapabilityState,
+    CapabilityStatus,
+    evaluate_capabilities,
+    withhold_deferred_capability,
+)
 from morpheus.core.models import ServedModel
 
 
@@ -33,3 +39,23 @@ def test_RUN_005_configured_capability_without_dependency_is_blocked() -> None:
     )
     assert report[Capability.RESEARCH].state is CapabilityState.BLOCKED
     assert report[Capability.RESEARCH].blockers == ("search_not_configured", "model_not_ready")
+
+
+def test_R8_withhold_deferred_capability_blocks_available_optional_scope() -> None:
+    available = CapabilityStatus(Capability.SEARCH, CapabilityState.AVAILABLE, ())
+    withheld = withhold_deferred_capability(available)
+    assert withheld.state is CapabilityState.BLOCKED
+    assert withheld.blockers == ("deferred_optional_scope",)
+    already_blocked = withhold_deferred_capability(
+        CapabilityStatus(
+            Capability.RAG, CapabilityState.BLOCKED, ("dependency_mapping_not_configured",)
+        )
+    )
+    assert already_blocked.state is CapabilityState.BLOCKED
+    assert already_blocked.blockers[0] == "deferred_optional_scope"
+    assert (
+        withhold_deferred_capability(
+            CapabilityStatus(Capability.TELEMETRY, CapabilityState.AVAILABLE)
+        ).state
+        is CapabilityState.AVAILABLE
+    )

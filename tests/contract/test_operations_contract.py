@@ -302,18 +302,20 @@ def test_UI_003_controls_report_core_ladder_and_disabled_features() -> None:
 
 def test_UI_003_enabled_control_with_healthy_component_is_usable() -> None:
     response = client(
-        settings=MorpheusSettings(api_key="test-api-key", enable_search=True),
+        settings=MorpheusSettings(api_key="test-api-key", enable_telemetry=True),
         runtime_agent=ServicesRuntimeAgent(
-            [{"component": "search", "state": "running", "health": "healthy"}]
+            [{"component": "telemetry", "state": "running", "health": "healthy"}]
         ),
     ).get(
         "/api/v1/operations/controls",
         headers={"Authorization": "Bearer test-api-key"},
     )
-    search = next(entry for entry in response.json()["controls"] if entry["control"] == "search")
+    telemetry = next(
+        entry for entry in response.json()["controls"] if entry["control"] == "telemetry"
+    )
     assert response.status_code == 200
-    assert search == {
-        "control": "search",
+    assert telemetry == {
+        "control": "telemetry",
         "state": "usable",
         "configured": True,
         "running": True,

@@ -14,6 +14,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
+from morpheus.core.capabilities import DEFERRED_OPTIONAL_FEATURES, DEFERRED_SCOPE_BLOCKER
+
 
 class Control(StrEnum):
     CORE = "core"
@@ -89,6 +91,12 @@ def evaluate_controls(
         else:
             state = ControlState.USABLE
             configured_flag, running_flag, healthy_flag, usable = True, True, True, True
+        control_blockers = blockers.get(control, ())
+        if control.value in DEFERRED_OPTIONAL_FEATURES and usable:
+            state = ControlState.HEALTHY
+            usable = False
+            if DEFERRED_SCOPE_BLOCKER not in control_blockers:
+                control_blockers = (DEFERRED_SCOPE_BLOCKER, *control_blockers)
         result[control] = ControlStatus(
             control=control,
             state=state,
@@ -96,6 +104,6 @@ def evaluate_controls(
             running=running_flag,
             healthy=healthy_flag,
             usable=usable,
-            blockers=blockers.get(control, ()),
+            blockers=control_blockers,
         )
     return result

@@ -22,6 +22,20 @@ class CapabilityState(StrEnum):
     BLOCKED = "blocked"
 
 
+# Optional v0.2 services restored to deferred (R8). Public surfaces may
+# observe them, but must never advertise them as available/usable.
+DEFERRED_OPTIONAL_FEATURES: frozenset[str] = frozenset(
+    {
+        Capability.SEARCH.value,
+        Capability.VOICE.value,
+        Capability.RESEARCH.value,
+        Capability.RAG.value,
+        Capability.IMAGE_GENERATION.value,
+    }
+)
+DEFERRED_SCOPE_BLOCKER = "deferred_optional_scope"
+
+
 @dataclass(frozen=True, slots=True)
 class CapabilityStatus:
     capability: Capability
@@ -48,3 +62,16 @@ def evaluate_capabilities(
             state = CapabilityState.UNHEALTHY
         result[capability] = CapabilityStatus(capability, state, capability_blockers)
     return result
+
+
+def withhold_deferred_capability(status: CapabilityStatus) -> CapabilityStatus:
+    """Keep deferred optional services off the public available/usable surface."""
+    if status.capability.value not in DEFERRED_OPTIONAL_FEATURES:
+        return status
+    if status.state is CapabilityState.DISABLED:
+        return status
+    blockers = status.blockers
+    if DEFERRED_SCOPE_BLOCKER not in blockers:
+        blockers = (DEFERRED_SCOPE_BLOCKER, *blockers)
+    state = CapabilityState.BLOCKED if status.state is CapabilityState.AVAILABLE else status.state
+    return CapabilityStatus(status.capability, state, blockers)
