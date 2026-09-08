@@ -267,10 +267,33 @@ class PlanningService:
     def require_known_plan(self, plan_id: str | None) -> DeploymentPlan:
         if plan_id is None or not str(plan_id).strip():
             raise PlanningIdentityError("plan identity is missing; an exact plan_id is required")
+        marker = str(plan_id).strip().lower()
+        if any(token in marker for token in _OBSERVED_MARKERS):
+            raise PlanningIdentityError(
+                f"plan {plan_id!r} is an observed/external identity; "
+                "managed actions require a retained Morpheus-owned plan (INV-007)"
+            )
         known = self.plan(str(plan_id))
         if known is None:
             raise PlanningIdentityError(f"unknown plan identity: {plan_id!r}")
         return known
+
+    def record_correlated_operation(
+        self,
+        *,
+        action: str,
+        plan_id: str,
+        state: str,
+        detail: str | None = None,
+    ) -> OperationRecord:
+        """Persist one R1 operation row for a durable managed workflow."""
+        return self._record_operation(
+            action=action,
+            plan_id=plan_id,
+            ownership=require_managed_ownership(MANAGED_OWNERSHIP),
+            state=state,
+            detail=detail,
+        )
 
     def require_campaign_for_plan(self, campaign_id: str, plan_id: str) -> BenchmarkCampaign:
         if not campaign_id:

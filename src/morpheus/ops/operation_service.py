@@ -29,6 +29,7 @@ from morpheus.core.operations import (
     fresh_operation_id,
 )
 from morpheus.core.workflows import StepOutcome, WorkflowId, workflow_definition
+from morpheus.ops.planning import PlanningService
 from morpheus.ports.protocols import Clock
 
 
@@ -63,12 +64,14 @@ class OperationService:
         store: OperationStore,
         clock: Clock,
         audit: OperationAuditSink | None = None,
+        planning: PlanningService | None = None,
         max_concurrent: int = 2,
     ) -> None:
         self._executor = executor
         self._store = store
         self._clock = clock
         self._audit = audit
+        self._planning = planning
         self._semaphore = asyncio.Semaphore(max(1, max_concurrent))
         self._tasks: set[asyncio.Task[None]] = set()
         # Current durable snapshot per live operation. All mutation happens
@@ -118,6 +121,8 @@ class OperationService:
         definition = workflow_definition(workflow_id)
         if not confirmed and any(step.confirm_required for step in definition.steps):
             raise OperationServiceError("workflow requires operator confirmation")
+        if self._planning is not None:
+            plan_id = self._planning.require_known_plan(plan_id).plan_id
 
         operation_id = derive_operation_id(workflow_id, token) if token else fresh_operation_id()
         existing = self._store.get(operation_id)
@@ -138,6 +143,10 @@ class OperationService:
             updated_at=now,
         )
         self._persist(operation)
+        bind = getattr(self._executor, "bind", None)
+        if callable(bind):
+            bind(operation)
+        self._record_plan_operation(operation, state="accepted")
         await self._audit_event(operation, event="started", step_id=None, message=None)
 
         try:
@@ -152,6 +161,7 @@ class OperationService:
             await self._audit_event(
                 failed, event="preflight_failed", step_id=None, message=failed.error
             )
+            self._record_plan_operation(failed)
             return self._result(failed, started=False)
 
         if not preflight.ok:
@@ -164,6 +174,7 @@ class OperationService:
             await self._audit_event(
                 failed, event="preflight_failed", step_id=None, message=failed.error
             )
+            self._record_plan_operation(failed)
             return self._result(failed, started=False)
 
         running = operation.begin(observed_at=self._now())
@@ -237,6 +248,7 @@ class OperationService:
                 await self._audit_event(
                     updated, event=event, step_id=step_id, message=result.message
                 )
+                self._record_plan_operation(updated)
 
     # ------------------------------------------------------------------ recovery
 
@@ -268,6 +280,21 @@ class OperationService:
                 )
             recovered += 1
         return recovered
+
+    def _record_plan_operation(
+        self, operation: ManagedOperation, *, state: str | None = None
+    ) -> None:
+        if self._planning is None or not operation.plan_id:
+            return
+        recorded_state = state or operation.state
+        if recorded_state == ManagedOperationState.RUNNING.value:
+            return
+        self._planning.record_correlated_operation(
+            action=operation.workflow_id,
+            plan_id=operation.plan_id,
+            state=recorded_state,
+            detail=operation.error,
+        )
 
     # ------------------------------------------------------------------ audit
 
