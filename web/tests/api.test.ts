@@ -524,7 +524,12 @@ test('settings and workflow fetchers send the CSRF token and parse responses', a
   await expect(startWorkflow('benchmark', true, 'plan-selected-1')).resolves.toMatchObject({ started: true })
   await expect(fetchLatestSelectedPlanId()).resolves.toBe('plan-selected-1')
   const startCall = fetchMock.mock.calls.find((call) => String(call[0]).endsWith('/operations/workflows/benchmark/start'))
-  expect(JSON.parse(String((startCall?.[1] as RequestInit).body))).toEqual({ confirmed: true, plan_id: 'plan-selected-1' })
+  const startInit = startCall?.[1]
+  const startBody = startInit && typeof startInit === 'object' && 'body' in startInit ? startInit.body : undefined
+  expect(typeof startBody === 'string' ? JSON.parse(startBody) : startBody).toEqual({
+    confirmed: true,
+    plan_id: 'plan-selected-1',
+  })
 
   await expect(cancelWorkflow('benchmark')).resolves.toMatchObject({ cancelled: true })
   await expect(fetchWorkflowSession('benchmark')).resolves.toMatchObject({ session_id: 's1' })

@@ -1102,8 +1102,8 @@ export async function fetchLatestSelectedPlanId(signal?: AbortSignal): Promise<s
     const payload = record(await selected.json())
     const recommendation = record(payload.recommendation)
     const planIds = Array.isArray(recommendation.plan_ids) ? recommendation.plan_ids : []
-    const first = planIds[0]
-    if (typeof first === 'string' && first.length > 0) return first
+    const first = planIds.find((value): value is string => typeof value === 'string' && value.length > 0)
+    if (first !== undefined) return first
   }
   const state = await fetch(`${API_BASE}/api/v1/plans/state`, {
     credentials: 'include',
