@@ -8,6 +8,8 @@ import secrets
 from dataclasses import dataclass
 from datetime import datetime
 
+MIN_SESSION_NONCE_LENGTH = 16
+
 
 class SessionValidationError(ValueError):
     """A browser session is missing, malformed, expired, or unauthenticated."""
@@ -17,6 +19,7 @@ class SessionValidationError(ValueError):
 class BrowserSession:
     expires_at: int
     csrf_token: str
+    nonce: str  # payload uniqueness entropy; not a single-use ticket
 
 
 class SessionCodec:
@@ -28,13 +31,17 @@ class SessionCodec:
 
     def issue(self, *, now: datetime) -> tuple[str, BrowserSession]:
         expires_at = int(now.timestamp()) + self._ttl_seconds
-        session = BrowserSession(expires_at=expires_at, csrf_token=secrets.token_urlsafe(24))
+        session = BrowserSession(
+            expires_at=expires_at,
+            csrf_token=secrets.token_urlsafe(24),
+            nonce=secrets.token_urlsafe(16),
+        )
         payload = json.dumps(
             {
                 "v": 1,
                 "exp": session.expires_at,
                 "csrf": session.csrf_token,
-                "nonce": secrets.token_urlsafe(16),
+                "nonce": session.nonce,
             },
             sort_keys=True,
             separators=(",", ":"),
@@ -60,16 +67,20 @@ class SessionCodec:
             raise SessionValidationError("session payload is invalid")
         expires_at = payload["exp"]
         csrf_token = payload["csrf"]
+        nonce = payload["nonce"]
         if (
             payload["v"] != 1
             or not isinstance(expires_at, int)
-            or not isinstance(csrf_token, str)
-            or len(csrf_token) < 16
-            or not isinstance(payload["nonce"], str)
+            or not _is_secret_string(csrf_token, minimum=16)
+            or not _is_secret_string(nonce, minimum=MIN_SESSION_NONCE_LENGTH)
             or int(now.timestamp()) >= expires_at
         ):
             raise SessionValidationError("session is expired or invalid")
-        return BrowserSession(expires_at=expires_at, csrf_token=csrf_token)
+        return BrowserSession(expires_at=expires_at, csrf_token=csrf_token, nonce=nonce)
+
+
+def _is_secret_string(value: object, *, minimum: int) -> bool:
+    return isinstance(value, str) and len(value) >= minimum
 
 
 def _encode(value: bytes) -> str:

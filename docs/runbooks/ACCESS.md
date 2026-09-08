@@ -10,6 +10,22 @@ loopback or SSH-tunnel profile. The network profile is the only profile
 that may bind beyond loopback, and it demands TLS, explicit origins, and
 hardened cookies.
 
+## Deployment constraint
+
+The API/control plane is a single process. Do not run multiple API or
+agent instances behind a shared session or nonce store.
+
+- Browser session cookies are HMAC-signed bearer tokens. They remain
+  valid until `session_ttl_seconds` even if the process restarts
+  (stateless). The payload `nonce` is uniqueness entropy, not a
+  single-use ticket; browsers reuse the same cookie on every request.
+- Agent request nonces are process-local replay protection. A restart
+  empties the seen-nonce set, so a previously used nonce can be accepted
+  again inside the timestamp window.
+- Multi-instance or rolling-restart shared replay protection is not
+  provided. That belongs with unfinished multi-instance work, not this
+  product surface.
+
 ## Default posture
 
 - API binds to `127.0.0.1:7400` and the dashboard to `127.0.0.1:7401`.
@@ -59,8 +75,9 @@ desktop/tunnel parity yet.
 - The desktop and browser reconnect with the same API key and receive the
   same health, compatibility, and capability semantics after a backend
   restart or a tunnel re-establishment.
-- After the backend restarts, log in again; the old signed cookie remains
-  valid until its expiry because sessions are stateless signed tokens.
+- After the backend restarts, an unexpired signed cookie is still valid
+  because sessions are stateless tokens. Agent request replay protection
+  is not: it resets with the process.
 
 ## Network profile (ACCESS-002, optional)
 

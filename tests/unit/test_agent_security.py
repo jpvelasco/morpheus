@@ -30,6 +30,22 @@ def test_SEC_001_agent_accepts_valid_signature_once() -> None:
         )
 
 
+def test_SEC_001_new_authenticator_accepts_previously_used_nonce() -> None:
+    """Replay protection is process-local: a restart starts with an empty set."""
+    body = request_body()
+    timestamp = str(int(NOW.timestamp()))
+    nonce = "restart-nonce"
+    signature = sign_request(KEY, timestamp=timestamp, nonce=nonce, body=body)
+
+    first = AgentAuthenticator(KEY, max_skew=timedelta(seconds=30))
+    first.verify(timestamp=timestamp, nonce=nonce, signature=signature, body=body, now=NOW)
+    with pytest.raises(AgentAuthenticationError, match="replayed"):
+        first.verify(timestamp=timestamp, nonce=nonce, signature=signature, body=body, now=NOW)
+
+    restarted = AgentAuthenticator(KEY, max_skew=timedelta(seconds=30))
+    restarted.verify(timestamp=timestamp, nonce=nonce, signature=signature, body=body, now=NOW)
+
+
 @pytest.mark.parametrize("offset", [-31, 31])
 def test_SEC_001_agent_rejects_expired_or_future_request(offset: int) -> None:
     body = request_body()

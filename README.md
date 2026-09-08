@@ -25,6 +25,12 @@ The deployed v0.1 system is an **operator control plane** for a host that alread
 runs OpenAI-compatible inference (on `<host>`: `<inference-service>` + Open WebUI).
 It does not manage that external runtime or GPU stack.
 
+**Deployment constraint:** the API/control plane is a single process. Browser
+session cookies are signed bearer tokens and stay valid until expiry across a
+process restart. Agent request nonces are process-local replay protection and
+reset on restart. Multi-instance or rolling-restart shared replay protection
+is not provided.
+
 The repository also contains substantial v0.2 component implementation, but a
 post-run audit found that the components do not yet form the intended coherent
 managed appliance. The active source milestone is the

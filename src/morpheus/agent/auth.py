@@ -15,6 +15,12 @@ def sign_request(key: bytes, *, timestamp: str, nonce: str, body: bytes) -> str:
 
 
 class AgentAuthenticator:
+    """HMAC-authenticate agent requests with process-local nonce replay protection.
+
+    The seen-nonce set lives in this process only and is empty after restart.
+    Multi-instance or rolling-restart shared replay protection is not provided.
+    """
+
     def __init__(self, key: bytes, *, max_skew: timedelta = timedelta(seconds=30)) -> None:
         if len(key) < 16:
             raise ValueError("agent key must contain at least 16 bytes")
