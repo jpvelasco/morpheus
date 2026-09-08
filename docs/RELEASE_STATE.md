@@ -36,7 +36,10 @@ private request data, host addresses, or unredacted evidence.
   is still open. R3 slice 1 landed: workflow starts now require a known
   managed `plan_id` before persist, and `model_acquire` runs through
   `AcquisitionCache` against an owned fixture source; other workflows still
-  honest-fail. R8 public-surface enforcement landed: deferred optional
+  honest-fail. R3 slice 2 landed: fixture StageHooks install/promote/rollback
+  canonical plans under the owned runtime root (file markers only).
+  `engine_configure`, `benchmark`, and `remove` still honest-fail. R8
+  public-surface enforcement landed: deferred optional
   services (search, voice, research, RAG, image generation) stay `deferred`
   in the manifest and cannot be advertised as available or usable on
   `/api/v1/capabilities`, `/api/v1/support`, or `/api/v1/operations/controls`
