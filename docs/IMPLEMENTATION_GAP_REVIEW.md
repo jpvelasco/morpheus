@@ -172,6 +172,10 @@ application operation boundary.
   and control surfaces. The 12 optional-scope IDs remain `deferred`. Enabling
   search/voice/research/RAG/image flags no longer advertises those services
   as available or usable; they stay blocked with `deferred_optional_scope`.
+- 2026-09-08: isolated R5 increment — `temperature_c` has unit `celsius`;
+  event queries prune then apply the retention cutoff before returning rows.
+  Background collection and producers remain open; OUI-002/OUI-003 stay
+  `planned`.
 
 Optional external harness evidence interoperability under ADR-0010 is not a
 rectification gap, requirement-status change, or R0-through-R9 work item. R1 and

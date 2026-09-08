@@ -849,19 +849,19 @@ def create_app(
         observed_at = clock.utc_now().isoformat()
         store = SqliteStore(settings.data_dir / "morpheus.sqlite3", owned_root=settings.data_dir)
         await store.initialize()
+        cutoff = retention_cutoff(observed_at, retention_days=settings.events_retention_days)
+        await store.prune_events(before=cutoff)
         try:
             events = await store.events(
                 source=source,
                 severity=severity,
                 correlation_id=correlation_id,
                 since=since,
+                not_before=cutoff,
                 limit=limit,
             )
         except EventsError as error:
             raise OperationsDataError(str(error)) from error
-        await store.prune_events(
-            before=retention_cutoff(observed_at, retention_days=settings.events_retention_days)
-        )
         return events_payload(observed_at=observed_at, events=events)
 
     @app.get("/api/v1/operations/benchmarks", dependencies=[Depends(require_api_key)])

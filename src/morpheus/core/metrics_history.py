@@ -17,6 +17,7 @@ SIGNAL_UNITS: dict[str, str] = {
     "request_success_total": "count",
     "requests_running": "count",
     "requests_waiting": "count",
+    "temperature_c": "celsius",
     "utilization_percent": "percent",
 }
 DEFAULT_UNIT = "count"
