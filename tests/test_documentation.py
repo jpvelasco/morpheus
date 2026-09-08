@@ -31,6 +31,15 @@ BANNED_CURRENT_CLAIMS = (
     "Phase 18 next",
 )
 
+# Public Status and env examples must not leak live host/service/model names.
+PUBLIC_IDENTIFIER_SURFACES = ("README.md", ".env.example")
+BANNED_PUBLIC_IDENTIFIERS = (
+    "ubuntu-1",
+    "coder-model",
+    "ai_default",
+    "qwen36-27b",
+)
+
 
 def test_local_documentation_links_resolve() -> None:
     missing: list[str] = []
@@ -67,6 +76,16 @@ def test_current_state_documents_agree_with_requirement_counts() -> None:
     assert stale == [], f"count drift vs requirements.json ({counts}): {stale}"
 
 
+def _phrase_hits(names: tuple[str, ...], phrases: tuple[str, ...]) -> list[str]:
+    hits: list[str] = []
+    for name in names:
+        text = (ROOT / name).read_text(encoding="utf-8")
+        for phrase in phrases:
+            if phrase in text:
+                hits.append(f"{name}: {phrase!r}")
+    return hits
+
+
 def test_current_state_documents_have_single_active_plan_and_no_stale_claims() -> None:
     missing_pointer = [
         name
@@ -74,11 +93,11 @@ def test_current_state_documents_have_single_active_plan_and_no_stale_claims() -
         if "RECTIFICATION_PLAN.md" not in (ROOT / name).read_text(encoding="utf-8")
     ]
     assert missing_pointer == [], f"no active-plan pointer: {missing_pointer}"
-
-    banned: list[str] = []
-    for name in CURRENT_STATE_DOCS:
-        text = (ROOT / name).read_text(encoding="utf-8")
-        for phrase in BANNED_CURRENT_CLAIMS:
-            if phrase in text:
-                banned.append(f"{name}: {phrase!r}")
+    banned = _phrase_hits(CURRENT_STATE_DOCS, BANNED_CURRENT_CLAIMS)
     assert banned == [], f"stale completion claims: {banned}"
+
+
+def test_public_status_surfaces_omit_environment_identifiers() -> None:
+    """README Status and .env.example must use placeholders, not live identities."""
+    leaked = _phrase_hits(PUBLIC_IDENTIFIER_SURFACES, BANNED_PUBLIC_IDENTIFIERS)
+    assert leaked == [], f"environment identifiers in public docs: {leaked}"

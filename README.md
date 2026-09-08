@@ -22,8 +22,8 @@ does not create a source, runtime, control, or release dependency; see
 ## Status
 
 The deployed v0.1 system is an **operator control plane** for a host that already
-runs OpenAI-compatible inference (on ubuntu-1: `coder-model` + Open WebUI). It
-does not manage that external runtime or GPU stack.
+runs OpenAI-compatible inference (on `<host>`: `<inference-service>` + Open WebUI).
+It does not manage that external runtime or GPU stack.
 
 The repository also contains substantial v0.2 component implementation, but a
 post-run audit found that the components do not yet form the intended coherent
@@ -32,11 +32,8 @@ managed appliance. The active source milestone is the
 qualification or release. The current requirement posture is 59 implemented,
 28 planned, 12 deferred, and 0 validated.
 
-For day-to-day operator use on ubuntu-1, install the frozen candidate with the
-ubuntu-1 path and stop feature work there:
-
-- [ubuntu-1 operator runbook](docs/runbooks/UBUNTU_OPERATOR.md)
-- Installer: `deploy/ubuntu-1/install.sh`
+For day-to-day operator use on a deployed host, install the frozen candidate
+from the private operator runbook and stop feature work there.
 
 Optional search/Open WebUI integration, voice integration, research, independent
 RAG, and image generation remain deferred outside the focused v0.2 critical
@@ -46,10 +43,10 @@ for rectification; it is distinct from the optional n8n sidecar.
 
 The current external runtime is treated as an integration dependency:
 
-- vLLM service: `coder-model`
-- internal API: `http://coder-model:8000/v1`
-- host API: `http://127.0.0.1:8082/v1`
-- shared Docker network: `ai_default`
+- vLLM service: `<inference-service>`
+- internal API: `http://<inference-service>:<port>/v1`
+- host API: `http://127.0.0.1:<port>/v1`
+- shared Docker network: `<docker-network>`
 - user interface: the existing Open WebUI service
 
 Morpheus must remain usable without an ODS checkout and must never require ODS
@@ -60,7 +57,7 @@ at runtime. ODS is research input only.
 - [Documentation index](docs/README.md)
 - [Current release state](docs/RELEASE_STATE.md)
 - [Active architecture rectification plan](docs/RECTIFICATION_PLAN.md)
-- [ubuntu-1 operator runbook](docs/runbooks/UBUNTU_OPERATOR.md)
+- [Operator runbook](docs/runbooks/UBUNTU_OPERATOR.md) — private, operator-local
 - [Product specification](docs/PRODUCT_SPECIFICATION.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [TDD implementation plan](docs/IMPLEMENTATION_PLAN.md)
