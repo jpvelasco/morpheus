@@ -296,7 +296,7 @@ def create_app(
     workflow_executor: WorkflowExecutor | None = None,
 ) -> FastAPI:
     @asynccontextmanager
-    async def lifespan(application: FastAPI):
+    async def lifespan(application: FastAPI) -> Any:
         async def host_snapshot() -> dict[str, Any]:
             return await runtime_snapshot(runtime_agent, clock=clock)
 
