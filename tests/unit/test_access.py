@@ -65,6 +65,7 @@ def test_access_capabilities_report_posture_without_secrets() -> None:
     assert capabilities["proxy_headers_trusted"] is False
     assert capabilities["allowed_origins"] == []
     assert capabilities["cookie_samesite"] == "strict"
+    assert capabilities["cookie_secure"] is False
     assert capabilities["session_ttl_seconds"] == 900
     assert "api_key" not in capabilities
 

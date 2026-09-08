@@ -99,7 +99,10 @@ DESCRIPTIONS: dict[str, str] = {
     "llm_model": "Model identifier requested from the inference service.",
     "external_docker_network": "Docker network hosting the inference service.",
     "session_ttl_seconds": "Browser session lifetime before re-authentication.",
-    "session_cookie_secure": "Require HTTPS before issuing session cookies.",
+    "session_cookie_secure": (
+        "Issue Secure session cookies; off for HTTP loopback/SSH-tunnel, "
+        "required with TLS for the network profile."
+    ),
     "max_concurrent_requests": "Bounded inference concurrency slot count.",
     "max_requests_per_minute": "Per-client request rate bound.",
     "retry_max_attempts": "Idempotent request retry bound.",

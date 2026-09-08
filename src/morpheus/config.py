@@ -58,7 +58,7 @@ class MorpheusSettings(BaseModel):
     agent_key: SecretStr = SecretStr("")
     session_secret: SecretStr = SecretStr("")
     session_ttl_seconds: int = Field(default=900, ge=60, le=86_400)
-    session_cookie_secure: bool = True
+    session_cookie_secure: bool = False
     max_concurrent_requests: int = Field(default=16, ge=1, le=256)
     max_requests_per_minute: int = Field(default=120, ge=1, le=10_000)
     retry_max_attempts: int = Field(default=3, ge=1, le=5)
@@ -248,17 +248,20 @@ class MorpheusSettings(BaseModel):
             raise ValueError("lifecycle requires a fixed deployment root")
         if self.diagnosis_mode == "external" and not self.diagnosis_endpoint:
             raise ValueError("external diagnosis requires a configured endpoint")
-        if (
-            self.access_profile in _LOOPBACK_PROFILES
-            and not ipaddress.ip_address(self.bind_address).is_loopback
-        ):
-            raise ValueError(
-                "access profiles loopback and ssh_tunnel require a loopback bind address"
-            )
+        if self.access_profile in _LOOPBACK_PROFILES:
+            if not ipaddress.ip_address(self.bind_address).is_loopback:
+                raise ValueError(
+                    "access profiles loopback and ssh_tunnel require a loopback bind address"
+                )
+            if self.session_cookie_secure and not self._tls_configured():
+                raise ValueError(
+                    "Secure session cookies require TLS; disable session_cookie_secure "
+                    "for HTTP loopback or configure tls_cert_path/tls_key_path"
+                )
         if self.access_profile == "network":
             if not self.allow_lan:
                 raise ValueError("the network access profile requires allow_lan=true")
-            if not self.tls_cert_path or not self.tls_key_path:
+            if not self._tls_configured():
                 raise ValueError("the network access profile requires tls cert and key paths")
             if not self.allowed_origins:
                 raise ValueError("the network access profile requires allowed_origins")
@@ -267,6 +270,9 @@ class MorpheusSettings(BaseModel):
             if not self.api_key.get_secret_value():
                 raise ValueError("the network access profile requires a configured api_key")
         return self
+
+    def _tls_configured(self) -> bool:
+        return self.tls_cert_path is not None and self.tls_key_path is not None
 
     def features(self) -> dict[str, bool]:
         return {name: bool(getattr(self, field)) for name, field in FEATURE_FIELDS.items()}

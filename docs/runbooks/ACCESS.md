@@ -14,8 +14,10 @@ hardened cookies.
 
 - API binds to `127.0.0.1:7400` and the dashboard to `127.0.0.1:7401`.
 - Browser sessions require the API key once, then issue short-lived
-  signed cookies (`Secure` when configured, `HttpOnly` for the session
-  token, `SameSite=Strict`).
+  signed cookies (`HttpOnly` for the session token, `SameSite=Strict`).
+  Loopback and SSH-tunnel HTTP defaults leave `Secure` off so the
+  browser will store the cookie; `access_profile=network` still
+  requires `session_cookie_secure=true` plus TLS.
 - Every state-changing browser call requires the CSRF token.
 - Proxy headers (`X-Forwarded-*`) are never trusted.
 - Check the live posture at `GET /api/v1/system/access` (API key
