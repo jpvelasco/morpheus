@@ -121,6 +121,21 @@ def test_blockers_are_preserved_verbatim() -> None:
     assert report[Control.VOICE].blockers == ("component_unhealthy:voice",)
 
 
+def test_R8_deferred_optional_control_never_reaches_usable() -> None:
+    report = evaluate_controls(
+        configured={Control.CORE: True, Control.SEARCH: True},
+        core_ready=True,
+        component_state={
+            Control.CORE: (ComponentHealth.HEALTHY,),
+            Control.SEARCH: (ComponentHealth.HEALTHY,),
+        },
+    )
+    status = report[Control.SEARCH]
+    assert status.usable is False
+    assert status.state is ControlState.HEALTHY
+    assert "deferred_optional_scope" in status.blockers
+
+
 def test_result_is_an_exact_mapping_of_configured_inputs() -> None:
     report = evaluate_controls(
         configured=configured(),

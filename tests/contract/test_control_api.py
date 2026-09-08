@@ -16,6 +16,7 @@ from morpheus.core.models import ServedModel
 from morpheus.ops.recommendation import catalog_snapshot_digest
 
 MORPHEUS_OWNED_REQUIREMENTS = frozenset({"RUN-005", "SEC-001", "UI-002", "UI-004"})
+DEFERRED_OPTIONAL_CAPABILITIES = ("search", "voice", "research", "rag", "image_generation")
 pytestmark = pytest.mark.contract
 NOW = datetime(2026, 7, 15, tzinfo=UTC)
 
@@ -332,11 +333,52 @@ def test_RUN_005_capabilities_report_disabled_features_honestly() -> None:
     assert response.json()["capabilities"]["search"]["state"] == "disabled"
 
 
+def test_R8_deferred_optional_capabilities_are_never_advertised_as_available() -> None:
+    test_client = client(
+        settings=MorpheusSettings(
+            api_key="test-api-key",
+            enable_search=True,
+            enable_voice=True,
+            enable_research=True,
+            enable_rag=True,
+            enable_image_generation=True,
+        ),
+        runtime_agent=ServicesRuntimeAgent(
+            [
+                {"component": "search", "state": "running", "health": "healthy"},
+                {"component": "voice-gateway", "state": "running", "health": "healthy"},
+                {"component": "research", "state": "running", "health": "healthy"},
+                {"component": "image", "state": "running", "health": "healthy"},
+            ]
+        ),
+    )
+    headers = {"Authorization": "Bearer test-api-key"}
+
+    capabilities = test_client.get("/api/v1/capabilities", headers=headers)
+    support = test_client.get("/api/v1/support", headers=headers)
+    controls = test_client.get("/api/v1/operations/controls", headers=headers)
+
+    assert capabilities.status_code == 200
+    assert support.status_code == 200
+    assert controls.status_code == 200
+    payload = capabilities.json()["capabilities"]
+    advertised = support.json()["support"]["advertised"]
+    control_items = {item["control"]: item for item in controls.json()["controls"]}
+    for name in DEFERRED_OPTIONAL_CAPABILITIES:
+        assert payload[name]["state"] != "available"
+        assert payload[name]["state"] == "blocked"
+        assert "deferred_optional_scope" in payload[name]["blockers"]
+        assert name not in advertised
+        if name in control_items:
+            assert control_items[name]["usable"] is False
+            assert control_items[name]["state"] != "usable"
+
+
 def test_RUN_005_capabilities_require_healthy_owned_service_evidence() -> None:
     test_client = client(
-        settings=MorpheusSettings(api_key="test-api-key", enable_search=True),
+        settings=MorpheusSettings(api_key="test-api-key", enable_telemetry=True),
         runtime_agent=ServicesRuntimeAgent(
-            [{"component": "search", "state": "running", "health": "healthy"}]
+            [{"component": "telemetry", "state": "running", "health": "healthy"}]
         ),
     )
 
@@ -345,18 +387,18 @@ def test_RUN_005_capabilities_require_healthy_owned_service_evidence() -> None:
     )
 
     assert response.status_code == 200
-    assert response.json()["capabilities"]["search"] == {"state": "available", "blockers": []}
+    assert response.json()["capabilities"]["telemetry"] == {"state": "available", "blockers": []}
 
 
 def test_RUN_005_capabilities_report_unhealthy_or_unverified_dependencies() -> None:
     unhealthy_client = client(
-        settings=MorpheusSettings(api_key="test-api-key", enable_search=True),
+        settings=MorpheusSettings(api_key="test-api-key", enable_telemetry=True),
         runtime_agent=ServicesRuntimeAgent(
-            [{"component": "search", "state": "running", "health": "unhealthy"}]
+            [{"component": "telemetry", "state": "running", "health": "unhealthy"}]
         ),
     )
     unverified_client = client(
-        settings=MorpheusSettings(api_key="test-api-key", enable_search=True)
+        settings=MorpheusSettings(api_key="test-api-key", enable_telemetry=True)
     )
 
     unhealthy = unhealthy_client.get(
@@ -366,11 +408,11 @@ def test_RUN_005_capabilities_report_unhealthy_or_unverified_dependencies() -> N
         "/api/v1/capabilities", headers={"Authorization": "Bearer test-api-key"}
     )
 
-    assert unhealthy.json()["capabilities"]["search"] == {
+    assert unhealthy.json()["capabilities"]["telemetry"] == {
         "state": "unhealthy",
-        "blockers": ["component_unhealthy:search"],
+        "blockers": ["component_unhealthy:telemetry"],
     }
-    assert unverified.json()["capabilities"]["search"] == {
+    assert unverified.json()["capabilities"]["telemetry"] == {
         "state": "blocked",
         "blockers": ["runtime_agent_not_configured"],
     }
@@ -378,9 +420,9 @@ def test_RUN_005_capabilities_report_unhealthy_or_unverified_dependencies() -> N
 
 def test_RUN_005_capabilities_block_running_service_without_health_contract() -> None:
     test_client = client(
-        settings=MorpheusSettings(api_key="test-api-key", enable_search=True),
+        settings=MorpheusSettings(api_key="test-api-key", enable_telemetry=True),
         runtime_agent=ServicesRuntimeAgent(
-            [{"component": "search", "state": "running", "health": None}]
+            [{"component": "telemetry", "state": "running", "health": None}]
         ),
     )
 
@@ -388,9 +430,9 @@ def test_RUN_005_capabilities_block_running_service_without_health_contract() ->
         "/api/v1/capabilities", headers={"Authorization": "Bearer test-api-key"}
     )
 
-    assert response.json()["capabilities"]["search"] == {
+    assert response.json()["capabilities"]["telemetry"] == {
         "state": "blocked",
-        "blockers": ["component_health_unavailable:search"],
+        "blockers": ["component_health_unavailable:telemetry"],
     }
 
 
