@@ -243,3 +243,24 @@ def test_fixture_benchmark_records_a_succeeded_campaign(tmp_path: Path) -> None:
         listed = client.get("/api/v1/operations/benchmarks?limit=10", headers=AUTH)
         assert listed.status_code == 200
         assert listed.json()["count"] >= 1
+
+
+def test_GATE_001_compat_health_follows_the_active_plan(tmp_path: Path) -> None:
+    plan = _plan("plan-r3-stage-a", alias="stage-a")
+    _seed(tmp_path, plan)
+    with _client(tmp_path) as client:
+        csrf = _csrf(client)
+        missing = client.get("/compat/health")
+        assert missing.status_code == 503
+        install = _start(client, csrf, "engine_install", plan.plan_id, "install-a")
+        assert _wait(client, "engine_install", install["operation_id"])["state"] == "succeeded"
+        promote = _start(client, csrf, "promote", plan.plan_id, "promote-a")
+        assert _wait(client, "promote", promote["operation_id"])["state"] == "succeeded"
+        health = client.get("/compat/health")
+        assert health.status_code == 200
+        assert health.json()["plan_id"] == plan.plan_id
+        models = client.get("/compat/v1/models", headers=AUTH)
+        assert models.status_code == 200
+        assert models.json()["data"][0]["id"] == "stage-a"
+        denied = client.get("/compat/v1/models")
+        assert denied.status_code == 401

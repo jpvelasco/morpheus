@@ -935,6 +935,13 @@ def test_OUI_006_unwired_workflow_refusal_is_honest_and_audited(tmp_path) -> Non
     )
     assert session_response.status_code == 200
     assert session_response.json()["session"]["session_id"] == started.json()["operation_id"]
+    events = test_client.get(
+        "/api/v1/operations/events?source=api&limit=20",
+        headers={"Authorization": "Bearer test-api-key"},
+    )
+    assert events.status_code == 200
+    messages = [entry["message"] for entry in events.json()["events"]]
+    assert any("remove" in message or "preflight" in message for message in messages)
 
 
 def test_OUI_006_workflow_unknown_id_and_missing_session_are_bounded(tmp_path) -> None:

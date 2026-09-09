@@ -41,7 +41,9 @@ private request data, host addresses, or unredacted evidence.
   `engine_configure` and `remove` still honest-fail. A fixture `benchmark`
   workflow now records a succeeded campaign through `run_campaign`. Settings
   apply is a real `load_settings` journal layer. A background metrics
-  collector persists samples without a dashboard GET. R8
+  collector persists samples without a dashboard GET. `/compat/health` and
+  `/compat/v1/models` bind to the active plan. Durable operations emit
+  redacted `api` events. R8
   public-surface enforcement landed: deferred optional
   services (search, voice, research, RAG, image generation) stay `deferred`
   in the manifest and cannot be advertised as available or usable on
