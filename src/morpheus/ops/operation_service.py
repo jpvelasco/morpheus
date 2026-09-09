@@ -14,7 +14,7 @@ returns the already-recorded operation without re-executing any step.
 from __future__ import annotations
 
 import asyncio
-from typing import Protocol
+from typing import Any, Protocol
 
 from morpheus.adapters.persistence.operation_store import OperationStore
 from morpheus.adapters.workflows.runner import (
