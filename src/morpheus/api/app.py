@@ -106,6 +106,7 @@ from morpheus.core.settings_catalog import detect_sources, settings_catalog
 from morpheus.core.targets import FROZEN_TARGETS
 from morpheus.core.workflows import WorkflowId, workflow_definitions
 from morpheus.core.workload import SEED_PROFILES, OperatorConstraints
+from morpheus.gateway.managed import route_for_plan
 from morpheus.ops.diagnosis import DiagnosisService
 from morpheus.ops.diagnostics import DiagnosticEvidenceBuilder, DiagnosticEvidenceError
 from morpheus.ops.operation_service import OperationService, OperationServiceError
@@ -352,11 +353,15 @@ def create_app(
         hooks=active_hooks,
         fallback=UnavailableWorkflowExecutor(),
     )
+    operation_events = SqliteStore(
+        settings.data_dir / "morpheus.sqlite3", owned_root=settings.data_dir
+    )
     operation_service = OperationService(
         executor=default_executor,
         store=OperationStore(settings.data_dir / "operations"),
         clock=clock,
         audit=workflow_audit_store,
+        events=operation_events,
         planning=planning,
     )
     operation_service.recover_interrupted()
@@ -669,6 +674,51 @@ def create_app(
     @app.get("/healthz")
     async def public_health() -> dict[str, str]:
         return {"status": "ok"}
+
+    def _require_active_route() -> tuple[Any, Any] | None:
+        active = plan_store.active()
+        if active is None:
+            return None
+        return active.plan, route_for_plan(active.plan)
+
+    @app.get("/compat/health")
+    async def compat_health() -> Any:
+        bound = _require_active_route()
+        if bound is None:
+            return JSONResponse(
+                status_code=503,
+                content={"status": "unavailable", "reason": "no_active_managed_plan"},
+            )
+        plan, route = bound
+        return {
+            "status": "ok",
+            "mode": route.mode,
+            "schema_version": route.schema_version,
+            "plan_id": plan.plan_id,
+        }
+
+    @app.get("/compat/v1/models")
+    async def compat_models(authorization: str | None = Header(default=None)) -> Any:
+        bound = _require_active_route()
+        if bound is None:
+            return JSONResponse(
+                status_code=503,
+                content={"error": {"code": "no_active_managed_plan"}},
+            )
+        plan, _route = bound
+        token = None
+        if authorization is not None and authorization.startswith("Bearer "):
+            token = authorization.removeprefix("Bearer ").strip()
+        expected = settings.api_key.get_secret_value()
+        if not expected or not token or not hmac.compare_digest(token, expected):
+            raise AuthenticationRequired
+        return {
+            "object": "list",
+            "data": [
+                {"id": alias, "object": "model", "owned_by": plan.plan_id}
+                for alias in plan.served_aliases
+            ],
+        }
 
     @app.post("/api/v1/session")
     async def login(credentials: SessionLogin, response: Response) -> dict[str, str]:

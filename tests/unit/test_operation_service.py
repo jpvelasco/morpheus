@@ -6,6 +6,7 @@ import pytest
 
 from morpheus.adapters.persistence.operation_store import OperationStore
 from morpheus.adapters.workflows.runner import PreflightResult, StepResult
+from morpheus.core.events import EventsError
 from morpheus.core.operations import (
     ManagedOperation,
     ManagedOperationState,
@@ -34,6 +35,14 @@ class RecordingAudit:
         self.events.append(dict(fields))
 
 
+class RecordingEvents:
+    def __init__(self) -> None:
+        self.events: list[dict[str, object]] = []
+
+    async def record_event(self, **fields: object) -> None:
+        self.events.append(dict(fields))
+
+
 class StaticExecutor:
     """Executor whose preflight/execute behavior is scriptable per test."""
 
@@ -57,12 +66,13 @@ class StaticExecutor:
         return self._execute  # type: ignore[return-value]
 
 
-def _service(tmp_path, executor, audit=None) -> OperationService:
+def _service(tmp_path, executor, audit=None, events=None) -> OperationService:
     return OperationService(
         executor=executor,
         store=OperationStore(tmp_path / "operations"),
         clock=FakeClock(),
         audit=audit,
+        events=events,
     )
 
 
@@ -115,13 +125,28 @@ async def test_existing_token_returns_recorded_operation_without_rerunning(
 
 async def test_preflight_crash_fails_the_operation_honestly(tmp_path) -> None:
     audit = RecordingAudit()
-    service = _service(tmp_path, StaticExecutor(preflight=RuntimeError("boom")), audit)
+    sink = RecordingEvents()
+    service = _service(tmp_path, StaticExecutor(preflight=RuntimeError("boom")), audit, events=sink)
     result = await service.start(WorkflowId.BENCHMARK, confirmed=True)
     assert result["started"] is False
     session = result["session"]
     assert session["state"] == "failed"
     assert "boom" in str(session["error"])
     assert any(event["event"] == "preflight_failed" for event in audit.events)
+    assert sink.events
+    assert sink.events[-1]["source"] == "api"
+    assert sink.events[-1]["severity"] == "error"
+
+
+class BrokenEvents:
+    async def record_event(self, **fields: object) -> None:
+        raise EventsError("invalid event")
+
+
+async def test_event_sink_errors_do_not_block_start(tmp_path) -> None:
+    service = _service(tmp_path, StaticExecutor(), events=BrokenEvents())
+    result = await service.start(WorkflowId.BENCHMARK, confirmed=True)
+    assert result["started"] is True
 
 
 async def test_step_crash_is_recorded_as_a_failed_step(tmp_path) -> None:

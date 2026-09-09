@@ -178,6 +178,9 @@ application operation boundary.
   succeeded campaign via `run_campaign`; `MetricsCollectorLoop` collects
   independently of GET. OUI-002/OUI-003/OUI-005 stay `planned` until the
   remaining producers, settings-to-plan preview, and walk land.
+- 2026-09-08: GATE-001 increment — `/compat/health` and `/compat/v1/models`
+  follow `plan_store.active()`. Durable workflow starts emit redacted `api`
+  events. Remaining R3: walk, owned-service actions, engine_configure/remove.
 - 2026-09-08: R8 focused-scope boundary enforced at the public capability
   and control surfaces. The 12 optional-scope IDs remain `deferred`. Enabling
   search/voice/research/RAG/image flags no longer advertises those services

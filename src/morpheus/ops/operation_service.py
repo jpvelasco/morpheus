@@ -14,7 +14,7 @@ returns the already-recorded operation without re-executing any step.
 from __future__ import annotations
 
 import asyncio
-from typing import Protocol
+from typing import Any, Protocol
 
 from morpheus.adapters.persistence.operation_store import OperationStore
 from morpheus.adapters.workflows.runner import (
@@ -22,6 +22,7 @@ from morpheus.adapters.workflows.runner import (
     StepResult,
     WorkflowExecutor,
 )
+from morpheus.core.events import EventsError, sanitize_message
 from morpheus.core.operations import (
     ManagedOperation,
     ManagedOperationState,
@@ -39,6 +40,10 @@ class OperationServiceError(RuntimeError):
 
 class OperationAuditSink(Protocol):
     async def record_workflow_audit(self, **fields: object) -> None: ...
+
+
+class OperationEventSink(Protocol):
+    async def record_event(self, **fields: object) -> None: ...
 
 
 _MAX_LIST = 50
@@ -64,6 +69,7 @@ class OperationService:
         store: OperationStore,
         clock: Clock,
         audit: OperationAuditSink | None = None,
+        events: OperationEventSink | Any | None = None,
         planning: PlanningService | None = None,
         max_concurrent: int = 2,
     ) -> None:
@@ -71,6 +77,7 @@ class OperationService:
         self._store = store
         self._clock = clock
         self._audit = audit
+        self._events = events
         self._planning = planning
         self._semaphore = asyncio.Semaphore(max(1, max_concurrent))
         self._tasks: set[asyncio.Task[None]] = set()
@@ -148,6 +155,7 @@ class OperationService:
             bind(operation)
         self._record_plan_operation(operation, state="accepted")
         await self._audit_event(operation, event="started", step_id=None, message=None)
+        await self._emit_event(operation, event="started", message=None)
 
         try:
             preflight: PreflightResult = await self._executor.preflight(workflow_id)
@@ -161,6 +169,7 @@ class OperationService:
             await self._audit_event(
                 failed, event="preflight_failed", step_id=None, message=failed.error
             )
+            await self._emit_event(failed, event="preflight_failed", message=failed.error)
             self._record_plan_operation(failed)
             return self._result(failed, started=False)
 
@@ -174,6 +183,7 @@ class OperationService:
             await self._audit_event(
                 failed, event="preflight_failed", step_id=None, message=failed.error
             )
+            await self._emit_event(failed, event="preflight_failed", message=failed.error)
             self._record_plan_operation(failed)
             return self._result(failed, started=False)
 
@@ -248,6 +258,7 @@ class OperationService:
                 await self._audit_event(
                     updated, event=event, step_id=step_id, message=result.message
                 )
+                await self._emit_event(updated, event=event, message=result.message)
                 self._record_plan_operation(updated)
 
     # ------------------------------------------------------------------ recovery
@@ -318,3 +329,26 @@ class OperationService:
             plan_id=operation.plan_id,
             ownership="managed" if operation.plan_id else None,
         )
+
+    async def _emit_event(
+        self,
+        operation: ManagedOperation,
+        *,
+        event: str,
+        message: str | None,
+    ) -> None:
+        if self._events is None:
+            return
+        severity = "error" if event.endswith("failed") or operation.state == "failed" else "info"
+        text = message or f"workflow {operation.workflow_id} {event}"
+        try:
+            await self._events.record_event(
+                source="api",
+                severity=severity,
+                message=sanitize_message(text),
+                correlation_id=operation.operation_id,
+                deployment_id=operation.plan_id,
+                recorded_at=self._now(),
+            )
+        except (EventsError, TypeError, ValueError):
+            return
