@@ -675,7 +675,7 @@ def create_app(
     async def public_health() -> dict[str, str]:
         return {"status": "ok"}
 
-    def _require_active_route():
+    def _require_active_route() -> tuple[Any, Any] | None:
         active = plan_store.active()
         if active is None:
             return None

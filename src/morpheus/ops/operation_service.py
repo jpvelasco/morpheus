@@ -69,7 +69,7 @@ class OperationService:
         store: OperationStore,
         clock: Clock,
         audit: OperationAuditSink | None = None,
-        events: OperationEventSink | None = None,
+        events: OperationEventSink | Any | None = None,
         planning: PlanningService | None = None,
         max_concurrent: int = 2,
     ) -> None:
