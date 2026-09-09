@@ -6,6 +6,7 @@ import pytest
 
 from morpheus.adapters.persistence.operation_store import OperationStore
 from morpheus.adapters.workflows.runner import PreflightResult, StepResult
+from morpheus.core.events import EventsError
 from morpheus.core.operations import (
     ManagedOperation,
     ManagedOperationState,
@@ -135,6 +136,17 @@ async def test_preflight_crash_fails_the_operation_honestly(tmp_path) -> None:
     assert sink.events
     assert sink.events[-1]["source"] == "api"
     assert sink.events[-1]["severity"] == "error"
+
+
+class BrokenEvents:
+    async def record_event(self, **fields: object) -> None:
+        raise EventsError("invalid event")
+
+
+async def test_event_sink_errors_do_not_block_start(tmp_path) -> None:
+    service = _service(tmp_path, StaticExecutor(), events=BrokenEvents())
+    result = await service.start(WorkflowId.BENCHMARK, confirmed=True)
+    assert result["started"] is True
 
 
 async def test_step_crash_is_recorded_as_a_failed_step(tmp_path) -> None:

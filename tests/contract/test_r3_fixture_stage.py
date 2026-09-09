@@ -252,6 +252,8 @@ def test_GATE_001_compat_health_follows_the_active_plan(tmp_path: Path) -> None:
         csrf = _csrf(client)
         missing = client.get("/compat/health")
         assert missing.status_code == 503
+        missing_models = client.get("/compat/v1/models", headers=AUTH)
+        assert missing_models.status_code == 503
         install = _start(client, csrf, "engine_install", plan.plan_id, "install-a")
         assert _wait(client, "engine_install", install["operation_id"])["state"] == "succeeded"
         promote = _start(client, csrf, "promote", plan.plan_id, "promote-a")

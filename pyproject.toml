@@ -29,7 +29,7 @@ dev = [
   "bandit==1.8.6",
   "build==1.2.2.post1",
   "hypothesis==6.135.26",
-  "httpx2==2.5.0",
+  "httpx2==2.12.0",
   "mypy==1.17.0",
   "pip-audit==2.9.0",
   "pytest==9.1.1",
