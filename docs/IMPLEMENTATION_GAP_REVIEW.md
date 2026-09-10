@@ -188,6 +188,11 @@ application operation boundary.
 - 2026-09-10: R3 increment — fixture `remove` refuses the active plan and
   deletes `{data_dir}/runtime/plans/{plan_id}` for inactive staged plans.
   Remaining R3: disposable walk, owned-service actions.
+- 2026-09-10: R3 increment — disposable acceptance walk composes
+  acquire, install, configure, benchmark, promote, observe, rollback,
+  and reconnect after API restart at the public authenticated boundary.
+  Remaining R3: owned-service actions. BENCH/GATE/RUNM/UI/OUI stay
+  `planned`.
 - 2026-09-08: R8 focused-scope boundary enforced at the public capability
   and control surfaces. The 12 optional-scope IDs remain `deferred`. Enabling
   search/voice/research/RAG/image flags no longer advertises those services

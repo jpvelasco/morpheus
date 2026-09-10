@@ -30,17 +30,18 @@ private request data, host addresses, or unredacted evidence.
   `planned`. R3 foundation landed on `feat/r3-durable-operation-service`:
   production workflow routes now run through a durable managed operation
   service (out-of-request execution, idempotent token starts, restart
-  recovery, honest refusal instead of simulated DEV mutations); remaining R3
-  scope — real per-workflow lifecycle executors, the disposable acceptance
-  walk, settings-to-startup-config composition, and owned service actions —
-  is still open. R3 slice 1 landed: workflow starts now require a known
+  recovery, honest refusal instead of simulated DEV mutations). Remaining
+  R3 scope is Morpheus-owned service actions behind the operation
+  boundary. R3 slice 1 landed: workflow starts now require a known
   managed `plan_id` before persist, and `model_acquire` runs through
   `AcquisitionCache` against an owned fixture source; other workflows still
   honest-fail. R3 slice 2 landed: fixture StageHooks install/promote/rollback
   canonical plans under the owned runtime root (file markers only).
   Fixture `remove` now refuses the active plan and cleans an inactive
   staged plan under the owned runtime root. Fixture `engine_configure`
-  writes a plan-bound config marker without activating.
+  writes a plan-bound config marker without activating. A disposable
+  acceptance walk now composes acquire through rollback and reconnects
+  after API restart. Owned-service actions remain open.
   A fixture `benchmark`
   workflow now records a succeeded campaign through `run_campaign`. Settings
   apply is a real `load_settings` journal layer. A background metrics
@@ -346,10 +347,8 @@ public/application boundaries and their affected gates pass.
 4. **R3 — durable managed application service.** Foundation landed on
    `feat/r3-durable-operation-service` (durable operation documents,
    out-of-request execution with bounded concurrency, idempotent token
-   starts, restart recovery, honest refusal default). Still open: real
-   lifecycle-backed executors per workflow, the disposable acceptance walk
-   lane, settings overrides through the real startup configuration source,
-   and Morpheus-owned service actions behind the operation boundary.
+   starts, restart recovery, honest refusal default). Remaining open:
+   Morpheus-owned service actions behind the operation boundary.
 5. **R4 through R7 — native lifecycle, observability, desktop/model console,
    diagnosis, and setup copilot.** These may fan out only after the R3
    application boundary is fixed. CHAT-001 and CHAT-002 remain planned and must
