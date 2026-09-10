@@ -160,6 +160,10 @@ def test_fixture_hooks_stay_inside_owned_runtime_root(tmp_path: Path) -> None:
     assert hooks.active_plan_id() == plan.plan_id
     hooks.deactivate(plan)
     assert hooks.active_plan_id() is None
+    first = hooks.write_config(plan)
+    assert first.is_relative_to(tmp_path / "runtime")
+    assert hooks.backup_config(plan) is not None
+    assert (tmp_path / "runtime" / "plans" / plan.plan_id / "config.previous.json").is_file()
     hooks.cleanup(plan)
     assert not marker.exists()
 
@@ -243,6 +247,57 @@ def test_fixture_benchmark_records_a_succeeded_campaign(tmp_path: Path) -> None:
         listed = client.get("/api/v1/operations/benchmarks?limit=10", headers=AUTH)
         assert listed.status_code == 200
         assert listed.json()["count"] >= 1
+
+
+def test_engine_configure_requires_a_staged_engine(tmp_path: Path) -> None:
+    plan = _plan("plan-r3-stage-a", alias="stage-a")
+    _seed(tmp_path, plan)
+    with _client(tmp_path) as client:
+        csrf = _csrf(client)
+        started = _start(client, csrf, "engine_configure", plan.plan_id, "configure-a")
+        session = (
+            _wait(client, "engine_configure", started["operation_id"])
+            if started["started"]
+            else started["session"]
+        )
+        assert session["state"] == "failed"
+        assert "staged engine" in (session.get("error") or "")
+        assert not (tmp_path / "runtime" / "plans" / plan.plan_id / "config.json").exists()
+
+
+def test_engine_configure_writes_config_without_activating(tmp_path: Path) -> None:
+    plan = _plan("plan-r3-stage-a", alias="stage-a")
+    _seed(tmp_path, plan)
+    with _client(tmp_path) as client:
+        csrf = _csrf(client)
+        install = _start(client, csrf, "engine_install", plan.plan_id, "install-a")
+        assert _wait(client, "engine_install", install["operation_id"])["state"] == "succeeded"
+        started = _start(client, csrf, "engine_configure", plan.plan_id, "configure-a")
+        assert started["started"] is True
+        session = _wait(client, "engine_configure", started["operation_id"])
+        assert session["state"] == "succeeded", session
+        assert client.get("/api/v1/plans/state", headers=AUTH).json()["active_plan_id"] is None
+    marker = tmp_path / "runtime" / "plans" / plan.plan_id / "config.json"
+    assert marker.is_file()
+    payload = marker.read_text(encoding="utf-8")
+    assert plan.plan_id in payload
+    assert "context_length" in payload
+
+
+def test_engine_configure_backs_up_previous_config(tmp_path: Path) -> None:
+    plan = _plan("plan-r3-stage-a", alias="stage-a")
+    _seed(tmp_path, plan)
+    with _client(tmp_path) as client:
+        csrf = _csrf(client)
+        install = _start(client, csrf, "engine_install", plan.plan_id, "install-a")
+        assert _wait(client, "engine_install", install["operation_id"])["state"] == "succeeded"
+        first = _start(client, csrf, "engine_configure", plan.plan_id, "configure-a")
+        assert _wait(client, "engine_configure", first["operation_id"])["state"] == "succeeded"
+        second = _start(client, csrf, "engine_configure", plan.plan_id, "configure-a-2")
+        assert _wait(client, "engine_configure", second["operation_id"])["state"] == "succeeded"
+    backup = tmp_path / "runtime" / "plans" / plan.plan_id / "config.previous.json"
+    assert backup.is_file()
+    assert plan.plan_id in backup.read_text(encoding="utf-8")
 
 
 def test_GATE_001_compat_health_follows_the_active_plan(tmp_path: Path) -> None:
