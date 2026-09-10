@@ -300,6 +300,46 @@ def test_engine_configure_backs_up_previous_config(tmp_path: Path) -> None:
     assert plan.plan_id in backup.read_text(encoding="utf-8")
 
 
+def test_remove_refuses_the_active_plan(tmp_path: Path) -> None:
+    plan = _plan("plan-r3-stage-a", alias="stage-a")
+    _seed(tmp_path, plan)
+    with _client(tmp_path) as client:
+        csrf = _csrf(client)
+        install = _start(client, csrf, "engine_install", plan.plan_id, "install-a")
+        assert _wait(client, "engine_install", install["operation_id"])["state"] == "succeeded"
+        promote = _start(client, csrf, "promote", plan.plan_id, "promote-a")
+        assert _wait(client, "promote", promote["operation_id"])["state"] == "succeeded"
+        started = _start(client, csrf, "remove", plan.plan_id, "remove-active")
+        session = (
+            _wait(client, "remove", started["operation_id"])
+            if started["started"]
+            else started["session"]
+        )
+        assert session["state"] == "failed"
+        assert "active" in (session.get("error") or "")
+        assert (tmp_path / "runtime" / "plans" / plan.plan_id / "engine.json").is_file()
+        assert (
+            client.get("/api/v1/plans/state", headers=AUTH).json()["active_plan_id"] == plan.plan_id
+        )
+
+
+def test_remove_cleans_a_staged_inactive_plan(tmp_path: Path) -> None:
+    plan = _plan("plan-r3-stage-a", alias="stage-a")
+    _seed(tmp_path, plan)
+    with _client(tmp_path) as client:
+        csrf = _csrf(client)
+        install = _start(client, csrf, "engine_install", plan.plan_id, "install-a")
+        assert _wait(client, "engine_install", install["operation_id"])["state"] == "succeeded"
+        configure = _start(client, csrf, "engine_configure", plan.plan_id, "configure-a")
+        assert _wait(client, "engine_configure", configure["operation_id"])["state"] == "succeeded"
+        started = _start(client, csrf, "remove", plan.plan_id, "remove-a")
+        assert started["started"] is True
+        session = _wait(client, "remove", started["operation_id"])
+        assert session["state"] == "succeeded", session
+        assert client.get("/api/v1/plans/state", headers=AUTH).json()["active_plan_id"] is None
+    assert not (tmp_path / "runtime" / "plans" / plan.plan_id).exists()
+
+
 def test_GATE_001_compat_health_follows_the_active_plan(tmp_path: Path) -> None:
     plan = _plan("plan-r3-stage-a", alias="stage-a")
     _seed(tmp_path, plan)
