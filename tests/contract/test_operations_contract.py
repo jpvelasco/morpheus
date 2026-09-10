@@ -721,6 +721,66 @@ def _signed_in_client(
     return test_client, {"X-CSRF-Token": csrf}
 
 
+def test_UI_003_owned_control_action_requires_confirmation_csrf_and_plan(tmp_path) -> None:
+    test_client, csrf = _signed_in_client(tmp_path)
+    missing_csrf = test_client.post(
+        "/api/v1/operations/controls/telemetry/action",
+        json={"confirmed": True, "plan_id": HONEST_PLAN_ID, "action": "restart"},
+    )
+    assert missing_csrf.status_code == 403
+    unconfirmed = test_client.post(
+        "/api/v1/operations/controls/telemetry/action",
+        json={"confirmed": False, "plan_id": HONEST_PLAN_ID, "action": "restart"},
+        headers=csrf,
+    )
+    assert unconfirmed.status_code == 400
+    assert "confirmation" in unconfirmed.json()["error"]["message"]
+    missing_plan = test_client.post(
+        "/api/v1/operations/controls/telemetry/action",
+        json={"confirmed": True, "action": "restart"},
+        headers=csrf,
+    )
+    assert missing_plan.status_code == 400
+
+
+def test_UI_003_owned_control_action_is_plan_bound_and_audited(tmp_path) -> None:
+    test_client, csrf = _signed_in_client(tmp_path)
+    response = test_client.post(
+        "/api/v1/operations/controls/telemetry/action",
+        json={"confirmed": True, "plan_id": HONEST_PLAN_ID, "action": "restart"},
+        headers=csrf,
+    )
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["accepted"] is True
+    assert payload["control"] == "telemetry"
+    assert payload["action"] == "restart"
+    assert payload["plan_id"] == HONEST_PLAN_ID
+    marker = tmp_path / "runtime" / "controls" / "telemetry.json"
+    assert marker.is_file()
+    assert HONEST_PLAN_ID in marker.read_text(encoding="utf-8")
+    events = test_client.get(
+        "/api/v1/operations/events?source=api&limit=20",
+        headers={"Authorization": "Bearer test-api-key"},
+    )
+    assert events.status_code == 200
+    messages = [entry["message"] for entry in events.json()["events"]]
+    assert any("telemetry" in message and "restart" in message for message in messages)
+
+
+def test_UI_003_external_and_deferred_controls_stay_read_only(tmp_path) -> None:
+    test_client, csrf = _signed_in_client(tmp_path)
+    for control in ("search", "voice", "research", "rag", "image_generation"):
+        response = test_client.post(
+            f"/api/v1/operations/controls/{control}/action",
+            json={"confirmed": True, "plan_id": HONEST_PLAN_ID, "action": "restart"},
+            headers=csrf,
+        )
+        assert response.status_code == 400, control
+        assert response.json()["error"]["code"] in {"control_read_only", "unknown_control"}
+        assert not (tmp_path / "runtime" / "controls" / f"{control}.json").exists()
+
+
 def test_OUI_005_settings_payload_reports_catalog_sources_and_journal(tmp_path) -> None:
     test_client = client(
         settings=MorpheusSettings(

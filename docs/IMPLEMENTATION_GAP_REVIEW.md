@@ -193,6 +193,11 @@ application operation boundary.
   and reconnect after API restart at the public authenticated boundary.
   Remaining R3: owned-service actions. BENCH/GATE/RUNM/UI/OUI stay
   `planned`.
+- 2026-09-10: R3 increment — `POST /api/v1/operations/controls/{control}/action`
+  accepts a confirmed, plan-bound restart for `core`, `telemetry`, and
+  `workflows` and writes `{data_dir}/runtime/controls/{control}.json`.
+  Deferred optional controls stay read-only. BENCH/GATE/RUNM/UI/OUI stay
+  `planned`.
 - 2026-09-08: R8 focused-scope boundary enforced at the public capability
   and control surfaces. The 12 optional-scope IDs remain `deferred`. Enabling
   search/voice/research/RAG/image flags no longer advertises those services

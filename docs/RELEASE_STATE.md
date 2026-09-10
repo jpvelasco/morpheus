@@ -41,7 +41,9 @@ private request data, host addresses, or unredacted evidence.
   staged plan under the owned runtime root. Fixture `engine_configure`
   writes a plan-bound config marker without activating. A disposable
   acceptance walk now composes acquire through rollback and reconnects
-  after API restart. Owned-service actions remain open.
+  after API restart. Owned-service actions now accept a confirmed,
+  plan-bound `telemetry`/`workflows`/`core` restart marker; deferred
+  optional controls stay read-only.
   A fixture `benchmark`
   workflow now records a succeeded campaign through `run_campaign`. Settings
   apply is a real `load_settings` journal layer. A background metrics
@@ -347,8 +349,8 @@ public/application boundaries and their affected gates pass.
 4. **R3 — durable managed application service.** Foundation landed on
    `feat/r3-durable-operation-service` (durable operation documents,
    out-of-request execution with bounded concurrency, idempotent token
-   starts, restart recovery, honest refusal default). Remaining open:
-   Morpheus-owned service actions behind the operation boundary.
+   starts, restart recovery, honest refusal default). Fixture owned-control
+   restart actions now share the plan, confirmation, and audit boundary.
 5. **R4 through R7 — native lifecycle, observability, desktop/model console,
    diagnosis, and setup copilot.** These may fan out only after the R3
    application boundary is fixed. CHAT-001 and CHAT-002 remain planned and must
