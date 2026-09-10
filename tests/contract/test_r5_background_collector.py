@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -65,10 +66,6 @@ def test_OUI_002_background_collector_persists_without_metrics_get(tmp_path) -> 
         clock=FakeClock(now=NOW),
         runtime_agent=HostRuntimeAgent(),
     )
-    with TestClient(app, base_url="https://testserver"):
-        collector = app.state.metrics_collector
-        recorded = __import__("asyncio").run(collector.collect_once())
-        assert recorded >= 1
     store = SqliteStore(tmp_path / "morpheus.sqlite3", owned_root=tmp_path)
 
     async def read() -> int:
@@ -81,4 +78,14 @@ def test_OUI_002_background_collector_persists_without_metrics_get(tmp_path) -> 
         )
         return len(samples)
 
-    assert __import__("asyncio").run(read()) >= 1
+    with TestClient(app, base_url="https://testserver"):
+        # Lifespan already starts MetricsCollectorLoop. Wait for that
+        # writer instead of opening a second collect_once against SQLite.
+        deadline = time.monotonic() + 5
+        count = 0
+        while time.monotonic() < deadline:
+            count = __import__("asyncio").run(read())
+            if count >= 1:
+                break
+            time.sleep(0.05)
+        assert count >= 1
