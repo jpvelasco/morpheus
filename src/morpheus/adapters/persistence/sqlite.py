@@ -302,10 +302,15 @@ class SqliteStore:
         correlation_id: str | None = None,
         since: str | None = None,
         not_before: str | None = None,
+        query: str | None = None,
         limit: int = 100,
     ) -> list[EventRecord]:
-        validate_event_filter(
-            source=source, severity=severity, correlation_id=correlation_id, since=since
+        needle = validate_event_filter(
+            source=source,
+            severity=severity,
+            correlation_id=correlation_id,
+            since=since,
+            query=query,
         )
         bounded = bounded_limit(limit)
         lower = since
@@ -322,6 +327,11 @@ class SqliteStore:
                   AND (? IS NULL OR severity = ?)
                   AND (? IS NULL OR correlation_id = ?)
                   AND (? IS NULL OR recorded_at >= ?)
+                  AND (
+                    ? IS NULL
+                    OR instr(lower(message), lower(?)) > 0
+                    OR instr(lower(ifnull(correlation_id, '')), lower(?)) > 0
+                  )
                 ORDER BY recorded_at DESC
                 LIMIT ?
                 """,
@@ -334,6 +344,9 @@ class SqliteStore:
                     correlation_id,
                     lower,
                     lower,
+                    needle,
+                    needle,
+                    needle,
                     bounded,
                 ),
             ).fetchall()

@@ -206,6 +206,10 @@ application operation boundary.
   event queries prune then apply the retention cutoff before returning rows.
   Background collection and producers remain open; OUI-002/OUI-003 stay
   `planned`.
+- 2026-09-10: isolated R5 increment — `/api/v1/operations/events?q=`
+  searches persisted redacted message and correlation text after prune.
+  Oversize or punctuation queries are rejected. OUI-002/OUI-003 stay
+  `planned`.
 
 Optional external harness evidence interoperability under ADR-0010 is not a
 rectification gap, requirement-status change, or R0-through-R9 work item. R1 and

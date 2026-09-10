@@ -967,6 +967,7 @@ def create_app(
         severity: str | None = Query(None),
         correlation_id: str | None = Query(None),
         since: str | None = Query(None),
+        q: str | None = Query(None),
     ) -> dict[str, Any]:
         observed_at = clock.utc_now().isoformat()
         store = SqliteStore(settings.data_dir / "morpheus.sqlite3", owned_root=settings.data_dir)
@@ -980,6 +981,7 @@ def create_app(
                 correlation_id=correlation_id,
                 since=since,
                 not_before=cutoff,
+                query=q,
                 limit=limit,
             )
         except EventsError as error:

@@ -12,6 +12,7 @@ from morpheus.core.events import (
     redact_text,
     sanitize_message,
     validate_event_filter,
+    validate_event_search,
 )
 
 
@@ -124,6 +125,12 @@ def test_validate_event_filter_rejects_unknown_values() -> None:
         validate_event_filter(correlation_id="bad id")
     with pytest.raises(EventsError):
         validate_event_filter(since="not-a-time")
+    with pytest.raises(EventsError):
+        validate_event_search("a" * 129)
+    with pytest.raises(EventsError):
+        validate_event_search("token=secret")
+    assert validate_event_search("plan-r5-search") == "plan-r5-search"
+    assert validate_event_search("") is None
 
 
 def test_event_record_rejects_blank_message() -> None:
