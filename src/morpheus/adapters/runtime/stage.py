@@ -1,8 +1,8 @@
 """Owned-root fixture stage hooks for disposable R3 labs.
 
 These hooks never launch a real engine. They persist plan markers under the
-Morpheus-owned data directory so install, promote, and rollback can be
-exercised without a GPU or external runtime.
+Morpheus-owned data directory so install, configure, promote, and rollback
+can be exercised without a GPU or external runtime.
 """
 
 from __future__ import annotations
@@ -34,6 +34,16 @@ class FixtureStageHooks:
     def _write(self, relative: str, payload: dict[str, object]) -> None:
         write_json_atomic(self._path(relative), payload)
 
+    def _write_plan_marker(
+        self, plan: DeploymentPlan, name: str, payload: dict[str, object]
+    ) -> Path:
+        self.initialize()
+        directory = self._plan_dir(plan.plan_id)
+        directory.mkdir(parents=True, exist_ok=True)
+        marker = directory / name
+        write_json_atomic(marker, payload)
+        return marker
+
     def _read(self, relative: str) -> dict[str, object] | None:
         target = self._path(relative)
         if not target.is_file():
@@ -42,12 +52,9 @@ class FixtureStageHooks:
         return document if isinstance(document, dict) else None
 
     def stage_engine(self, plan: DeploymentPlan) -> Path:
-        self.initialize()
-        directory = self._plan_dir(plan.plan_id)
-        directory.mkdir(parents=True, exist_ok=True)
-        marker = directory / "engine.json"
-        write_json_atomic(
-            marker,
+        return self._write_plan_marker(
+            plan,
+            "engine.json",
             {
                 "plan_id": plan.plan_id,
                 "engine_id": plan.engine.engine_id,
@@ -55,7 +62,6 @@ class FixtureStageHooks:
                 "artifact_digest": plan.engine.artifact_digest,
             },
         )
-        return marker
 
     def active_plan_id(self) -> str | None:
         document = self._read("active.json")
@@ -72,6 +78,25 @@ class FixtureStageHooks:
         if not marker.is_file():
             return (f"plan {plan.plan_id} has no staged engine marker",)
         return ()
+
+    def backup_config(self, plan: DeploymentPlan) -> Path | None:
+        marker = self._plan_dir(plan.plan_id) / "config.json"
+        if not marker.is_file():
+            return None
+        backup = self._plan_dir(plan.plan_id) / "config.previous.json"
+        backup.write_text(marker.read_text(encoding="utf-8"), encoding="utf-8")
+        return backup
+
+    def write_config(self, plan: DeploymentPlan) -> Path:
+        return self._write_plan_marker(
+            plan,
+            "config.json",
+            {
+                "plan_id": plan.plan_id,
+                "engine_id": plan.engine.engine_id,
+                "settings": dict(plan.settings),
+            },
+        )
 
     def activate(self, plan: DeploymentPlan) -> None:
         self.initialize()

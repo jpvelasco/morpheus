@@ -32,6 +32,7 @@ class MetricsCollectorLoop:
         self._task: asyncio.Task[None] | None = None
         self._stop = asyncio.Event()
         self.last_error: str | None = None
+        self.last_count: int | None = None
 
     async def collect_once(self) -> int:
         observed_at = self._clock.utc_now().isoformat()
@@ -77,7 +78,7 @@ class MetricsCollectorLoop:
         interval = max(1, self._settings.metrics_collection_interval_seconds)
         while not self._stop.is_set():
             try:
-                await self.collect_once()
+                self.last_count = await self.collect_once()
                 self.last_error = None
             except Exception as error:
                 self.last_error = f"{type(error).__name__}: {error}"

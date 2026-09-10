@@ -38,7 +38,9 @@ private request data, host addresses, or unredacted evidence.
   `AcquisitionCache` against an owned fixture source; other workflows still
   honest-fail. R3 slice 2 landed: fixture StageHooks install/promote/rollback
   canonical plans under the owned runtime root (file markers only).
-  `engine_configure` and `remove` still honest-fail. A fixture `benchmark`
+  `remove` still honest-fail. Fixture `engine_configure` now writes a
+  plan-bound config marker under the owned runtime root without activating.
+  A fixture `benchmark`
   workflow now records a succeeded campaign through `run_campaign`. Settings
   apply is a real `load_settings` journal layer. A background metrics
   collector persists samples without a dashboard GET. `/compat/health` and

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -67,8 +68,12 @@ def test_OUI_002_background_collector_persists_without_metrics_get(tmp_path) -> 
     )
     with TestClient(app, base_url="https://testserver"):
         collector = app.state.metrics_collector
-        recorded = __import__("asyncio").run(collector.collect_once())
-        assert recorded >= 1
+        deadline = time.monotonic() + 10
+        while collector.last_count is None and time.monotonic() < deadline:
+            time.sleep(0.05)
+        assert collector.last_count is not None
+        assert collector.last_count >= 1
+        assert collector.last_error is None
     store = SqliteStore(tmp_path / "morpheus.sqlite3", owned_root=tmp_path)
 
     async def read() -> int:

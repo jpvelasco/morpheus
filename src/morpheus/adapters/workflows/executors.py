@@ -1,9 +1,10 @@
 """Explicit executor implementations for managed operations.
 
 ``ManagedLifecycleExecutor`` is the production default. It runs the
-workflows that have a wired lifecycle (acquire, install, promote,
-rollback) and honestly refuses every other workflow. The R3 exit rule
-forbids production routes from advertising simulated mutations.
+workflows that have a wired lifecycle (acquire, install, configure,
+promote, rollback, benchmark) and honestly refuses every other workflow.
+The R3 exit rule forbids production routes from advertising simulated
+mutations.
 """
 
 from __future__ import annotations
@@ -67,6 +68,7 @@ class ManagedLifecycleExecutor:
             {
                 WorkflowId.MODEL_ACQUIRE,
                 WorkflowId.ENGINE_INSTALL,
+                WorkflowId.ENGINE_CONFIGURE,
                 WorkflowId.PROMOTE,
                 WorkflowId.ROLLBACK,
                 WorkflowId.BENCHMARK,
@@ -81,9 +83,13 @@ class ManagedLifecycleExecutor:
         if workflow_id not in self._wired:
             return await self._fallback.preflight(workflow_id)
         try:
-            self._require_plan(workflow_id)
+            plan = self._require_plan(workflow_id)
             if workflow_id is WorkflowId.MODEL_ACQUIRE:
                 self._acquire[workflow_id.value] = self._acquisition_plan(workflow_id)
+            if workflow_id is WorkflowId.ENGINE_CONFIGURE:
+                failed = self._validation_failure(plan)
+                if failed is not None:
+                    return PreflightResult(ok=False, reason=failed.message)
             if workflow_id is WorkflowId.ROLLBACK and self._planning.plans.active() is None:
                 return PreflightResult(ok=False, reason="rollback requires an active managed plan")
         except (AcquisitionError, PlanningIdentityError, ValueError) as error:
@@ -94,14 +100,16 @@ class ManagedLifecycleExecutor:
         if workflow_id not in self._wired:
             return await self._fallback.execute(step_id, workflow_id)
         try:
-            if workflow_id is WorkflowId.MODEL_ACQUIRE:
-                return self._execute_acquire(step_id, workflow_id)
-            if workflow_id is WorkflowId.ENGINE_INSTALL:
-                return self._execute_install(step_id, workflow_id)
+            handler = {
+                WorkflowId.MODEL_ACQUIRE: self._execute_acquire,
+                WorkflowId.ENGINE_INSTALL: self._execute_install,
+                WorkflowId.ENGINE_CONFIGURE: self._execute_configure,
+                WorkflowId.BENCHMARK: self._execute_benchmark,
+            }.get(workflow_id)
+            if handler is not None:
+                return handler(step_id, workflow_id)
             if workflow_id is WorkflowId.PROMOTE:
                 return await self._execute_promote(step_id, workflow_id)
-            if workflow_id is WorkflowId.BENCHMARK:
-                return self._execute_benchmark(step_id, workflow_id)
             return await self._execute_rollback(step_id, workflow_id)
         except (AcquisitionError, PlanningIdentityError, OSError, ValueError) as error:
             return StepResult(ok=False, message=str(error))
@@ -154,11 +162,27 @@ class ManagedLifecycleExecutor:
             hooks.stage_engine(plan)
             return StepResult(ok=True, message="engine marker staged")
         if step_id == "smoke":
-            violations = hooks.validate(plan)
-            if violations:
-                return StepResult(ok=False, message="; ".join(violations))
-            return StepResult(ok=True, message="staged engine marker validated")
+            return self._validation_failure(plan) or StepResult(
+                ok=True, message="staged engine marker validated"
+            )
         return StepResult(ok=False, message=f"unknown install step {step_id!r}")
+
+    def _execute_configure(self, step_id: str, workflow_id: WorkflowId) -> StepResult:
+        plan = self._require_plan(workflow_id)
+        hooks = self._fixture_hooks()
+        if step_id == "validate":
+            return self._validation_failure(plan) or StepResult(
+                ok=True, message="staged engine marker validated"
+            )
+        if step_id == "backup":
+            backup = hooks.backup_config(plan)
+            if backup is None:
+                return StepResult(ok=True, message="no previous config to snapshot")
+            return StepResult(ok=True, message="previous config snapshotted")
+        if step_id == "apply":
+            marker = hooks.write_config(plan)
+            return StepResult(ok=True, message=marker.name)
+        return StepResult(ok=False, message=f"unknown configure step {step_id!r}")
 
     async def _execute_promote(self, step_id: str, workflow_id: WorkflowId) -> StepResult:
         plan = self._require_plan(workflow_id)
@@ -225,6 +249,12 @@ class ManagedLifecycleExecutor:
         if isinstance(self._hooks, FixtureStageHooks):
             return self._hooks
         return FixtureStageHooks(self._data_dir)
+
+    def _validation_failure(self, plan: DeploymentPlan) -> StepResult | None:
+        violations = self._fixture_hooks().validate(plan)
+        if not violations:
+            return None
+        return StepResult(ok=False, message="; ".join(violations))
 
     def _execute_benchmark(self, step_id: str, workflow_id: WorkflowId) -> StepResult:
         plan = self._require_plan(workflow_id)
