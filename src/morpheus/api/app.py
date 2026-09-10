@@ -31,6 +31,7 @@ from morpheus.adapters.persistence.records_store import RecordsStore
 from morpheus.adapters.persistence.settings import SettingsJournal, SettingsJournalError
 from morpheus.adapters.persistence.sqlite import SqliteStore
 from morpheus.adapters.runtime.agent import RuntimeAgentClient
+from morpheus.adapters.runtime.controls import FixtureControlActions, OwnedControlError
 from morpheus.adapters.runtime.stage import FixtureStageHooks
 from morpheus.adapters.workflows.executors import (
     ManagedLifecycleExecutor,
@@ -239,6 +240,14 @@ class WorkflowStart(BaseModel):
 
     confirmed: bool = False
     operation_token: str | None = Field(default=None, max_length=128)
+    plan_id: str | None = Field(default=None, max_length=128)
+
+
+class ControlActionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    confirmed: bool = False
+    action: str = Field(min_length=1, max_length=32)
     plan_id: str | None = Field(default=None, max_length=128)
 
 
@@ -565,6 +574,16 @@ def create_app(
             content={"error": {"code": "deployment_conflict", "message": str(error)}},
         )
 
+    @app.exception_handler(OwnedControlError)
+    async def owned_control_error(request: Request, error: OwnedControlError) -> JSONResponse:
+        del request
+        message = str(error)
+        code = "control_read_only" if "read-only" in message else "unknown_control"
+        return JSONResponse(
+            status_code=400,
+            content={"error": {"code": code, "message": message}},
+        )
+
     @app.exception_handler(OperationsDataError)
     async def operations_data_error(request: Request, error: OperationsDataError) -> JSONResponse:
         del request
@@ -859,6 +878,34 @@ def create_app(
             service_evidence=service_evidence,
             observed_at=clock.utc_now().isoformat(),
         )
+
+    @app.post(
+        "/api/v1/operations/controls/{control}/action",
+        dependencies=[Depends(require_csrf)],
+    )
+    async def operations_control_action(control: str, body: ControlActionRequest) -> dict[str, Any]:
+        if not body.confirmed:
+            raise OperationsDataError("control action requires operator confirmation")
+        plan = planning.require_known_plan(body.plan_id)
+        marker = FixtureControlActions(settings.data_dir).apply(
+            control=control, action=body.action, plan_id=plan.plan_id
+        )
+        store = SqliteStore(settings.data_dir / "morpheus.sqlite3", owned_root=settings.data_dir)
+        await store.initialize()
+        await store.record_event(
+            source="api",
+            severity="info",
+            message=f"owned control {control} {body.action} plan {plan.plan_id}",
+            correlation_id=plan.plan_id,
+        )
+        return {
+            "schema_version": 1,
+            "accepted": True,
+            "control": control,
+            "action": body.action,
+            "plan_id": plan.plan_id,
+            "marker": marker.name,
+        }
 
     @app.get("/api/v1/operations/metrics", dependencies=[Depends(require_api_key)])
     async def operations_metrics(
