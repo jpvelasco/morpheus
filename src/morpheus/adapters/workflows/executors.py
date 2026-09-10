@@ -2,9 +2,9 @@
 
 ``ManagedLifecycleExecutor`` is the production default. It runs the
 workflows that have a wired lifecycle (acquire, install, configure,
-promote, rollback, benchmark) and honestly refuses every other workflow.
-The R3 exit rule forbids production routes from advertising simulated
-mutations.
+promote, rollback, benchmark, remove) and honestly refuses every other
+workflow. The R3 exit rule forbids production routes from advertising
+simulated mutations.
 """
 
 from __future__ import annotations
@@ -72,6 +72,7 @@ class ManagedLifecycleExecutor:
                 WorkflowId.PROMOTE,
                 WorkflowId.ROLLBACK,
                 WorkflowId.BENCHMARK,
+                WorkflowId.REMOVE,
             }
         )
 
@@ -86,12 +87,15 @@ class ManagedLifecycleExecutor:
             plan = self._require_plan(workflow_id)
             if workflow_id is WorkflowId.MODEL_ACQUIRE:
                 self._acquire[workflow_id.value] = self._acquisition_plan(workflow_id)
-            if workflow_id is WorkflowId.ENGINE_CONFIGURE:
-                failed = self._validation_failure(plan)
-                if failed is not None:
-                    return PreflightResult(ok=False, reason=failed.message)
             if workflow_id is WorkflowId.ROLLBACK and self._planning.plans.active() is None:
                 return PreflightResult(ok=False, reason="rollback requires an active managed plan")
+            failed = None
+            if workflow_id is WorkflowId.ENGINE_CONFIGURE:
+                failed = self._validation_failure(plan)
+            elif workflow_id is WorkflowId.REMOVE:
+                failed = self._active_remove_failure(plan)
+            if failed is not None:
+                return PreflightResult(ok=False, reason=failed.message)
         except (AcquisitionError, PlanningIdentityError, ValueError) as error:
             return PreflightResult(ok=False, reason=str(error))
         return PreflightResult(ok=True)
@@ -105,6 +109,7 @@ class ManagedLifecycleExecutor:
                 WorkflowId.ENGINE_INSTALL: self._execute_install,
                 WorkflowId.ENGINE_CONFIGURE: self._execute_configure,
                 WorkflowId.BENCHMARK: self._execute_benchmark,
+                WorkflowId.REMOVE: self._execute_remove,
             }.get(workflow_id)
             if handler is not None:
                 return handler(step_id, workflow_id)
@@ -184,6 +189,20 @@ class ManagedLifecycleExecutor:
             return StepResult(ok=True, message=marker.name)
         return StepResult(ok=False, message=f"unknown configure step {step_id!r}")
 
+    def _execute_remove(self, step_id: str, workflow_id: WorkflowId) -> StepResult:
+        plan = self._require_plan(workflow_id)
+        if step_id == "confirm":
+            return self._active_remove_failure(plan) or StepResult(
+                ok=True, message="removal confirmed for inactive plan"
+            )
+        if step_id == "remove":
+            blocked = self._active_remove_failure(plan)
+            if blocked is not None:
+                return blocked
+            self._fixture_hooks().cleanup(plan)
+            return StepResult(ok=True, message=plan.plan_id)
+        return StepResult(ok=False, message=f"unknown remove step {step_id!r}")
+
     async def _execute_promote(self, step_id: str, workflow_id: WorkflowId) -> StepResult:
         plan = self._require_plan(workflow_id)
         if step_id == "evidence":
@@ -255,6 +274,12 @@ class ManagedLifecycleExecutor:
         if not violations:
             return None
         return StepResult(ok=False, message="; ".join(violations))
+
+    def _active_remove_failure(self, plan: DeploymentPlan) -> StepResult | None:
+        active = self._planning.plans.active()
+        if active is not None and active.plan.plan_id == plan.plan_id:
+            return StepResult(ok=False, message="cannot remove the active managed plan")
+        return None
 
     def _execute_benchmark(self, step_id: str, workflow_id: WorkflowId) -> StepResult:
         plan = self._require_plan(workflow_id)

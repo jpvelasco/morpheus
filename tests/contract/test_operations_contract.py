@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 from morpheus.adapters.fakes import FakeClock, FakeInference
 from morpheus.adapters.persistence.records_store import RecordsStore
 from morpheus.adapters.persistence.sqlite import SqliteStore
+from morpheus.adapters.workflows.executors import UnavailableWorkflowExecutor
 from morpheus.agent.protocol import AgentOperation, AgentResponse
 from morpheus.api.app import create_app
 from morpheus.config import MorpheusSettings, load_settings
@@ -152,6 +153,7 @@ def client(
     settings: MorpheusSettings | None = None,
     health_result: Evidence | None = None,
     inference: FakeInference | None = None,
+    workflow_executor: UnavailableWorkflowExecutor | None = None,
 ) -> TestClient:
     app = create_app(
         settings=settings
@@ -169,6 +171,7 @@ def client(
         ),
         clock=FakeClock(now=NOW),
         runtime_agent=runtime_agent,
+        workflow_executor=workflow_executor,
     )
     return TestClient(app, base_url="https://testserver")
 
@@ -695,7 +698,9 @@ def _seed_honest_plan(data_dir) -> None:
     )
 
 
-def _signed_in_client(tmp_path) -> tuple[TestClient, dict[str, str]]:
+def _signed_in_client(
+    tmp_path, *, workflow_executor: UnavailableWorkflowExecutor | None = None
+) -> tuple[TestClient, dict[str, str]]:
     settings = MorpheusSettings(
         api_key="test-api-key",
         session_secret="session-test-secret",
@@ -705,7 +710,7 @@ def _signed_in_client(tmp_path) -> tuple[TestClient, dict[str, str]]:
         lifecycle_deployment_root=tmp_path / "deploy",
     )
     _seed_honest_plan(settings.data_dir)
-    test_client = client(settings=settings)
+    test_client = client(settings=settings, workflow_executor=workflow_executor)
     response = test_client.post(
         "/api/v1/session",
         json={"api_key": "test-api-key"},
@@ -871,7 +876,7 @@ def test_OUI_006_workflows_payload_lists_definitions_and_sessions(tmp_path) -> N
 
 
 def test_OUI_006_workflow_start_requires_confirmation_and_csrf(tmp_path) -> None:
-    test_client, csrf = _signed_in_client(tmp_path)
+    test_client, csrf = _signed_in_client(tmp_path, workflow_executor=UnavailableWorkflowExecutor())
     without_csrf = test_client.post(
         "/api/v1/operations/workflows/remove/start",
         json={"confirmed": True, "plan_id": HONEST_PLAN_ID},
@@ -909,15 +914,15 @@ def test_OUI_006_workflow_start_requires_confirmation_and_csrf(tmp_path) -> None
 
 
 def test_OUI_006_unwired_workflow_refusal_is_honest_and_audited(tmp_path) -> None:
-    test_client, csrf = _signed_in_client(tmp_path)
+    test_client, csrf = _signed_in_client(tmp_path, workflow_executor=UnavailableWorkflowExecutor())
     started = test_client.post(
         "/api/v1/operations/workflows/remove/start",
         json={"confirmed": True, "plan_id": HONEST_PLAN_ID, "operation_token": "honest-remove"},
         headers=csrf,
     )
     assert started.status_code == 200
-    # R3: remove still has no lifecycle-backed executor; the operation is
-    # recorded durably but no mutating step pretends to have run.
+    # Injected UnavailableWorkflowExecutor still refuses mutation; the
+    # operation is recorded durably but no mutating step pretends to have run.
     assert started.json()["started"] is False
     session = started.json()["session"]
     assert session["state"] == "failed"
