@@ -56,7 +56,9 @@ private request data, host addresses, or unredacted evidence.
   `/api/v1/capabilities`, `/api/v1/support`, or `/api/v1/operations/controls`
   even when their feature flags are on. Isolated R5 increment: `temperature_c`
   reports unit `celsius`, and `/api/v1/operations/events` prunes then applies
-  the retention cutoff before returning rows. OUI-002/OUI-003 stay `planned`.
+  the retention cutoff before returning rows. Bounded `q` search now
+  matches persisted redacted messages and correlation ids without
+  returning expired rows or raw secrets. OUI-002/OUI-003 stay `planned`.
 
 - **Validated baseline source equivalent:** `aa094172764a4de3e5dc91324306b14857706c4e`
   (`security: bound API request work`). Its pre-publication build evidence

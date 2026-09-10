@@ -9,6 +9,7 @@ SEVERITIES = frozenset({"info", "warn", "error"})
 SEVERITY_ALIASES = {"warning": "warn"}
 MAX_MESSAGE_CHARS = 512
 MAX_EVENT_QUERY_LIMIT = 200
+MAX_SEARCH_CHARS = 128
 
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 _ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
@@ -113,13 +114,22 @@ def bounded_limit(limit: int) -> int:
     return min(max(limit, 1), MAX_EVENT_QUERY_LIMIT)
 
 
+def validate_event_search(query: str | None) -> str | None:
+    if query is None or query == "":
+        return None
+    if len(query) > MAX_SEARCH_CHARS or not _IDENTIFIER.fullmatch(query):
+        raise EventsError("invalid event search query")
+    return query
+
+
 def validate_event_filter(
     *,
     source: str | None = None,
     severity: str | None = None,
     correlation_id: str | None = None,
     since: str | None = None,
-) -> None:
+    query: str | None = None,
+) -> str | None:
     if source is not None and source not in APPROVED_SOURCES:
         raise EventsError(f"unapproved event source: {source!r}")
     if severity is not None and severity not in SEVERITIES:
@@ -128,3 +138,4 @@ def validate_event_filter(
         _bounded(correlation_id, "correlation id")
     if since is not None:
         _parse_iso(since)
+    return validate_event_search(query)
