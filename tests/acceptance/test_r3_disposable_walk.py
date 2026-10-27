@@ -28,10 +28,12 @@ from fastapi.testclient import TestClient
 
 from morpheus.adapters.fakes import FakeClock, FakeInference
 from morpheus.adapters.persistence.records_store import RecordsStore
+from morpheus.adapters.runtime.stage import FixtureStageHooks
 from morpheus.api.app import create_app
 from morpheus.config import MorpheusSettings
 from morpheus.core.health import Evidence, HealthState
 from morpheus.core.records import DeploymentPlan, EngineIdentity, ModelIdentity, WorkloadProfile
+from tests.runtime_fixtures import fixture_executor
 
 pytestmark = pytest.mark.acceptance
 MORPHEUS_OWNED_REQUIREMENTS = frozenset({"OUI-006", "RUNM-003", "GATE-001"})
@@ -91,6 +93,7 @@ def _client(tmp_path: Path) -> TestClient:
         enable_workflows=True,
         max_requests_per_minute=10_000,
     )
+    hooks = FixtureStageHooks(tmp_path)
     app = create_app(
         settings=settings,
         inference=FakeInference(
@@ -106,6 +109,8 @@ def _client(tmp_path: Path) -> TestClient:
             model_results=(),
         ),
         clock=FakeClock(now=NOW),
+        stage_hooks=hooks,
+        workflow_executor=fixture_executor(tmp_path, hooks),
     )
     return TestClient(app, base_url="https://testserver")
 

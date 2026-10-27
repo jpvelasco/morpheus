@@ -116,6 +116,12 @@ application operation boundary.
 
 ## Rectification Progress
 
+- 2026-10-26: R3 continuation removes fixture mutations from production
+  composition. Unconfigured workflows fail durably, direct promotion refuses
+  unavailable runtime hooks, and owned controls return `control_unavailable`.
+  Marker lifecycle and synthetic campaigns are explicitly injected disposable
+  fixtures. No requirement status advances; real owned runtime adapters and
+  interruption/recovery behavior remain open.
 - 2026-08-23: gate repair landed (#66): platform-neutral TLS path validation,
   unique research-deployment contract module name, portable Makefile test
   globs, locked pip refreshed past PYSEC-2026-3721, Linux-fatal fixture casing.

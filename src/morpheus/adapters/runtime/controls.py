@@ -21,6 +21,27 @@ class OwnedControlError(ValueError):
     """A control action is unknown, deferred, or otherwise not mutable."""
 
 
+class OwnedControlUnavailable(OwnedControlError):
+    """No lifecycle adapter is configured for an otherwise valid action."""
+
+
+def validate_control_action(*, control: str, action: str) -> None:
+    if control in DEFERRED_OPTIONAL_FEATURES:
+        raise OwnedControlError(f"control {control!r} is read-only")
+    if control not in OWNED_MUTABLE_CONTROLS:
+        raise OwnedControlError(f"unknown control {control!r}")
+    if action not in OWNED_CONTROL_ACTIONS:
+        raise OwnedControlError(f"unknown control action {action!r}")
+
+
+class UnavailableControlActions:
+    """Refuse controls until an owned lifecycle adapter is configured."""
+
+    def apply(self, *, control: str, action: str, plan_id: str) -> Path | None:
+        validate_control_action(control=control, action=action)
+        raise OwnedControlUnavailable("owned service lifecycle is not configured")
+
+
 class FixtureControlActions:
     """Write plan-bound control markers under the owned runtime root."""
 
@@ -28,12 +49,7 @@ class FixtureControlActions:
         self._resolver = OwnedPathResolver(Path(data_dir) / "runtime")
 
     def apply(self, *, control: str, action: str, plan_id: str) -> Path:
-        if control in DEFERRED_OPTIONAL_FEATURES:
-            raise OwnedControlError(f"control {control!r} is read-only")
-        if control not in OWNED_MUTABLE_CONTROLS:
-            raise OwnedControlError(f"unknown control {control!r}")
-        if action not in OWNED_CONTROL_ACTIONS:
-            raise OwnedControlError(f"unknown control action {action!r}")
+        validate_control_action(control=control, action=action)
         directory = self._resolver.resolve_relative("controls")
         directory.mkdir(parents=True, exist_ok=True)
         marker = directory / f"{control}.json"

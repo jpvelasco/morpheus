@@ -17,6 +17,7 @@ from fastapi.testclient import TestClient
 
 from morpheus.adapters.fakes import FakeClock, FakeInference
 from morpheus.adapters.persistence.records_store import RecordsStore
+from morpheus.adapters.runtime.stage import FixtureStageHooks
 from morpheus.api.app import create_app
 from morpheus.config import MorpheusSettings
 from morpheus.core.health import Evidence, HealthState
@@ -27,6 +28,7 @@ from morpheus.core.records import (
     ModelIdentity,
     WorkloadProfile,
 )
+from tests.runtime_fixtures import fixture_executor
 
 pytestmark = pytest.mark.contract
 MORPHEUS_OWNED_REQUIREMENTS = frozenset({"RUNM-003", "OUI-006"})
@@ -79,7 +81,7 @@ def _plan() -> DeploymentPlan:
     )
 
 
-def _client(tmp_path: Path, *, seed_plan: bool = False) -> TestClient:
+def _client(tmp_path: Path, *, seed_plan: bool = False, fixture: bool = False) -> TestClient:
     settings = MorpheusSettings(
         api_key=API_KEY,
         session_secret="session-test-secret",
@@ -114,6 +116,9 @@ def _client(tmp_path: Path, *, seed_plan: bool = False) -> TestClient:
             model_results=(),
         ),
         clock=FakeClock(now=NOW),
+        workflow_executor=fixture_executor(tmp_path, FixtureStageHooks(tmp_path))
+        if fixture
+        else None,
     )
     return TestClient(app, base_url="https://testserver")
 
@@ -170,7 +175,7 @@ def test_RUNM_003_known_plan_acquire_succeeds_and_correlates_identity(
     source = tmp_path / "acquire-source" / DIGEST
     source.parent.mkdir(parents=True)
     source.write_bytes(FIXTURE_BLOB)
-    with _client(tmp_path, seed_plan=True) as client:
+    with _client(tmp_path, seed_plan=True, fixture=True) as client:
         csrf = _csrf(client)
         response = _start(
             client,

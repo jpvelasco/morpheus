@@ -1962,6 +1962,7 @@
         "tests/integration/test_sqlite_store.py",
         "tests/contract/test_operations_contract.py",
         "tests/contract/test_operation_durability.py",
+        "tests/contract/test_r3_fixture_stage.py",
         "web/tests/App.test.tsx",
         "web/tests/api.test.ts",
         "web/e2e/dashboard.spec.ts"

@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 from morpheus.adapters.fakes import FakeClock, FakeInference
 from morpheus.adapters.persistence.records_store import RecordsStore
 from morpheus.adapters.persistence.sqlite import SqliteStore
+from morpheus.adapters.runtime.controls import FixtureControlActions
 from morpheus.adapters.workflows.executors import UnavailableWorkflowExecutor
 from morpheus.agent.protocol import AgentOperation, AgentResponse
 from morpheus.api.app import create_app
@@ -28,6 +29,7 @@ from morpheus.core.metrics_history import MetricSample
 from morpheus.core.models import ServedModel
 from morpheus.core.records import DeploymentPlan, EngineIdentity, ModelIdentity, WorkloadProfile
 from morpheus.core.telemetry import TelemetryEvent
+from morpheus.ports.runtime import ControlActionsPort
 
 HONEST_PLAN_ID = "plan-r3-honest-0001"
 HONEST_DIGEST = "c" * 64
@@ -154,6 +156,7 @@ def client(
     health_result: Evidence | None = None,
     inference: FakeInference | None = None,
     workflow_executor: UnavailableWorkflowExecutor | None = None,
+    control_actions: ControlActionsPort | None = None,
 ) -> TestClient:
     app = create_app(
         settings=settings
@@ -172,6 +175,7 @@ def client(
         clock=FakeClock(now=NOW),
         runtime_agent=runtime_agent,
         workflow_executor=workflow_executor,
+        control_actions=control_actions,
     )
     return TestClient(app, base_url="https://testserver")
 
@@ -699,7 +703,10 @@ def _seed_honest_plan(data_dir) -> None:
 
 
 def _signed_in_client(
-    tmp_path, *, workflow_executor: UnavailableWorkflowExecutor | None = None
+    tmp_path,
+    *,
+    workflow_executor: UnavailableWorkflowExecutor | None = None,
+    control_actions: ControlActionsPort | None = None,
 ) -> tuple[TestClient, dict[str, str]]:
     settings = MorpheusSettings(
         api_key="test-api-key",
@@ -710,7 +717,9 @@ def _signed_in_client(
         lifecycle_deployment_root=tmp_path / "deploy",
     )
     _seed_honest_plan(settings.data_dir)
-    test_client = client(settings=settings, workflow_executor=workflow_executor)
+    test_client = client(
+        settings=settings, workflow_executor=workflow_executor, control_actions=control_actions
+    )
     response = test_client.post(
         "/api/v1/session",
         json={"api_key": "test-api-key"},
@@ -744,7 +753,7 @@ def test_UI_003_owned_control_action_requires_confirmation_csrf_and_plan(tmp_pat
 
 
 def test_UI_003_owned_control_action_is_plan_bound_and_audited(tmp_path) -> None:
-    test_client, csrf = _signed_in_client(tmp_path)
+    test_client, csrf = _signed_in_client(tmp_path, control_actions=FixtureControlActions(tmp_path))
     response = test_client.post(
         "/api/v1/operations/controls/telemetry/action",
         json={"confirmed": True, "plan_id": HONEST_PLAN_ID, "action": "restart"},
@@ -766,6 +775,18 @@ def test_UI_003_owned_control_action_is_plan_bound_and_audited(tmp_path) -> None
     assert events.status_code == 200
     messages = [entry["message"] for entry in events.json()["events"]]
     assert any("telemetry" in message and "restart" in message for message in messages)
+
+
+def test_UI_003_default_control_action_refuses_marker_success(tmp_path) -> None:
+    test_client, csrf = _signed_in_client(tmp_path)
+    response = test_client.post(
+        "/api/v1/operations/controls/core/action",
+        json={"confirmed": True, "plan_id": HONEST_PLAN_ID, "action": "restart"},
+        headers=csrf,
+    )
+    assert response.status_code == 409
+    assert response.json()["error"]["code"] == "control_unavailable"
+    assert not (tmp_path / "runtime" / "controls" / "core.json").exists()
 
 
 def test_UI_003_external_and_deferred_controls_stay_read_only(tmp_path) -> None:
