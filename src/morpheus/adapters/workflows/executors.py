@@ -1,10 +1,7 @@
-"""Explicit executor implementations for managed operations.
+"""Unavailable default and explicitly injected disposable workflow fixtures.
 
-``ManagedLifecycleExecutor`` is the production default. It runs the
-workflows that have a wired lifecycle (acquire, install, configure,
-promote, rollback, benchmark, remove) and honestly refuses every other
-workflow. The R3 exit rule forbids production routes from advertising
-simulated mutations.
+Marker-based lifecycle and synthetic campaigns are test fixtures, never a
+production runtime. The R3 exit rule forbids advertising simulated mutations.
 """
 
 from __future__ import annotations
@@ -27,7 +24,6 @@ from morpheus.core.benchmark import (
 )
 from morpheus.core.benchstore import BenchmarkStore
 from morpheus.core.campaign import authorization_token, run_campaign
-from morpheus.core.deployment import StageHooks
 from morpheus.core.operations import ManagedOperation
 from morpheus.core.records import BenchmarkCampaign, DeploymentPlan
 from morpheus.core.workflows import WorkflowId
@@ -47,42 +43,27 @@ class UnavailableWorkflowExecutor:
         return StepResult(ok=False, message=self._reason)
 
 
-class ManagedLifecycleExecutor:
-    """Per-workflow production executor with honest fallback."""
+class FixtureLifecycleExecutor:
+    """Disposable marker lifecycle and synthetic benchmark executor."""
 
     def __init__(
         self,
         *,
         planning: PlanningService,
         data_dir: Path,
-        hooks: StageHooks | None = None,
-        fallback: UnavailableWorkflowExecutor | None = None,
+        hooks: FixtureStageHooks,
     ) -> None:
         self._planning = planning
         self._data_dir = Path(data_dir)
-        self._hooks = hooks or FixtureStageHooks(data_dir)
-        self._fallback = fallback or UnavailableWorkflowExecutor()
+        self._hooks = hooks
         self._bound: dict[str, ManagedOperation] = {}
         self._acquire: dict[str, AcquisitionPlan] = {}
-        self._wired = frozenset(
-            {
-                WorkflowId.MODEL_ACQUIRE,
-                WorkflowId.ENGINE_INSTALL,
-                WorkflowId.ENGINE_CONFIGURE,
-                WorkflowId.PROMOTE,
-                WorkflowId.ROLLBACK,
-                WorkflowId.BENCHMARK,
-                WorkflowId.REMOVE,
-            }
-        )
 
     def bind(self, operation: ManagedOperation) -> None:
         self._bound[operation.workflow_id] = operation
         self._acquire.pop(operation.workflow_id, None)
 
     async def preflight(self, workflow_id: WorkflowId) -> PreflightResult:
-        if workflow_id not in self._wired:
-            return await self._fallback.preflight(workflow_id)
         try:
             plan = self._require_plan(workflow_id)
             if workflow_id is WorkflowId.MODEL_ACQUIRE:
@@ -101,8 +82,6 @@ class ManagedLifecycleExecutor:
         return PreflightResult(ok=True)
 
     async def execute(self, step_id: str, workflow_id: WorkflowId) -> StepResult:
-        if workflow_id not in self._wired:
-            return await self._fallback.execute(step_id, workflow_id)
         try:
             handler = {
                 WorkflowId.MODEL_ACQUIRE: self._execute_acquire,
@@ -159,7 +138,7 @@ class ManagedLifecycleExecutor:
 
     def _execute_install(self, step_id: str, workflow_id: WorkflowId) -> StepResult:
         plan = self._require_plan(workflow_id)
-        hooks = self._fixture_hooks()
+        hooks = self._hooks
         if step_id == "preflight":
             hooks.initialize()
             return StepResult(ok=True, message="owned runtime root is writable")
@@ -174,7 +153,7 @@ class ManagedLifecycleExecutor:
 
     def _execute_configure(self, step_id: str, workflow_id: WorkflowId) -> StepResult:
         plan = self._require_plan(workflow_id)
-        hooks = self._fixture_hooks()
+        hooks = self._hooks
         if step_id == "validate":
             return self._validation_failure(plan) or StepResult(
                 ok=True, message="staged engine marker validated"
@@ -199,7 +178,7 @@ class ManagedLifecycleExecutor:
             blocked = self._active_remove_failure(plan)
             if blocked is not None:
                 return blocked
-            self._fixture_hooks().cleanup(plan)
+            self._hooks.cleanup(plan)
             return StepResult(ok=True, message=plan.plan_id)
         return StepResult(ok=False, message=f"unknown remove step {step_id!r}")
 
@@ -264,13 +243,8 @@ class ManagedLifecycleExecutor:
             raise ValueError(f"{workflow_id.value} requires a bound canonical plan")
         return self._planning.require_known_plan(bound.plan_id)
 
-    def _fixture_hooks(self) -> FixtureStageHooks:
-        if isinstance(self._hooks, FixtureStageHooks):
-            return self._hooks
-        return FixtureStageHooks(self._data_dir)
-
     def _validation_failure(self, plan: DeploymentPlan) -> StepResult | None:
-        violations = self._fixture_hooks().validate(plan)
+        violations = self._hooks.validate(plan)
         if not violations:
             return None
         return StepResult(ok=False, message="; ".join(violations))

@@ -1,23 +1,28 @@
 # AGENTS.md
 
-## Where We Left Off (2026-08-23)
+## Where We Left Off (2026-10-26)
 
-Current `main`: `df39a3b5b430e1e3a6b46f11d84c2693c286c27e`. Rectification is in
+Resume baseline `main`: `0d57c33` (#97). Rectification is in
 progress; the v0.2 product is **not** source-complete or release-ready.
+Implementation is paused at the operator's 2026-10-26 request; resume only on
+explicit continuation.
 
 - Landed: **R0** truthful ledgers + semantic traceability (#67), **R1** one
   canonical identity and plan family (#68, closes #55), **R2** evidence-backed
   recommendation over retained repositories (#71, closes #56).
-- Next package: **R3** durable managed operation service (#57), then **R4**
-  target-native process/backend lifecycle. One integrator owns R2 and R3.
+- Active package: **R3** durable managed operation service (#57), then **R4**
+  target-native process/backend lifecycle. R3 durability and fixture workflow
+  coverage exist; fixture markers and synthetic campaigns require explicit
+  test injection. The production default refuses unconfigured lifecycle work.
 - Do not resume the old Phase 11-to-18 implementation prompt or jump directly to
   physical qualification (R10).
 
 `requirements.json` stands at 59 implemented, 28 planned, 12 deferred, 0
 validated. Component scaffolds do not establish product behavior. Still open:
 
-- managed operation routes use a deliberately non-mutating DEV executor;
-- metrics are collected on page requests and events have no producers;
+- managed lifecycle and owned-service runtime adapters remain incomplete;
+- background metrics and redacted operation events exist, but full signal and
+  producer coverage remain incomplete;
 - native engine shutdown bypasses process-tree supervision;
 - desktop/native package and local diagnosis paths remain incomplete;
 - model console / setup copilot are planned only; optional search/voice/RAG/etc.

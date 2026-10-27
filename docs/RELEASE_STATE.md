@@ -7,13 +7,19 @@ private request data, host addresses, or unredacted evidence.
 
 ## Current Position
 
-- **Authoritative development source reviewed:**
+- **Resume baseline:** `0d57c33` (#97, bounded redacted event search).
+  DEV/disposable-lab implementation was authorized on 2026-10-26, then paused
+  the same day at the operator's request after stabilizing the current change.
+  R3 remains the next package; resume requires an explicit continuation.
+  No host or release lane was authorized.
+- **Historical implementation audit source:**
   `9b4cda09d4b064f160902b9dd25387cf3129cdb3` (final GitHub implementation
   run, audited on 2026-08-22). The active worktree may contain the documentation
   and requirement reconciliation that follows that source.
-- **Active source milestone:** architecture rectification R0 through R9; see
-  [`RECTIFICATION_PLAN.md`](RECTIFICATION_PLAN.md). R1 canonical identity/plan
-  consolidation is the first dependency-critical implementation package.
+- **Active source milestone:** R3 durable managed operations, within
+  architecture rectification R0 through R9; see
+  [`RECTIFICATION_PLAN.md`](RECTIFICATION_PLAN.md). R0 through R2 foundations
+  have landed.
 - **Rectification progress:** 2026-08-24 — gate repair landed (#66); R0
   semantic traceability enforced (machine-readable `boundaries`, requirement-ID
   ownership metadata, public-lane owner rule, derived documentation counts,
@@ -59,6 +65,14 @@ private request data, host addresses, or unredacted evidence.
   the retention cutoff before returning rows. Bounded `q` search now
   matches persisted redacted messages and correlation ids without
   returning expired rows or raw secrets. OUI-002/OUI-003 stay `planned`.
+  On the current continuation branch, production defaults now refuse
+  unconfigured workflow, deployment, and owned control mutations.
+  `FixtureLifecycleExecutor`, `FixtureStageHooks`, and fixture control actions
+  require explicit test injection; marker writes and synthetic campaigns no
+  longer report production lifecycle success. Real runtime adapters and their
+  interruption/recovery acceptance lanes remain open R3 scope.
+  Stabilization also updates the locked `certifi`, `filelock`, and `urllib3`
+  dependencies to the fixed versions reported by the required security audit.
 
 - **Validated baseline source equivalent:** `aa094172764a4de3e5dc91324306b14857706c4e`
   (`security: bound API request work`). Its pre-publication build evidence
@@ -331,8 +345,8 @@ workspace; refer to the candidate commit and task ID in its redacted manifest.
 
 ## Active Milestone
 
-**Architecture rectification is active; R0 documentation/status reconciliation
-is followed by R1 canonical identity and deployment-plan consolidation.** The
+**Architecture rectification R3 is active after the landed R0/R1/R2
+foundations.** The
 final component run is not a phase-exit record. RUNM-001 and the other planned
 rows remain incomplete until their canonical behavior crosses the required
 public/application boundaries and their affected gates pass.

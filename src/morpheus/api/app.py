@@ -31,10 +31,12 @@ from morpheus.adapters.persistence.records_store import RecordsStore
 from morpheus.adapters.persistence.settings import SettingsJournal, SettingsJournalError
 from morpheus.adapters.persistence.sqlite import SqliteStore
 from morpheus.adapters.runtime.agent import RuntimeAgentClient
-from morpheus.adapters.runtime.controls import FixtureControlActions, OwnedControlError
-from morpheus.adapters.runtime.stage import FixtureStageHooks
+from morpheus.adapters.runtime.controls import (
+    OwnedControlError,
+    OwnedControlUnavailable,
+    UnavailableControlActions,
+)
 from morpheus.adapters.workflows.executors import (
-    ManagedLifecycleExecutor,
     UnavailableWorkflowExecutor,
 )
 from morpheus.adapters.workflows.runner import LazyAuditStore, WorkflowExecutor
@@ -124,6 +126,7 @@ from morpheus.ops.recommendation import (
 )
 from morpheus.ops.support import SupportReportService
 from morpheus.ports.protocols import Clock, InferencePort, RuntimeAgentPort
+from morpheus.ports.runtime import ControlActionsPort
 
 
 class AuthenticationRequired(Exception):
@@ -304,6 +307,7 @@ def create_app(
     runtime_agent: RuntimeAgentPort | None = None,
     stage_hooks: StageHooks | None = None,
     workflow_executor: WorkflowExecutor | None = None,
+    control_actions: ControlActionsPort | None = None,
 ) -> FastAPI:
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> Any:
@@ -346,7 +350,8 @@ def create_app(
         evidence=StoreBenchmarkEvidence(BenchmarkStore(settings.data_dir / "benchmarks")),
         clock=clock,
     )
-    active_hooks = stage_hooks or FixtureStageHooks(settings.data_dir)
+    active_hooks = stage_hooks or _UnavailableStageHooks()
+    active_controls = control_actions or UnavailableControlActions()
     app.add_middleware(BodyLimitMiddleware, max_body_bytes=settings.max_request_bytes)
     session_secret = settings.session_secret.get_secret_value().encode()
     session_codec = (
@@ -356,12 +361,7 @@ def create_app(
     )
     request_limiter = ConcurrencyLimiter(settings.max_concurrent_requests)
     rate_limiter = FixedWindowRateLimiter(settings.max_requests_per_minute)
-    default_executor = workflow_executor or ManagedLifecycleExecutor(
-        planning=planning,
-        data_dir=settings.data_dir,
-        hooks=active_hooks,
-        fallback=UnavailableWorkflowExecutor(),
-    )
+    default_executor = workflow_executor or UnavailableWorkflowExecutor()
     operation_events = SqliteStore(
         settings.data_dir / "morpheus.sqlite3", owned_root=settings.data_dir
     )
@@ -578,6 +578,11 @@ def create_app(
     async def owned_control_error(request: Request, error: OwnedControlError) -> JSONResponse:
         del request
         message = str(error)
+        if isinstance(error, OwnedControlUnavailable):
+            return JSONResponse(
+                status_code=409,
+                content={"error": {"code": "control_unavailable", "message": message}},
+            )
         code = "control_read_only" if "read-only" in message else "unknown_control"
         return JSONResponse(
             status_code=400,
@@ -887,9 +892,7 @@ def create_app(
         if not body.confirmed:
             raise OperationsDataError("control action requires operator confirmation")
         plan = planning.require_known_plan(body.plan_id)
-        marker = FixtureControlActions(settings.data_dir).apply(
-            control=control, action=body.action, plan_id=plan.plan_id
-        )
+        marker = active_controls.apply(control=control, action=body.action, plan_id=plan.plan_id)
         store = SqliteStore(settings.data_dir / "morpheus.sqlite3", owned_root=settings.data_dir)
         await store.initialize()
         await store.record_event(
@@ -904,7 +907,7 @@ def create_app(
             "control": control,
             "action": body.action,
             "plan_id": plan.plan_id,
-            "marker": marker.name,
+            "marker": marker.name if marker is not None else None,
         }
 
     @app.get("/api/v1/operations/metrics", dependencies=[Depends(require_api_key)])

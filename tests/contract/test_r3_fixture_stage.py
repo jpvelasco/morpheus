@@ -22,6 +22,7 @@ from morpheus.core.records import (
     ModelIdentity,
     WorkloadProfile,
 )
+from tests.runtime_fixtures import fixture_executor
 
 pytestmark = pytest.mark.contract
 NOW = datetime(2026, 8, 24, 12, 0, tzinfo=UTC)
@@ -87,7 +88,7 @@ def _seed(tmp_path: Path, *plans: DeploymentPlan) -> RecordsStore:
     return store
 
 
-def _client(tmp_path: Path) -> TestClient:
+def _client(tmp_path: Path, *, fixture: bool = False) -> TestClient:
     settings = MorpheusSettings(
         api_key=API_KEY,
         session_secret="session-test-secret",
@@ -95,6 +96,7 @@ def _client(tmp_path: Path) -> TestClient:
         enable_workflows=True,
         max_requests_per_minute=10_000,
     )
+    hooks = FixtureStageHooks(tmp_path)
     app = create_app(
         settings=settings,
         inference=FakeInference(
@@ -110,6 +112,8 @@ def _client(tmp_path: Path) -> TestClient:
             model_results=(),
         ),
         clock=FakeClock(now=NOW),
+        stage_hooks=hooks if fixture else None,
+        workflow_executor=fixture_executor(tmp_path, hooks) if fixture else None,
     )
     return TestClient(app, base_url="https://testserver")
 
@@ -168,10 +172,57 @@ def test_fixture_hooks_stay_inside_owned_runtime_root(tmp_path: Path) -> None:
     assert not marker.exists()
 
 
+@pytest.mark.parametrize(
+    "workflow",
+    (
+        "model_acquire",
+        "engine_install",
+        "engine_configure",
+        "benchmark",
+        "promote",
+        "rollback",
+        "remove",
+    ),
+)
+def test_OUI_006_default_composition_refuses_fixture_mutations(
+    tmp_path: Path, workflow: str
+) -> None:
+    plan = _plan("plan-r3-default", alias="default")
+    _seed(tmp_path, plan)
+    FixtureStageHooks(tmp_path).stage_engine(plan)
+    with _client(tmp_path, fixture=False) as client:
+        started = _start(client, _csrf(client), workflow, plan.plan_id, f"default-{workflow}")
+        assert started["started"] is False
+        assert started["session"]["state"] == "failed"
+        assert "configured" in started["session"]["error"]
+    assert not (tmp_path / "runtime" / "plans" / plan.plan_id / "config.json").exists()
+    assert not (tmp_path / "benchmarks").exists()
+
+
+def test_default_plan_promotion_refuses_fixture_markers(tmp_path: Path) -> None:
+    plan = _plan("plan-r3-default", alias="default")
+    _seed(tmp_path, plan)
+    FixtureStageHooks(tmp_path).stage_engine(plan)
+    with _client(tmp_path) as client:
+        response = client.post(
+            f"/api/v1/plans/{plan.plan_id}/promote",
+            json={
+                "confirmed": True,
+                "artifacts_verified": True,
+                "campaign_id": f"campaign-{plan.plan_id}",
+            },
+            headers=_csrf(client),
+        )
+        assert response.status_code == 409, response.text
+        assert response.json()["error"]["code"] == "deployment_conflict"
+        assert client.get("/api/v1/plans/state", headers=AUTH).json()["active_plan_id"] is None
+    assert not (tmp_path / "runtime" / "active.json").exists()
+
+
 def test_engine_install_stages_without_activating(tmp_path: Path) -> None:
     plan = _plan("plan-r3-stage-a", alias="stage-a")
     _seed(tmp_path, plan)
-    with _client(tmp_path) as client:
+    with _client(tmp_path, fixture=True) as client:
         csrf = _csrf(client)
         started = _start(client, csrf, "engine_install", plan.plan_id, "install-a")
         assert started["started"] is True
@@ -185,7 +236,7 @@ def test_engine_install_stages_without_activating(tmp_path: Path) -> None:
 def test_promote_without_campaign_does_not_activate(tmp_path: Path) -> None:
     plan = _plan("plan-r3-stage-a", alias="stage-a")
     RecordsStore(tmp_path / "records").save_plan(plan)
-    with _client(tmp_path) as client:
+    with _client(tmp_path, fixture=True) as client:
         csrf = _csrf(client)
         install = _start(client, csrf, "engine_install", plan.plan_id, "install-a")
         _wait(client, "engine_install", install["operation_id"])
@@ -203,7 +254,7 @@ def test_install_promote_then_rollback_restores_previous(tmp_path: Path) -> None
     plan_a = _plan("plan-r3-stage-a", alias="stage-a")
     plan_b = _plan("plan-r3-stage-b", alias="stage-b")
     _seed(tmp_path, plan_a, plan_b)
-    with _client(tmp_path) as client:
+    with _client(tmp_path, fixture=True) as client:
         csrf = _csrf(client)
         install_a = _start(client, csrf, "engine_install", plan_a.plan_id, "install-a")
         assert _wait(client, "engine_install", install_a["operation_id"])["state"] == "succeeded"
@@ -235,7 +286,7 @@ def test_install_promote_then_rollback_restores_previous(tmp_path: Path) -> None
 def test_fixture_benchmark_records_a_succeeded_campaign(tmp_path: Path) -> None:
     plan = _plan("plan-r3-stage-a", alias="stage-a")
     RecordsStore(tmp_path / "records").save_plan(plan)
-    with _client(tmp_path) as client:
+    with _client(tmp_path, fixture=True) as client:
         csrf = _csrf(client)
         started = _start(client, csrf, "benchmark", plan.plan_id, "bench-a")
         assert started["started"] is True
@@ -252,7 +303,7 @@ def test_fixture_benchmark_records_a_succeeded_campaign(tmp_path: Path) -> None:
 def test_engine_configure_requires_a_staged_engine(tmp_path: Path) -> None:
     plan = _plan("plan-r3-stage-a", alias="stage-a")
     _seed(tmp_path, plan)
-    with _client(tmp_path) as client:
+    with _client(tmp_path, fixture=True) as client:
         csrf = _csrf(client)
         started = _start(client, csrf, "engine_configure", plan.plan_id, "configure-a")
         session = (
@@ -268,7 +319,7 @@ def test_engine_configure_requires_a_staged_engine(tmp_path: Path) -> None:
 def test_engine_configure_writes_config_without_activating(tmp_path: Path) -> None:
     plan = _plan("plan-r3-stage-a", alias="stage-a")
     _seed(tmp_path, plan)
-    with _client(tmp_path) as client:
+    with _client(tmp_path, fixture=True) as client:
         csrf = _csrf(client)
         install = _start(client, csrf, "engine_install", plan.plan_id, "install-a")
         assert _wait(client, "engine_install", install["operation_id"])["state"] == "succeeded"
@@ -287,7 +338,7 @@ def test_engine_configure_writes_config_without_activating(tmp_path: Path) -> No
 def test_engine_configure_backs_up_previous_config(tmp_path: Path) -> None:
     plan = _plan("plan-r3-stage-a", alias="stage-a")
     _seed(tmp_path, plan)
-    with _client(tmp_path) as client:
+    with _client(tmp_path, fixture=True) as client:
         csrf = _csrf(client)
         install = _start(client, csrf, "engine_install", plan.plan_id, "install-a")
         assert _wait(client, "engine_install", install["operation_id"])["state"] == "succeeded"
@@ -303,7 +354,7 @@ def test_engine_configure_backs_up_previous_config(tmp_path: Path) -> None:
 def test_remove_refuses_the_active_plan(tmp_path: Path) -> None:
     plan = _plan("plan-r3-stage-a", alias="stage-a")
     _seed(tmp_path, plan)
-    with _client(tmp_path) as client:
+    with _client(tmp_path, fixture=True) as client:
         csrf = _csrf(client)
         install = _start(client, csrf, "engine_install", plan.plan_id, "install-a")
         assert _wait(client, "engine_install", install["operation_id"])["state"] == "succeeded"
@@ -326,7 +377,7 @@ def test_remove_refuses_the_active_plan(tmp_path: Path) -> None:
 def test_remove_cleans_a_staged_inactive_plan(tmp_path: Path) -> None:
     plan = _plan("plan-r3-stage-a", alias="stage-a")
     _seed(tmp_path, plan)
-    with _client(tmp_path) as client:
+    with _client(tmp_path, fixture=True) as client:
         csrf = _csrf(client)
         install = _start(client, csrf, "engine_install", plan.plan_id, "install-a")
         assert _wait(client, "engine_install", install["operation_id"])["state"] == "succeeded"
@@ -343,7 +394,7 @@ def test_remove_cleans_a_staged_inactive_plan(tmp_path: Path) -> None:
 def test_GATE_001_compat_health_follows_the_active_plan(tmp_path: Path) -> None:
     plan = _plan("plan-r3-stage-a", alias="stage-a")
     _seed(tmp_path, plan)
-    with _client(tmp_path) as client:
+    with _client(tmp_path, fixture=True) as client:
         csrf = _csrf(client)
         missing = client.get("/compat/health")
         assert missing.status_code == 503
